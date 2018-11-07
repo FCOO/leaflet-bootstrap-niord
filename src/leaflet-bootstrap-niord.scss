@@ -1,0 +1,122 @@
+/***********************************************
+	leaflet-bootstrap-niord.scss,
+
+	(c) 2018, FCOO
+
+	https://github.com/FCOO/leaflet-bootstrap-niord
+	https://github.com/FCOO
+
+
+************************************************/
+//BOURBON - http://bourbon.io/
+@import "../bower_components/bourbon/core/bourbon";
+
+//MODERNIZR-MIXIN - https://github.com/danielguillan/modernizr-mixin
+@import "../bower_components/modernizr-mixin/stylesheets/modernizr";
+
+//MATHSASS - https://github.com/terkel/mathsass
+@import "../bower_components/mathsass/dist/math";
+
+
+//LEAFLET-BOOTSTRAP - mixin to create colors for bsMarker
+@import "../bower_components/sass-color-helpers/stylesheets/color-helpers";
+@import "../bower_components/leaflet-bootstrap/src/leaflet-bootstrap-marker-mixin";
+
+
+
+@mixin path-niord( $prefix, $color, $border-color){
+    $name: path-niord;
+    @if $prefix != null {
+        $name: path-niord-#{$prefix}
+    }
+
+    @include lbm-marker-and-icon-classes( $name, $color, $border-color );
+
+    .#{$name}{
+        stroke: $border-color;
+    }
+    .#{$name}.path-niord-popupopen{
+        stroke: darken( $border-color, 20% );
+    }
+
+    .#{$name}:not(.path-niord-no-fill){
+        fill  : $color;
+    }
+
+
+}
+
+
+/******************************************
+Common style for all domains
+******************************************/
+.path-niord {
+    cursor      : pointer;
+    stroke-width: 1;
+    fill-opacity: .2;
+    &.path-niord-only-hover {
+        stroke-opacity: 0;
+        fill-opacity  : 0;
+
+    }
+    &:hover {
+        fill-opacity: .7;
+    }
+    &.path-niord-inactive {
+        cursor      : inherit;
+        fill-opacity: .4;
+    }
+
+    &.path-niord.path-niord-no-fill {
+        fill: none;
+    }
+
+    &.path-niord-popupopen {
+        fill-opacity: .85;
+    }
+}
+
+
+/*
+Create trhe style for the four different domains
+*/
+$dark-purple: #e2007a;
+//$dark-purple: rgb(139,0,139);
+$darkest-purple: darken($dark-purple, 20%);
+
+//FA - All Danish firing areas are defined as miscellaneous Notices to Mariners in the "niord-fa" domain.
+@include path-niord( 'FA', white, $darkest-purple);
+
+//NM - All Danish Notices to Mariners are produced in the "niord-nm" domain.
+@include path-niord( 'NM', white, $darkest-purple);
+
+//NW - All Danish navigational warnings are produced in the "niord-nw" domain.
+@include path-niord( 'NW', $dark-purple, $darkest-purple);
+
+//FE - The actual firing exercises are maintained as local navigational warnings in the "niord-fe" domain.
+@include path-niord( 'FE', $dark-purple, $darkest-purple);
+
+
+
+
+
+
+
+
+
+//TEST
+//Change cursor from grab/grabbing to pointer/move to look like google maps
+body {
+    .leaflet-grab {
+	    cursor: default;
+    }
+
+    &.leaflet-dragging {
+        .leaflet-grab,
+        .leaflet-grab .leaflet-interactive,
+        .leaflet-marker-draggable {
+	        cursor: move;
+	    }
+    }
+}
+

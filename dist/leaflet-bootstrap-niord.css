@@ -1,0 +1,181 @@
+/***********************************************
+	leaflet-bootstrap-niord.scss,
+
+	(c) 2018, FCOO
+
+	https://github.com/FCOO/leaflet-bootstrap-niord
+	https://github.com/FCOO
+
+
+************************************************/
+/***********************************************
+leaflet-bootstrap-marker-mixin.scss
+Style for bsMarker estimated to look like Google Maps
+
+The pulsate is a djusted version of leaflet-icon-pulse by Filip Zavadil
+https://github.com/mapshakers/leaflet-icon-pulse
+
+lbm-icon lbm-COLOR [lbm-border-COLOR] [lbm-transparent] [lbm-puls] [lbm-hover]
+
+lbm-icon          : Standard icon with black border and tin white shadow
+lbm-[COLOR]       : Sets inner color to [COLOR]
+lbm-border-[COLOR]: border-color = [COLOR]
+
+lbm-big-shadow    : Big shadow in same color as inner color
+lbm-puls          : Has a pulsing ring
+lbm-transparent   : Inner color get opacity: 0.7
+lbm-hover         : When hover: get big-shadow and opacity: 0.9 for ibm-transparent
+************************************************/
+/**********************************************************
+lbm-marker-and-icon-classes
+**********************************************************/
+/******************************************
+Common style for all domains
+******************************************/
+.path-niord {
+  cursor: pointer;
+  stroke-width: 1;
+  fill-opacity: .2; }
+  .path-niord.path-niord-only-hover {
+    stroke-opacity: 0;
+    fill-opacity: 0; }
+  .path-niord:hover {
+    fill-opacity: .7; }
+  .path-niord.path-niord-inactive {
+    cursor: inherit;
+    fill-opacity: .4; }
+  .path-niord.path-niord.path-niord-no-fill {
+    fill: none; }
+  .path-niord.path-niord-popupopen {
+    fill-opacity: .85; }
+
+/*
+Create trhe style for the four different domains
+*/
+.lbm-path-niord-FA {
+  background-color: white;
+  color: #000; }
+  .lbm-path-niord-FA.lbm-transparent {
+    background-color: rgba(255, 255, 255, 0.7); }
+    .lbm-path-niord-FA.lbm-transparent.lbm-hover:hover {
+      background-color: rgba(255, 255, 255, 0.9); }
+  .lbm-path-niord-FA.lbm-big-shadow, .lbm-path-niord-FA.leaflet-drag-target, .lbm-path-niord-FA.lbm-hover:hover {
+    box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.28); }
+  .lbm-path-niord-FA:before {
+    box-shadow: 0 0 6px 2px white; }
+
+.lbm-border-path-niord-FA {
+  border-color: #7c0043; }
+
+.fa-lbm-icon-path-niord-FA {
+  color: white; }
+
+.fa-lbm-icon-border-path-niord-FA {
+  color: #7c0043; }
+
+.path-niord-FA {
+  stroke: #7c0043; }
+
+.path-niord-FA.path-niord-popupopen {
+  stroke: #16000c; }
+
+.path-niord-FA:not(.path-niord-no-fill) {
+  fill: white; }
+
+.lbm-path-niord-NM {
+  background-color: white;
+  color: #000; }
+  .lbm-path-niord-NM.lbm-transparent {
+    background-color: rgba(255, 255, 255, 0.7); }
+    .lbm-path-niord-NM.lbm-transparent.lbm-hover:hover {
+      background-color: rgba(255, 255, 255, 0.9); }
+  .lbm-path-niord-NM.lbm-big-shadow, .lbm-path-niord-NM.leaflet-drag-target, .lbm-path-niord-NM.lbm-hover:hover {
+    box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.28); }
+  .lbm-path-niord-NM:before {
+    box-shadow: 0 0 6px 2px white; }
+
+.lbm-border-path-niord-NM {
+  border-color: #7c0043; }
+
+.fa-lbm-icon-path-niord-NM {
+  color: white; }
+
+.fa-lbm-icon-border-path-niord-NM {
+  color: #7c0043; }
+
+.path-niord-NM {
+  stroke: #7c0043; }
+
+.path-niord-NM.path-niord-popupopen {
+  stroke: #16000c; }
+
+.path-niord-NM:not(.path-niord-no-fill) {
+  fill: white; }
+
+.lbm-path-niord-NW {
+  background-color: #e2007a;
+  color: #fff; }
+  .lbm-path-niord-NW.lbm-transparent {
+    background-color: rgba(226, 0, 122, 0.7); }
+    .lbm-path-niord-NW.lbm-transparent.lbm-hover:hover {
+      background-color: rgba(226, 0, 122, 0.9); }
+  .lbm-path-niord-NW.lbm-big-shadow, .lbm-path-niord-NW.leaflet-drag-target, .lbm-path-niord-NW.lbm-hover:hover {
+    box-shadow: 0px 0px 0px 5px rgba(226, 0, 122, 0.28); }
+  .lbm-path-niord-NW:before {
+    box-shadow: 0 0 6px 2px #e2007a; }
+
+.lbm-border-path-niord-NW {
+  border-color: #7c0043; }
+
+.fa-lbm-icon-path-niord-NW {
+  color: #e2007a; }
+
+.fa-lbm-icon-border-path-niord-NW {
+  color: #7c0043; }
+
+.path-niord-NW {
+  stroke: #7c0043; }
+
+.path-niord-NW.path-niord-popupopen {
+  stroke: #16000c; }
+
+.path-niord-NW:not(.path-niord-no-fill) {
+  fill: #e2007a; }
+
+.lbm-path-niord-FE {
+  background-color: #e2007a;
+  color: #fff; }
+  .lbm-path-niord-FE.lbm-transparent {
+    background-color: rgba(226, 0, 122, 0.7); }
+    .lbm-path-niord-FE.lbm-transparent.lbm-hover:hover {
+      background-color: rgba(226, 0, 122, 0.9); }
+  .lbm-path-niord-FE.lbm-big-shadow, .lbm-path-niord-FE.leaflet-drag-target, .lbm-path-niord-FE.lbm-hover:hover {
+    box-shadow: 0px 0px 0px 5px rgba(226, 0, 122, 0.28); }
+  .lbm-path-niord-FE:before {
+    box-shadow: 0 0 6px 2px #e2007a; }
+
+.lbm-border-path-niord-FE {
+  border-color: #7c0043; }
+
+.fa-lbm-icon-path-niord-FE {
+  color: #e2007a; }
+
+.fa-lbm-icon-border-path-niord-FE {
+  color: #7c0043; }
+
+.path-niord-FE {
+  stroke: #7c0043; }
+
+.path-niord-FE.path-niord-popupopen {
+  stroke: #16000c; }
+
+.path-niord-FE:not(.path-niord-no-fill) {
+  fill: #e2007a; }
+
+body .leaflet-grab {
+  cursor: default; }
+
+body.leaflet-dragging .leaflet-grab,
+body.leaflet-dragging .leaflet-grab .leaflet-interactive,
+body.leaflet-dragging .leaflet-marker-draggable {
+  cursor: move; }
