@@ -12,7 +12,7 @@
 leaflet-bootstrap-marker-mixin.scss
 Style for bsMarker estimated to look like Google Maps
 
-The pulsate is a djusted version of leaflet-icon-pulse by Filip Zavadil
+The pulsate is an adjusted version of leaflet-icon-pulse by Filip Zavadil
 https://github.com/mapshakers/leaflet-icon-pulse
 
 lbm-icon lbm-COLOR [lbm-border-COLOR] [lbm-transparent] [lbm-puls] [lbm-hover]
@@ -21,161 +21,132 @@ lbm-icon          : Standard icon with black border and tin white shadow
 lbm-[COLOR]       : Sets inner color to [COLOR]
 lbm-border-[COLOR]: border-color = [COLOR]
 
-lbm-big-shadow    : Big shadow in same color as inner color
+lbm-shadow        : Shadow in same color as inner color
 lbm-puls          : Has a pulsing ring
 lbm-transparent   : Inner color get opacity: 0.7
-lbm-hover         : When hover: get big-shadow and opacity: 0.9 for ibm-transparent
+lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 ************************************************/
 /**********************************************************
 lbm-marker-and-icon-classes
 **********************************************************/
-/******************************************
-Common style for all domains
-******************************************/
-.path-niord {
-  cursor: pointer;
-  stroke-width: 1;
-  fill-opacity: .2; }
-  .path-niord.path-niord-only-hover {
-    stroke-opacity: 0;
-    fill-opacity: 0; }
-  .path-niord:hover {
-    fill-opacity: .7; }
-  .path-niord.path-niord-inactive {
-    cursor: inherit;
-    fill-opacity: .4; }
-  .path-niord.path-niord.path-niord-no-fill {
-    fill: none; }
-  .path-niord.path-niord-popupopen {
-    fill-opacity: .85; }
+/***********************************************
+    _leaflet-polyline-mixin.scss
 
-/*
-Create trhe style for the four different domains
-*/
-.lbm-path-niord-FA {
+	(c) 2018, FCOO
+
+	https://github.com/FCOO/leaflet-polyline
+	https://github.com/FCOO
+
+************************************************/
+/* Create the style for the four different domains */
+.lbm-niord-FA {
   background-color: white;
   color: #000; }
-  .lbm-path-niord-FA.lbm-transparent {
+  .lbm-niord-FA.lbm-transparent {
     background-color: rgba(255, 255, 255, 0.7); }
-    .lbm-path-niord-FA.lbm-transparent.lbm-hover:hover {
+    .lbm-niord-FA.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 255, 255, 0.9); }
-  .lbm-path-niord-FA.lbm-big-shadow, .lbm-path-niord-FA.leaflet-drag-target, .lbm-path-niord-FA.lbm-hover:hover {
+  .lbm-niord-FA.lbm-shadow, .lbm-niord-FA.leaflet-drag-target, .lbm-niord-FA.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.28); }
-  .lbm-path-niord-FA:before {
+  .lbm-niord-FA:before {
     box-shadow: 0 0 6px 2px white; }
 
-.lbm-border-path-niord-FA {
+.lbm-border-niord-FA {
   border-color: #7c0043; }
 
-.fa-lbm-icon-path-niord-FA {
+.fa-lbm-icon-niord-FA {
   color: white; }
 
-.fa-lbm-icon-border-path-niord-FA {
+.fa-lbm-icon-border-niord-FA {
   color: #7c0043; }
 
-.path-niord-FA {
-  stroke: #7c0043; }
-
-.path-niord-FA.path-niord-popupopen {
-  stroke: #16000c; }
-
-.path-niord-FA:not(.path-niord-no-fill) {
+.lpl-base.lpl-niord-FA {
   fill: white; }
 
-.lbm-path-niord-NM {
+.lpl-base.lpl-border-niord-FA,
+.lpl-shadow.lpl-border-niord-FA {
+  stroke: #7c0043; }
+
+.lbm-niord-NM {
   background-color: white;
   color: #000; }
-  .lbm-path-niord-NM.lbm-transparent {
+  .lbm-niord-NM.lbm-transparent {
     background-color: rgba(255, 255, 255, 0.7); }
-    .lbm-path-niord-NM.lbm-transparent.lbm-hover:hover {
+    .lbm-niord-NM.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 255, 255, 0.9); }
-  .lbm-path-niord-NM.lbm-big-shadow, .lbm-path-niord-NM.leaflet-drag-target, .lbm-path-niord-NM.lbm-hover:hover {
+  .lbm-niord-NM.lbm-shadow, .lbm-niord-NM.leaflet-drag-target, .lbm-niord-NM.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.28); }
-  .lbm-path-niord-NM:before {
+  .lbm-niord-NM:before {
     box-shadow: 0 0 6px 2px white; }
 
-.lbm-border-path-niord-NM {
+.lbm-border-niord-NM {
   border-color: #7c0043; }
 
-.fa-lbm-icon-path-niord-NM {
+.fa-lbm-icon-niord-NM {
   color: white; }
 
-.fa-lbm-icon-border-path-niord-NM {
+.fa-lbm-icon-border-niord-NM {
   color: #7c0043; }
 
-.path-niord-NM {
-  stroke: #7c0043; }
-
-.path-niord-NM.path-niord-popupopen {
-  stroke: #16000c; }
-
-.path-niord-NM:not(.path-niord-no-fill) {
+.lpl-base.lpl-niord-NM {
   fill: white; }
 
-.lbm-path-niord-NW {
-  background-color: #e2007a;
-  color: #fff; }
-  .lbm-path-niord-NW.lbm-transparent {
-    background-color: rgba(226, 0, 122, 0.7); }
-    .lbm-path-niord-NW.lbm-transparent.lbm-hover:hover {
-      background-color: rgba(226, 0, 122, 0.9); }
-  .lbm-path-niord-NW.lbm-big-shadow, .lbm-path-niord-NW.leaflet-drag-target, .lbm-path-niord-NW.lbm-hover:hover {
-    box-shadow: 0px 0px 0px 5px rgba(226, 0, 122, 0.28); }
-  .lbm-path-niord-NW:before {
-    box-shadow: 0 0 6px 2px #e2007a; }
-
-.lbm-border-path-niord-NW {
-  border-color: #7c0043; }
-
-.fa-lbm-icon-path-niord-NW {
-  color: #e2007a; }
-
-.fa-lbm-icon-border-path-niord-NW {
-  color: #7c0043; }
-
-.path-niord-NW {
+.lpl-base.lpl-border-niord-NM,
+.lpl-shadow.lpl-border-niord-NM {
   stroke: #7c0043; }
 
-.path-niord-NW.path-niord-popupopen {
-  stroke: #16000c; }
-
-.path-niord-NW:not(.path-niord-no-fill) {
-  fill: #e2007a; }
-
-.lbm-path-niord-FE {
+.lbm-niord-NW {
   background-color: #e2007a;
   color: #fff; }
-  .lbm-path-niord-FE.lbm-transparent {
+  .lbm-niord-NW.lbm-transparent {
     background-color: rgba(226, 0, 122, 0.7); }
-    .lbm-path-niord-FE.lbm-transparent.lbm-hover:hover {
+    .lbm-niord-NW.lbm-transparent.lbm-hover:hover {
       background-color: rgba(226, 0, 122, 0.9); }
-  .lbm-path-niord-FE.lbm-big-shadow, .lbm-path-niord-FE.leaflet-drag-target, .lbm-path-niord-FE.lbm-hover:hover {
+  .lbm-niord-NW.lbm-shadow, .lbm-niord-NW.leaflet-drag-target, .lbm-niord-NW.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(226, 0, 122, 0.28); }
-  .lbm-path-niord-FE:before {
+  .lbm-niord-NW:before {
     box-shadow: 0 0 6px 2px #e2007a; }
 
-.lbm-border-path-niord-FE {
+.lbm-border-niord-NW {
   border-color: #7c0043; }
 
-.fa-lbm-icon-path-niord-FE {
+.fa-lbm-icon-niord-NW {
   color: #e2007a; }
 
-.fa-lbm-icon-border-path-niord-FE {
+.fa-lbm-icon-border-niord-NW {
   color: #7c0043; }
 
-.path-niord-FE {
-  stroke: #7c0043; }
-
-.path-niord-FE.path-niord-popupopen {
-  stroke: #16000c; }
-
-.path-niord-FE:not(.path-niord-no-fill) {
+.lpl-base.lpl-niord-NW {
   fill: #e2007a; }
 
-body .leaflet-grab {
-  cursor: default; }
+.lpl-base.lpl-border-niord-NW,
+.lpl-shadow.lpl-border-niord-NW {
+  stroke: #7c0043; }
 
-body.leaflet-dragging .leaflet-grab,
-body.leaflet-dragging .leaflet-grab .leaflet-interactive,
-body.leaflet-dragging .leaflet-marker-draggable {
-  cursor: move; }
+.lbm-niord-FE {
+  background-color: #e2007a;
+  color: #fff; }
+  .lbm-niord-FE.lbm-transparent {
+    background-color: rgba(226, 0, 122, 0.7); }
+    .lbm-niord-FE.lbm-transparent.lbm-hover:hover {
+      background-color: rgba(226, 0, 122, 0.9); }
+  .lbm-niord-FE.lbm-shadow, .lbm-niord-FE.leaflet-drag-target, .lbm-niord-FE.lbm-hover:hover {
+    box-shadow: 0px 0px 0px 5px rgba(226, 0, 122, 0.28); }
+  .lbm-niord-FE:before {
+    box-shadow: 0 0 6px 2px #e2007a; }
+
+.lbm-border-niord-FE {
+  border-color: #7c0043; }
+
+.fa-lbm-icon-niord-FE {
+  color: #e2007a; }
+
+.fa-lbm-icon-border-niord-FE {
+  color: #7c0043; }
+
+.lpl-base.lpl-niord-FE {
+  fill: #e2007a; }
+
+.lpl-base.lpl-border-niord-FE,
+.lpl-shadow.lpl-border-niord-FE {
+  stroke: #7c0043; }

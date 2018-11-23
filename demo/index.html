@@ -13,6 +13,22 @@
     <link  href="../src/leaflet-bootstrap-niord.css" rel="stylesheet">
     <style>
         html, body, #map { width:100%; height:100%}
+
+        //Change cursor from grab/grabbing to pointer/move to look like google maps
+        body {
+            .leaflet-grab {
+	            cursor: default;
+            }
+
+            &.leaflet-dragging {
+                .leaflet-grab,
+                .leaflet-grab .leaflet-interactive,
+                .leaflet-marker-draggable {
+	                cursor: move;
+	            }
+            }
+        }
+
     </style>
 </head>
 

@@ -23,100 +23,33 @@
 @import "../bower_components/leaflet-bootstrap/src/leaflet-bootstrap-marker-mixin";
 
 
+//LEAFLET-POLYLINE - mixin to create colors for polyline and polygon
+@import "../bower_components/leaflet-polyline/src/leaflet-polyline-mixin";
 
-@mixin path-niord( $prefix, $color, $border-color){
-    $name: path-niord;
-    @if $prefix != null {
-        $name: path-niord-#{$prefix}
-    }
 
+@mixin niord( $prefix, $color, $border-color){
+    $name: niord-#{$prefix};
     @include lbm-marker-and-icon-classes( $name, $color, $border-color );
-
-    .#{$name}{
-        stroke: $border-color;
-    }
-    .#{$name}.path-niord-popupopen{
-        stroke: darken( $border-color, 20% );
-    }
-
-    .#{$name}:not(.path-niord-no-fill){
-        fill  : $color;
-    }
-
-
+    @include polyline-classes( $name, $color, $border-color );
 }
 
 
-/******************************************
-Common style for all domains
-******************************************/
-.path-niord {
-    cursor      : pointer;
-    stroke-width: 1;
-    fill-opacity: .2;
-    &.path-niord-only-hover {
-        stroke-opacity: 0;
-        fill-opacity  : 0;
 
-    }
-    &:hover {
-        fill-opacity: .7;
-    }
-    &.path-niord-inactive {
-        cursor      : inherit;
-        fill-opacity: .4;
-    }
-
-    &.path-niord.path-niord-no-fill {
-        fill: none;
-    }
-
-    &.path-niord-popupopen {
-        fill-opacity: .85;
-    }
-}
-
-
-/*
-Create trhe style for the four different domains
-*/
+/* Create the style for the four different domains */
 $dark-purple: #e2007a;
 //$dark-purple: rgb(139,0,139);
 $darkest-purple: darken($dark-purple, 20%);
 
 //FA - All Danish firing areas are defined as miscellaneous Notices to Mariners in the "niord-fa" domain.
-@include path-niord( 'FA', white, $darkest-purple);
+@include niord( 'FA', white, $darkest-purple);
 
 //NM - All Danish Notices to Mariners are produced in the "niord-nm" domain.
-@include path-niord( 'NM', white, $darkest-purple);
+@include niord( 'NM', white, $darkest-purple);
 
 //NW - All Danish navigational warnings are produced in the "niord-nw" domain.
-@include path-niord( 'NW', $dark-purple, $darkest-purple);
+@include niord( 'NW', $dark-purple, $darkest-purple);
 
 //FE - The actual firing exercises are maintained as local navigational warnings in the "niord-fe" domain.
-@include path-niord( 'FE', $dark-purple, $darkest-purple);
+@include niord( 'FE', $dark-purple, $darkest-purple);
 
-
-
-
-
-
-
-
-
-//TEST
-//Change cursor from grab/grabbing to pointer/move to look like google maps
-body {
-    .leaflet-grab {
-	    cursor: default;
-    }
-
-    &.leaflet-dragging {
-        .leaflet-grab,
-        .leaflet-grab .leaflet-interactive,
-        .leaflet-marker-draggable {
-	        cursor: move;
-	    }
-    }
-}
 

@@ -1,6 +1,6 @@
 {
   "name": "leaflet-bootstrap-niord",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "homepage": "https://github.com/FCOO/leaflet-bootstrap-niord",
   "authors": [
     "Niels Holt"
@@ -18,8 +18,7 @@
     "jquery": "latest",
     "leaflet": "latest",
     "jquery-bootstrap-niord": "fcoo/jquery-bootstrap-niord#^1.0.0",
-    "leaflet-bootstrap": "fcoo/leaflet-bootstrap#^1.6.1",
-    "leaflet-polyline": "https://github.com/FCOO/leaflet-polyline.git#^1.0.0",
+    "leaflet-bootstrap": "fcoo/leaflet-bootstrap#^2.0.0",
     "leaflet-latlng-format": "FCOO/leaflet-latlng-format#^1.1.0"
   },
   "devDependencies": {

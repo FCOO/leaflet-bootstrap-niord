@@ -57,17 +57,6 @@
     function featureTypeIsPolygon( feature ){ return featureType( feature ) == 'Polygon';  }
     function featureTypeIsPoint( feature ){ return featureType( feature ) == 'Point';  }
 
-
-    function layer_popupopen() {
-        $(this._path).addClass('path-niord-popupopen');
-        this.hideTooltip();
-    }
-    function layer_popupclose(){
-        $(this._path).removeClass('path-niord-popupopen');
-        this.showTooltip();
-
-    }
-
     function latLngAsText( latLng, lat, baseOptions ){
         var result = $.extend({}, baseOptions || {}),
             vfFormatId = ns.options.vfFormatId[lat ? 'lat' : 'lng'];
@@ -94,8 +83,9 @@
     //Default options
         options: {
             mode: 0,
-//HER addShadow: false,
-//HER addInteractive: true,
+            addInteractive: true,
+            transparent   : true,
+
         },
 
         //initialize
@@ -105,6 +95,11 @@
                 filter      : $.proxy(this.filter, this),
                 pointToLayer: $.proxy(this.pointToLayer, this),
                 onEachFeature: $.proxy(this.onEachFeature, this),
+
+                addInteractive: true,
+                border        : true,
+                shadowWhenPopupOpen     : true,
+                tooltipHideWhenPopupOpen: true
             });
 
             L.GeoJSON.prototype.initialize.call(this, null, options);
@@ -178,23 +173,49 @@
         style
         ********************************************************/
         style: function( feature ){
-            var classNames = [];
+            var domainId        = featureMessage(feature).domainId,
+                domainColorName = 'niord-' + domainId, //Domain-style
+                result = {
+                    borderColorName: domainColorName,
+                    hover          : false,
+                };
 
-            classNames.push(
-                'path-niord',                                       //Default
-                'path-niord-' + featureMessage(feature).domainId    //Domain-style
-            );
 
             if (this.options.mode)
-                classNames.push('path-niord-inactive');
+                //Inactive lines and polygon in modal windows
+                result.interactive = false;
+            else
+                //hover-effect on main map
+                result.hover = true;
 
-            if (featureTypeIsLine(feature))
-                classNames.push('path-niord-no-fill');
+            if (featureTypeIsPolygon(feature))
+                result.colorName = domainColorName;
 
-            if (featureTypeIsPolygon(feature) && !this.options.mode && ns.options.domainOnlyHover[featureMessage( feature ).domainId])
-                classNames.push('path-niord-only-hover');
+            if (featureTypeIsPolygon(feature) && !this.options.mode && ns.options.domainOnlyHover[domainId]){
+                result.borderColorName = 'none';
+                result.onlyShowOnHover = true;
+            }
 
-            return { className: classNames.join(' ') };
+            return result;
+
+
+//HER             var classNames = [];
+//HER
+//HER             classNames.push(
+//HER                 'niord',                                       //Default
+//HER                 'niord-' + featureMessage(feature).domainId    //Domain-style
+//HER             );
+//HER
+//HER             if (this.options.mode)
+//HER                 classNames.push('niord-inactive');
+//HER
+//HER             if (featureTypeIsLine(feature))
+//HER                 classNames.push('niord-no-fill');
+//HER
+//HER             if (featureTypeIsPolygon(feature) && !this.options.mode && ns.options.domainOnlyHover[featureMessage( feature ).domainId])
+//HER                 classNames.push('niord-only-hover');
+//HER
+//HER             return { className: classNames.join(' ') };
         },
 
         /********************************************************
@@ -221,7 +242,7 @@
         ********************************************************/
         pointToLayer: function (feature, latlng) {
             var inModal       = !!this.options.mode,
-                pathClassName = 'path-niord-' + featureMessage(feature).domainId,
+                pathClassName = 'niord-' + featureMessage(feature).domainId,
                 iconSize;
 
             //Defines icon-size
@@ -236,8 +257,8 @@
 
             var result = L.bsMarker(latlng, {
                             draggable       : false,
-                            color           : pathClassName,
-                            borderColor     : pathClassName,
+                            colorName       : pathClassName,
+                            borderColorName : pathClassName,
                             useBigIcon      : false,
                             iconSize        : iconSize,
                             number          : iconSize ? feature.properties.coordIndex : undefined,
@@ -251,7 +272,7 @@
                             tooltipHideWhenDragging : true,
                             tooltipHideWhenPopupOpen: true,
 
-                            bigShadowWhenPopupOpen  : true
+                            shadowWhenPopupOpen  : true
 
                     });
 
@@ -268,12 +289,7 @@
         ********************************************************/
         onEachFeature: function (feature, layer){
             if (!featureTypeIsPoint(feature) && !this.options.mode){
-                //TODO Set LineString clickable using https://github.com/FCOO/leaflet-polyline
-
                 layer.bindPopup( this._popup(feature) );
-                layer.on('popupopen',  layer_popupopen  );
-                layer.on('popupclose', layer_popupclose );
-
                 layer.bindTooltip( this._tooltip(feature), {sticky: true} );
             }
         },

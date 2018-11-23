@@ -81,8 +81,14 @@
 
 
     ns.Message.prototype.maps_update_geojson_layer = function( newModalMapMode ){
+        if (this.doNotUpdate) return;
+        this.doNotUpdate = true;
         var _this = this;
         $.each(this.maps, function(id, _map){
+
+            if (_map.niordDetailSelectList)
+                _map.niordDetailSelectList.data('popover_radiogroup').setSelected( newModalMapMode );
+
             $.each(_map.niordGeoJSONLayers, function(id, layer){ layer.remove(); } );
 
             _map.niordGeoJSONLayers[newModalMapMode] =
@@ -92,6 +98,7 @@
             _map.niordMessage.geoJSONBounds = _map.niordMessage.geoJSONBounds || _map.niordGeoJSONLayers[newModalMapMode].getBounds();
         });
         this.currentModalMapMode = newModalMapMode;
+        this.doNotUpdate = false;
     };
 
     /*********************************************************************
@@ -141,7 +148,8 @@
         );
 
         //Add button to change the details on the map == change between the map.niordGeoJSONLayers
-        var controlButton = L.control.bsButton({
+        var controlButton =
+            L.control.bsButton({
                 position  : 'topleft',
                 text      : {da:'Vis...', en:'Show...'},
             });
@@ -168,7 +176,7 @@
 
         //Create the icons for large icon, small icon, popup and line
         var mmmIcons = ns.options.leaflet.mmmIcons,
-            colorClassName = 'path-niord-'+message.domainId,
+            colorClassName = 'niord-'+message.domainId,
             largeMarkerIcon       = L.bsMarkerAsIcon(colorClassName, colorClassName,  {extraClassName:'fa-lg',              partOfList: true, faClassName: mmmIcons.markerIcon  }),
             largeMarkerOnLineIcon = L.bsMarkerAsIcon(colorClassName, colorClassName,  {extraClassName:'fa-lg fa-no-margin', partOfList: true, faClassName: mmmIcons.markerIcon  }),
             smallMarkerIcon       = L.bsMarkerAsIcon(colorClassName, colorClassName,  {extraClassName:'fa-xs',              partOfList: true, faClassName: mmmIcons.markerIcon  }),
@@ -217,18 +225,19 @@
 
         message.maps_update_geojson_layer( selectedId );
 
-        $(controlButton.getContainer())
-            .bsSelectListPopover({
-                onChange: message.maps_update_geojson_layer,
-                context : message,
+        map.niordDetailSelectList =
+            $(controlButton.getContainer())
+                .bsSelectListPopover({
+                    onChange: message.maps_update_geojson_layer,
+                    context : message,
 
-                center      : true,
-                vertical    : true,
-                closeOnClick: true,
-                placement   : 'rightbottom',
-                selectedId  : selectedId,
-                list        : list
-            });
+                    center      : true,
+                    vertical    : true,
+                    closeOnClick: true,
+                    placement   : 'rightbottom',
+                    selectedId  : selectedId,
+                    list        : list
+                });
 
 
         //Resize the map and set view to geoJSON-objects when the outer element is resized
