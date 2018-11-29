@@ -14992,155 +14992,6 @@ https://github.com/berkan52/select2-bootstrap4-theme
   right: 0; }
 
 /***********************************************
-    leaflet-polyline.scss
-
-	(c) 2018, FCOO
-
-	https://github.com/FCOO/leaflet-polyline
-	https://github.com/FCOO
-
-************************************************/
-/***********************************************
-    _leaflet-polyline-mixin.scss
-
-	(c) 2018, FCOO
-
-	https://github.com/FCOO/leaflet-polyline
-	https://github.com/FCOO
-
-************************************************/
-.lpl-base {
-  stroke-opacity: 1;
-  fill-opacity: 1;
-  fill: none; }
-  .lpl-base.lpl-popup-open {
-    stroke-opacity: 1;
-    fill-opacity: 1; }
-    .lpl-base.lpl-popup-open.lpl-transparent {
-      stroke-opacity: .9;
-      fill-opacity: .8; }
-  .lpl-base:not(.lpl-popup-open).lpl-only-show-on-hover {
-    stroke-opacity: 0;
-    fill-opacity: 0; }
-  .lpl-base:not(.lpl-popup-open).lpl-transparent:not(.lpl-only-show-on-hover) {
-    stroke-opacity: .7;
-    fill-opacity: .35; }
-    .lpl-base:not(.lpl-popup-open).lpl-transparent:not(.lpl-only-show-on-hover).lpl-hover {
-      stroke-opacity: .9;
-      fill-opacity: .7; }
-
-.lpl-border {
-  stroke: white;
-  stroke-opacity: 0;
-  fill: none; }
-  .lpl-border.lpl-show:not(.lpl-only-show-on-hover), .lpl-border.lpl-show.lpl-popup-open {
-    stroke-opacity: .5; }
-
-.lpl-shadow {
-  stroke: white;
-  stroke-opacity: 0;
-  fill: none; }
-  .lpl-shadow.lpl-show, .lpl-shadow.lpl-hover {
-    stroke-opacity: .28; }
-
-.lpl-interactive {
-  stroke: transparent;
-  fill: none; }
-  .lpl-interactive.lpl-fill {
-    fill: transparent; }
-
-.lpl-base.lpl-pink {
-  fill: pink; }
-
-.lpl-base.lpl-border-pink,
-.lpl-shadow.lpl-border-pink {
-  stroke: pink; }
-
-.lpl-base.lpl-purple {
-  fill: purple; }
-
-.lpl-base.lpl-border-purple,
-.lpl-shadow.lpl-border-purple {
-  stroke: purple; }
-
-.lpl-base.lpl-red {
-  fill: red; }
-
-.lpl-base.lpl-border-red,
-.lpl-shadow.lpl-border-red {
-  stroke: red; }
-
-.lpl-base.lpl-orange {
-  fill: orange; }
-
-.lpl-base.lpl-border-orange,
-.lpl-shadow.lpl-border-orange {
-  stroke: orange; }
-
-.lpl-base.lpl-yellow {
-  fill: yellow; }
-
-.lpl-base.lpl-border-yellow,
-.lpl-shadow.lpl-border-yellow {
-  stroke: yellow; }
-
-.lpl-base.lpl-green {
-  fill: green; }
-
-.lpl-base.lpl-border-green,
-.lpl-shadow.lpl-border-green {
-  stroke: green; }
-
-.lpl-base.lpl-cyan {
-  fill: cyan; }
-
-.lpl-base.lpl-border-cyan,
-.lpl-shadow.lpl-border-cyan {
-  stroke: cyan; }
-
-.lpl-base.lpl-blue {
-  fill: blue; }
-
-.lpl-base.lpl-border-blue,
-.lpl-shadow.lpl-border-blue {
-  stroke: blue; }
-
-.lpl-base.lpl-brown {
-  fill: brown; }
-
-.lpl-base.lpl-border-brown,
-.lpl-shadow.lpl-border-brown {
-  stroke: brown; }
-
-.lpl-base.lpl-white {
-  fill: white; }
-
-.lpl-base.lpl-border-white,
-.lpl-shadow.lpl-border-white {
-  stroke: white; }
-
-.lpl-base.lpl-grey {
-  fill: grey; }
-
-.lpl-base.lpl-border-grey,
-.lpl-shadow.lpl-border-grey {
-  stroke: grey; }
-
-.lpl-base.lpl-black {
-  fill: black; }
-
-.lpl-base.lpl-border-black,
-.lpl-shadow.lpl-border-black {
-  stroke: black; }
-
-.lpl-base.lpl-none {
-  fill: none; }
-
-.lpl-base.lpl-border-none,
-.lpl-shadow.lpl-border-none {
-  stroke: none; }
-
-/***********************************************
 	leaflet-bootstrap.scss,
 
 	(c) 2017, FCOO
@@ -15284,6 +15135,26 @@ $spacer                 : 1rem !default;
   margin: 0; }
 
 /***********************************************
+leaflet-bootstrap-marker.scss
+Style for bsMarker estimated to look like Google Maps
+
+The pulsate is a djusted version of leaflet-icon-pulse by Filip Zavadil
+https://github.com/mapshakers/leaflet-icon-pulse
+
+
+lbm-icon lbm-COLOR [lbm-border-COLOR] [lbm-transparent] [lbm-puls] [lbm-hover]
+
+
+lbm-icon          : Standard icon with black border and tin white shadow
+lbm-[COLOR]       : Sets inner color to [COLOR]
+lbm-border-[COLOR]: border-color = [COLOR]
+
+lbm-shadow        : Shadow in same color as inner color
+lbm-puls          : Has a pulsing ring
+lbm-transparent   : Inner color get opacity: 0.7
+lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
+************************************************/
+/***********************************************
 leaflet-bootstrap-marker-mixin.scss
 Style for bsMarker estimated to look like Google Maps
 
@@ -15304,26 +15175,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 /**********************************************************
 lbm-marker-and-icon-classes
 **********************************************************/
-/***********************************************
-leaflet-bootstrap-marker.scss
-Style for bsMarker estimated to look like Google Maps
-
-The pulsate is a djusted version of leaflet-icon-pulse by Filip Zavadil
-https://github.com/mapshakers/leaflet-icon-pulse
-
-
-lbm-icon lbm-COLOR [lbm-border-COLOR] [lbm-transparent] [lbm-puls] [lbm-hover]
-
-
-lbm-icon          : Standard icon with black border and tin white shadow
-lbm-[COLOR]       : Sets inner color to [COLOR]
-lbm-border-[COLOR]: border-color = [COLOR]
-
-lbm-shadow        : Shadow in same color as inner color
-lbm-puls          : Has a pulsing ring
-lbm-transparent   : Inner color get opacity: 0.7
-lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
-************************************************/
 @keyframes pulsate {
   0% {
     transform: scale(0.1, 0.1);
@@ -15342,6 +15193,8 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
   color: #000;
   border-color: black;
   text-align: center; }
+  .lbm-icon.lbm-thick-border {
+    border-width: 3px; }
   .lbm-icon.lbm-round {
     border-radius: 100%; }
     .lbm-icon.lbm-round:before {
@@ -15387,6 +15240,8 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
   font-size: 13px;
   line-height: 1.5384615385; }
 
+/*
+*/
 .lbm-pink {
   background-color: pink;
   color: #000; }
@@ -15639,25 +15494,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 .fa-lbm-icon-border-black {
   color: black; }
 
-/*
-//fa-pulsate - fontawesome class for pulsate icons
-.fa-pulsate {
-
-    animation: pulsate 1s ease-out;
-    animation-iteration-count: infinite;
-    animation-delay: 1.1s;
-}
-
-*/
-/***********************************************
-    _leaflet-polyline-mixin.scss
-
-	(c) 2018, FCOO
-
-	https://github.com/FCOO/leaflet-polyline
-	https://github.com/FCOO
-
-************************************************/
 .lbm-indigo {
   background-color: indigo;
   color: #fff; }
@@ -15678,13 +15514,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 
 .fa-lbm-icon-border-indigo {
   color: indigo; }
-
-.lpl-base.lpl-indigo {
-  fill: indigo; }
-
-.lpl-base.lpl-border-indigo,
-.lpl-shadow.lpl-border-indigo {
-  stroke: indigo; }
 
 .lbm-teal {
   background-color: teal;
@@ -15707,13 +15536,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 .fa-lbm-icon-border-teal {
   color: teal; }
 
-.lpl-base.lpl-teal {
-  fill: teal; }
-
-.lpl-base.lpl-border-teal,
-.lpl-shadow.lpl-border-teal {
-  stroke: teal; }
-
 .lbm-darkgray {
   background-color: darkgray;
   color: #000; }
@@ -15734,13 +15556,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 
 .fa-lbm-icon-border-darkgray {
   color: darkgray; }
-
-.lpl-base.lpl-darkgray {
-  fill: darkgray; }
-
-.lpl-base.lpl-border-darkgray,
-.lpl-shadow.lpl-border-darkgray {
-  stroke: darkgray; }
 
 .lbm-primary {
   background-color: #007bff;
@@ -15763,13 +15578,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 .fa-lbm-icon-border-primary {
   color: #007bff; }
 
-.lpl-base.lpl-primary {
-  fill: #007bff; }
-
-.lpl-base.lpl-border-primary,
-.lpl-shadow.lpl-border-primary {
-  stroke: #007bff; }
-
 .lbm-secondary {
   background-color: #6c757d;
   color: #fff; }
@@ -15790,13 +15598,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 
 .fa-lbm-icon-border-secondary {
   color: #6c757d; }
-
-.lpl-base.lpl-secondary {
-  fill: #6c757d; }
-
-.lpl-base.lpl-border-secondary,
-.lpl-shadow.lpl-border-secondary {
-  stroke: #6c757d; }
 
 .lbm-success {
   background-color: #28a745;
@@ -15819,13 +15620,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 .fa-lbm-icon-border-success {
   color: #28a745; }
 
-.lpl-base.lpl-success {
-  fill: #28a745; }
-
-.lpl-base.lpl-border-success,
-.lpl-shadow.lpl-border-success {
-  stroke: #28a745; }
-
 .lbm-info {
   background-color: #17a2b8;
   color: #000; }
@@ -15846,13 +15640,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 
 .fa-lbm-icon-border-info {
   color: #17a2b8; }
-
-.lpl-base.lpl-info {
-  fill: #17a2b8; }
-
-.lpl-base.lpl-border-info,
-.lpl-shadow.lpl-border-info {
-  stroke: #17a2b8; }
 
 .lbm-warning {
   background-color: #ffc107;
@@ -15875,13 +15662,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 .fa-lbm-icon-border-warning {
   color: #ffc107; }
 
-.lpl-base.lpl-warning {
-  fill: #ffc107; }
-
-.lpl-base.lpl-border-warning,
-.lpl-shadow.lpl-border-warning {
-  stroke: #ffc107; }
-
 .lbm-danger {
   background-color: #dc3545;
   color: #000; }
@@ -15902,13 +15682,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 
 .fa-lbm-icon-border-danger {
   color: #dc3545; }
-
-.lpl-base.lpl-danger {
-  fill: #dc3545; }
-
-.lpl-base.lpl-border-danger,
-.lpl-shadow.lpl-border-danger {
-  stroke: #dc3545; }
 
 .lbm-light {
   background-color: #f8f9fa;
@@ -15931,13 +15704,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 .fa-lbm-icon-border-light {
   color: #f8f9fa; }
 
-.lpl-base.lpl-light {
-  fill: #f8f9fa; }
-
-.lpl-base.lpl-border-light,
-.lpl-shadow.lpl-border-light {
-  stroke: #f8f9fa; }
-
 .lbm-dark {
   background-color: #343a40;
   color: #fff; }
@@ -15958,13 +15724,6 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 
 .fa-lbm-icon-border-dark {
   color: #343a40; }
-
-.lpl-base.lpl-dark {
-  fill: #343a40; }
-
-.lpl-base.lpl-border-dark,
-.lpl-shadow.lpl-border-dark {
-  stroke: #343a40; }
 
 .lbm-standard {
   background-color: #4285F4;
@@ -15987,9 +15746,162 @@ lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 .fa-lbm-icon-border-standard {
   color: #4285F4; }
 
-.lpl-base.lpl-standard {
-  fill: #4285F4; }
+/*
+//fa-pulsate - fontawesome class for pulsate icons
+.fa-pulsate {
 
-.lpl-base.lpl-border-standard,
-.lpl-shadow.lpl-border-standard {
-  stroke: #4285F4; }
+    animation: pulsate 1s ease-out;
+    animation-iteration-count: infinite;
+    animation-delay: 1.1s;
+}
+
+*/
+
+/***********************************************
+    leaflet-polyline.scss
+
+	(c) 2018, FCOO
+
+	https://github.com/FCOO/leaflet-polyline
+	https://github.com/FCOO
+
+************************************************/
+/***********************************************
+    _leaflet-polyline-mixin.scss
+
+	(c) 2018, FCOO
+
+	https://github.com/FCOO/leaflet-polyline
+	https://github.com/FCOO
+
+************************************************/
+.lpl-base {
+  stroke-opacity: 1;
+  fill-opacity: 1;
+  fill: none; }
+  .lpl-base.lpl-popup-open {
+    stroke-opacity: 1;
+    fill-opacity: 1; }
+    .lpl-base.lpl-popup-open.lpl-transparent {
+      stroke-opacity: .9;
+      fill-opacity: .8; }
+  .lpl-base:not(.lpl-popup-open).lpl-only-show-on-hover {
+    stroke-opacity: 0;
+    fill-opacity: 0; }
+  .lpl-base:not(.lpl-popup-open).lpl-transparent:not(.lpl-only-show-on-hover) {
+    stroke-opacity: .7;
+    fill-opacity: .35; }
+    .lpl-base:not(.lpl-popup-open).lpl-transparent:not(.lpl-only-show-on-hover).lpl-hover {
+      stroke-opacity: .9;
+      fill-opacity: .7; }
+
+.lpl-border {
+  stroke: white;
+  stroke-opacity: 0;
+  fill: none; }
+  .lpl-border.lpl-show:not(.lpl-only-show-on-hover), .lpl-border.lpl-show.lpl-popup-open {
+    stroke-opacity: .5; }
+
+.lpl-shadow {
+  stroke: white;
+  stroke-opacity: 0;
+  fill: none; }
+  .lpl-shadow.lpl-show, .lpl-shadow.lpl-hover {
+    stroke-opacity: .28; }
+
+.lpl-interactive {
+  stroke: transparent;
+  fill: none; }
+  .lpl-interactive.lpl-fill {
+    fill: transparent; }
+
+.lpl-base.lpl-pink {
+  fill: pink; }
+
+.lpl-base.lpl-border-pink,
+.lpl-shadow.lpl-border-pink {
+  stroke: pink; }
+
+.lpl-base.lpl-purple {
+  fill: purple; }
+
+.lpl-base.lpl-border-purple,
+.lpl-shadow.lpl-border-purple {
+  stroke: purple; }
+
+.lpl-base.lpl-red {
+  fill: red; }
+
+.lpl-base.lpl-border-red,
+.lpl-shadow.lpl-border-red {
+  stroke: red; }
+
+.lpl-base.lpl-orange {
+  fill: orange; }
+
+.lpl-base.lpl-border-orange,
+.lpl-shadow.lpl-border-orange {
+  stroke: orange; }
+
+.lpl-base.lpl-yellow {
+  fill: yellow; }
+
+.lpl-base.lpl-border-yellow,
+.lpl-shadow.lpl-border-yellow {
+  stroke: yellow; }
+
+.lpl-base.lpl-green {
+  fill: green; }
+
+.lpl-base.lpl-border-green,
+.lpl-shadow.lpl-border-green {
+  stroke: green; }
+
+.lpl-base.lpl-cyan {
+  fill: cyan; }
+
+.lpl-base.lpl-border-cyan,
+.lpl-shadow.lpl-border-cyan {
+  stroke: cyan; }
+
+.lpl-base.lpl-blue {
+  fill: blue; }
+
+.lpl-base.lpl-border-blue,
+.lpl-shadow.lpl-border-blue {
+  stroke: blue; }
+
+.lpl-base.lpl-brown {
+  fill: brown; }
+
+.lpl-base.lpl-border-brown,
+.lpl-shadow.lpl-border-brown {
+  stroke: brown; }
+
+.lpl-base.lpl-white {
+  fill: white; }
+
+.lpl-base.lpl-border-white,
+.lpl-shadow.lpl-border-white {
+  stroke: white; }
+
+.lpl-base.lpl-grey {
+  fill: grey; }
+
+.lpl-base.lpl-border-grey,
+.lpl-shadow.lpl-border-grey {
+  stroke: grey; }
+
+.lpl-base.lpl-black {
+  fill: black; }
+
+.lpl-base.lpl-border-black,
+.lpl-shadow.lpl-border-black {
+  stroke: black; }
+
+.lpl-base.lpl-none {
+  fill: none; }
+
+.lpl-base.lpl-border-none,
+.lpl-shadow.lpl-border-none {
+  stroke: none; }

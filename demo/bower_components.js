@@ -73145,1052 +73145,6 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
 }(L, this, document));
 
 ;
-/*****************************************************************************
-leaflet-latlng-geodesy.js
-
-This is a adjusted "Leaflet"-version of latlon-spherical.js from
-https://github.com/chrisveness/geodesy by Chris Veness
-See http://www.movable-type.co.uk/scripts/latlong.html
-
-The LatLon-object is replaced with standard Leaflet LatLng-object and the
-code is packed in a define-function
-
-
-*****************************************************************************/
-(function (L/*, window, document, undefined*/) {
-
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-/* Latitude/longitude spherical geodesy tools                         (c) Chris Veness 2002-2017  */
-/*                                                                                   MIT Licence  */
-/* www.movable-type.co.uk/scripts/latlong.html                                                    */
-/* www.movable-type.co.uk/scripts/geodesy/docs/module-latlon-spherical.html                       */
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-
-'use strict';
-
-
-/**
- * Library of geodesy functions for operations on a spherical earth model.
- *
- * @module   latlon-spherical
- * @requires dms
- */
-
-
-/**
- * Returns the distance from ‘this’ point to destination point (using haversine formula).
- *
- * @param   {L.LatLng} point - Latitude/longitude of destination point.
- * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
- * @returns {number} Distance between this point and destination point, in same units as radius.
- *
- * @example
- *     var p1 = new L.LatLng(52.205, 0.119);
- *     var p2 = new L.LatLng(48.857, 2.351);
- *     var d = p1.distanceTo(p2); // 404.3 km
- */
-
-
-L.LatLng.prototype.distanceTo = function(point, radius) {
-    radius = (radius === undefined) ? 6371e3 : Number(radius);
-
-    // a = sin²(Δφ/2) + cos(φ1)⋅cos(φ2)⋅sin²(Δλ/2)
-    // tanδ = √(a) / √(1−a)
-    // see mathforum.org/library/drmath/view/51879.html for derivation
-
-    var R = radius;
-    var φ1 = this.lat.toRadians(),  λ1 = this.lng.toRadians();
-    var φ2 = point.lat.toRadians(), λ2 = point.lng.toRadians();
-    var Δφ = φ2 - φ1;
-    var Δλ = λ2 - λ1;
-
-    var a = Math.sin(Δφ/2) * Math.sin(Δφ/2)
-          + Math.cos(φ1) * Math.cos(φ2)
-          * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    var d = R * c;
-
-    return d;
-};
-
-
-/**
- * Returns the (initial) bearing from ‘this’ point to destination point.
- *
- * @param   {L.LatLng} point - Latitude/longitude of destination point.
- * @returns {number} Initial bearing in degrees from north.
- *
- * @example
- *     var p1 = new L.LatLng(52.205, 0.119);
- *     var p2 = new L.LatLng(48.857, 2.351);
- *     var b1 = p1.bearingTo(p2); // 156.2°
- */
-L.LatLng.prototype.bearingTo = function(point) {
-
-    // tanθ = sinΔλ⋅cosφ2 / cosφ1⋅sinφ2 − sinφ1⋅cosφ2⋅cosΔλ
-    // see mathforum.org/library/drmath/view/55417.html for derivation
-
-    var φ1 = this.lat.toRadians(), φ2 = point.lat.toRadians();
-    var Δλ = (point.lng-this.lng).toRadians();
-    var y = Math.sin(Δλ) * Math.cos(φ2);
-    var x = Math.cos(φ1)*Math.sin(φ2) -
-            Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
-    var θ = Math.atan2(y, x);
-
-    return (θ.toDegrees()+360) % 360;
-};
-
-
-/**
- * Returns final bearing arriving at destination destination point from ‘this’ point; the final bearing
- * will differ from the initial bearing by varying degrees according to distance and latitude.
- *
- * @param   {L.LatLng} point - Latitude/longitude of destination point.
- * @returns {number} Final bearing in degrees from north.
- *
- * @example
- *     var p1 = new L.LatLng(52.205, 0.119);
- *     var p2 = new L.LatLng(48.857, 2.351);
- *     var b2 = p1.finalBearingTo(p2); // 157.9°
- */
-L.LatLng.prototype.finalBearingTo = function(point) {
-
-    // get initial bearing from destination point to this point & reverse it by adding 180°
-    return ( point.bearingTo(this)+180 ) % 360;
-};
-
-
-/**
- * Returns the midpoint between ‘this’ point and the supplied point.
- *
- * @param   {L.LatLng} point - Latitude/longitude of destination point.
- * @returns {L.LatLng} Midpoint between this point and the supplied point.
- *
- * @example
- *     var p1 = new L.LatLng(52.205, 0.119);
- *     var p2 = new L.LatLng(48.857, 2.351);
- *     var pMid = p1.midpointTo(p2); // 50.5363°N, 001.2746°E
- */
-L.LatLng.prototype.midpointTo = function(point) {
-
-    // φm = atan2( sinφ1 + sinφ2, √( (cosφ1 + cosφ2⋅cosΔλ) ⋅ (cosφ1 + cosφ2⋅cosΔλ) ) + cos²φ2⋅sin²Δλ )
-    // λm = λ1 + atan2(cosφ2⋅sinΔλ, cosφ1 + cosφ2⋅cosΔλ)
-    // see mathforum.org/library/drmath/view/51822.html for derivation
-
-    var φ1 = this.lat.toRadians(), λ1 = this.lng.toRadians();
-    var φ2 = point.lat.toRadians();
-    var Δλ = (point.lng-this.lng).toRadians();
-
-    var Bx = Math.cos(φ2) * Math.cos(Δλ);
-    var By = Math.cos(φ2) * Math.sin(Δλ);
-
-    var x = Math.sqrt((Math.cos(φ1) + Bx) * (Math.cos(φ1) + Bx) + By * By);
-    var y = Math.sin(φ1) + Math.sin(φ2);
-    var φ3 = Math.atan2(y, x);
-
-    var λ3 = λ1 + Math.atan2(By, Math.cos(φ1) + Bx);
-
-    return new L.LatLng(φ3.toDegrees(), (λ3.toDegrees()+540)%360-180); // normalise to −180..+180°
-};
-
-
-/**
- * Returns the point at given fraction between ‘this’ point and specified point.
- *
- * @param   {L.LatLng} point - Latitude/longitude of destination point.
- * @param   {number} fraction - Fraction between the two points (0 = this point, 1 = specified point).
- * @returns {L.LatLng} Intermediate point between this point and destination point.
- *
- * @example
- *   let p1 = new L.LatLng(52.205, 0.119);
- *   let p2 = new L.LatLng(48.857, 2.351);
- *   let pMid = p1.intermediatePointTo(p2, 0.25); // 51.3721°N, 000.7073°E
- */
-L.LatLng.prototype.intermediatePointTo = function(point, fraction) {
-
-    var φ1 = this.lat.toRadians(), λ1 = this.lng.toRadians();
-    var φ2 = point.lat.toRadians(), λ2 = point.lng.toRadians();
-    var sinφ1 = Math.sin(φ1), cosφ1 = Math.cos(φ1), sinλ1 = Math.sin(λ1), cosλ1 = Math.cos(λ1);
-    var sinφ2 = Math.sin(φ2), cosφ2 = Math.cos(φ2), sinλ2 = Math.sin(λ2), cosλ2 = Math.cos(λ2);
-
-    // distance between points
-    var Δφ = φ2 - φ1;
-    var Δλ = λ2 - λ1;
-    var a = Math.sin(Δφ/2) * Math.sin(Δφ/2)
-        + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    var δ = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-    var A = Math.sin((1-fraction)*δ) / Math.sin(δ);
-    var B = Math.sin(fraction*δ) / Math.sin(δ);
-
-    var x = A * cosφ1 * cosλ1 + B * cosφ2 * cosλ2;
-    var y = A * cosφ1 * sinλ1 + B * cosφ2 * sinλ2;
-    var z = A * sinφ1 + B * sinφ2;
-
-    var φ3 = Math.atan2(z, Math.sqrt(x*x + y*y));
-    var λ3 = Math.atan2(y, x);
-
-    return new L.LatLng(φ3.toDegrees(), (λ3.toDegrees()+540)%360-180); // normalise lng to −180..+180°
-};
-
-
-/**
- * Returns the destination point from ‘this’ point having travelled the given distance on the
- * given initial bearing (bearing normally varies around path followed).
- *
- * @param   {number} distance - Distance travelled, in same units as earth radius (default: metres).
- * @param   {number} bearing - Initial bearing in degrees from north.
- * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
- * @returns {L.LatLng} Destination point.
- *
- * @example
- *     var p1 = new L.LatLng(51.4778, -0.0015);
- *     var p2 = p1.destinationPoint(7794, 300.7); // 51.5135°N, 000.0983°W
- */
-L.LatLng.prototype.destinationPoint = function(distance, bearing, radius) {
-    radius = (radius === undefined) ? 6371e3 : Number(radius);
-
-    // sinφ2 = sinφ1⋅cosδ + cosφ1⋅sinδ⋅cosθ
-    // tanΔλ = sinθ⋅sinδ⋅cosφ1 / cosδ−sinφ1⋅sinφ2
-    // see mathforum.org/library/drmath/view/52049.html for derivation
-
-    var δ = Number(distance) / radius; // angular distance in radians
-    var θ = Number(bearing).toRadians();
-
-    var φ1 = this.lat.toRadians();
-    var λ1 = this.lng.toRadians();
-
-    var sinφ1 = Math.sin(φ1), cosφ1 = Math.cos(φ1);
-    var sinδ = Math.sin(δ), cosδ = Math.cos(δ);
-    var sinθ = Math.sin(θ), cosθ = Math.cos(θ);
-
-    var sinφ2 = sinφ1*cosδ + cosφ1*sinδ*cosθ;
-    var φ2 = Math.asin(sinφ2);
-    var y = sinθ * sinδ * cosφ1;
-    var x = cosδ - sinφ1 * sinφ2;
-    var λ2 = λ1 + Math.atan2(y, x);
-
-    return new L.LatLng(φ2.toDegrees(), (λ2.toDegrees()+540)%360-180); // normalise to −180..+180°
-};
-
-
-/**
- * Returns the point of intersection of two paths defined by point and bearing.
- *
- * @param   {L.LatLng} p1 - First point.
- * @param   {number} brng1 - Initial bearing from first point.
- * @param   {L.LatLng} p2 - Second point.
- * @param   {number} brng2 - Initial bearing from second point.
- * @returns {L.LatLng|null} Destination point (null if no unique intersection defined).
- *
- * @example
- *     var p1 = L.LatLng(51.8853, 0.2545), brng1 = 108.547;
- *     var p2 = L.LatLng(49.0034, 2.5735), brng2 =  32.435;
- *     var pInt = LatLng.intersection(p1, brng1, p2, brng2); // 50.9078°N, 004.5084°E
- */
-L.LatLng.intersection = function(p1, brng1, p2, brng2) {
-    // see www.edwilliams.org/avform.htm#Intersection
-
-    var φ1 = p1.lat.toRadians(), λ1 = p1.lng.toRadians();
-    var φ2 = p2.lat.toRadians(), λ2 = p2.lng.toRadians();
-    var θ13 = Number(brng1).toRadians(), θ23 = Number(brng2).toRadians();
-    var Δφ = φ2-φ1, Δλ = λ2-λ1;
-
-    // angular distance p1-p2
-    var δ12 = 2*Math.asin( Math.sqrt( Math.sin(Δφ/2)*Math.sin(Δφ/2)
-        + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)*Math.sin(Δλ/2) ) );
-    if (δ12 == 0) return null;
-
-    // initial/final bearings between points
-    var θa = Math.acos( ( Math.sin(φ2) - Math.sin(φ1)*Math.cos(δ12) ) / ( Math.sin(δ12)*Math.cos(φ1) ) );
-    if (isNaN(θa)) θa = 0; // protect against rounding
-    var θb = Math.acos( ( Math.sin(φ1) - Math.sin(φ2)*Math.cos(δ12) ) / ( Math.sin(δ12)*Math.cos(φ2) ) );
-
-    var θ12 = Math.sin(λ2-λ1)>0 ? θa : 2*Math.PI-θa;
-    var θ21 = Math.sin(λ2-λ1)>0 ? 2*Math.PI-θb : θb;
-
-    var α1 = θ13 - θ12; // angle 2-1-3
-    var α2 = θ21 - θ23; // angle 1-2-3
-
-    if (Math.sin(α1)==0 && Math.sin(α2)==0) return null; // infinite intersections
-    if (Math.sin(α1)*Math.sin(α2) < 0) return null;      // ambiguous intersection
-
-    var α3 = Math.acos( -Math.cos(α1)*Math.cos(α2) + Math.sin(α1)*Math.sin(α2)*Math.cos(δ12) );
-    var δ13 = Math.atan2( Math.sin(δ12)*Math.sin(α1)*Math.sin(α2), Math.cos(α2)+Math.cos(α1)*Math.cos(α3) );
-    var φ3 = Math.asin( Math.sin(φ1)*Math.cos(δ13) + Math.cos(φ1)*Math.sin(δ13)*Math.cos(θ13) );
-    var Δλ13 = Math.atan2( Math.sin(θ13)*Math.sin(δ13)*Math.cos(φ1), Math.cos(δ13)-Math.sin(φ1)*Math.sin(φ3) );
-    var λ3 = λ1 + Δλ13;
-
-    return new L.LatLng(φ3.toDegrees(), (λ3.toDegrees()+540)%360-180); // normalise to −180..+180°
-};
-
-
-/**
- * Returns (signed) distance from ‘this’ point to great circle defined by start-point and end-point.
- *
- * @param   {L.LatLng} pathStart - Start point of great circle path.
- * @param   {L.LatLng} pathEnd - End point of great circle path.
- * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
- * @returns {number} Distance to great circle (-ve if to left, +ve if to right of path).
- *
- * @example
- *   var pCurrent = new L.LatLng(53.2611, -0.7972);
- *   var p1 = new L.LatLng(53.3206, -1.7297);
- *   var p2 = new L.LatLng(53.1887,  0.1334);
- *   var d = pCurrent.crossTrackDistanceTo(p1, p2);  // -307.5 m
- */
-L.LatLng.prototype.crossTrackDistanceTo = function(pathStart, pathEnd, radius) {
-    var R = (radius === undefined) ? 6371e3 : Number(radius);
-
-    var δ13 = pathStart.distanceTo(this, R) / R;
-    var θ13 = pathStart.bearingTo(this).toRadians();
-    var θ12 = pathStart.bearingTo(pathEnd).toRadians();
-
-    var δxt = Math.asin(Math.sin(δ13) * Math.sin(θ13-θ12));
-
-    return δxt * R;
-};
-
-
-/**
- * Returns how far ‘this’ point is along a path from from start-point, heading towards end-point.
- * That is, if a perpendicular is drawn from ‘this’ point to the (great circle) path, the along-track
- * distance is the distance from the start point to where the perpendicular crosses the path.
- *
- * @param   {L.LatLng} pathStart - Start point of great circle path.
- * @param   {L.LatLng} pathEnd - End point of great circle path.
- * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
- * @returns {number} Distance along great circle to point nearest ‘this’ point.
- *
- * @example
- *   var pCurrent = new L.LatLng(53.2611, -0.7972);
- *   var p1 = new L.LatLng(53.3206, -1.7297);
- *   var p2 = new L.LatLng(53.1887,  0.1334);
- *   var d = pCurrent.alongTrackDistanceTo(p1, p2);  // 62.331 km
- */
-L.LatLng.prototype.alongTrackDistanceTo = function(pathStart, pathEnd, radius) {
-    var R = (radius === undefined) ? 6371e3 : Number(radius);
-
-    var δ13 = pathStart.distanceTo(this, R) / R;
-    var θ13 = pathStart.bearingTo(this).toRadians();
-    var θ12 = pathStart.bearingTo(pathEnd).toRadians();
-
-    var δxt = Math.asin(Math.sin(δ13) * Math.sin(θ13-θ12));
-
-    var δat = Math.acos(Math.cos(δ13) / Math.abs(Math.cos(δxt)));
-
-    return δat*Math.sign(Math.cos(θ12-θ13)) * R;
-};
-
-
-/**
- * Returns maximum latitude reached when travelling on a great circle on given bearing from this
- * point ('Clairaut's formula'). Negate the result for the minimum latitude (in the Southern
- * hemisphere).
- *
- * The maximum latitude is independent of longitude; it will be the same for all points on a given
- * latitude.
- *
- * @param {number} bearing - Initial bearing.
- * @param {number} latitude - Starting latitude.
- */
-L.LatLng.prototype.maxLatitude = function(bearing) {
-    var θ = Number(bearing).toRadians();
-
-    var φ = this.lat.toRadians();
-
-    var φMax = Math.acos(Math.abs(Math.sin(θ)*Math.cos(φ)));
-
-    return φMax.toDegrees();
-};
-
-
-/**
- * Returns the pair of meridians at which a great circle defined by two points crosses the given
- * latitude. If the great circle doesn't reach the given latitude, null is returned.
- *
- * @param {L.LatLng} point1 - First point defining great circle.
- * @param {L.LatLng} point2 - Second point defining great circle.
- * @param {number} latitude - Latitude crossings are to be determined for.
- * @returns {Object|null} Object containing { lon1, lon2 } or null if given latitude not reached.
- */
-L.LatLng.crossingParallels = function(point1, point2, latitude) {
-    var φ = Number(latitude).toRadians();
-
-    var φ1 = point1.lat.toRadians();
-    var λ1 = point1.lng.toRadians();
-    var φ2 = point2.lat.toRadians();
-    var λ2 = point2.lng.toRadians();
-
-    var Δλ = λ2 - λ1;
-
-    var x = Math.sin(φ1) * Math.cos(φ2) * Math.cos(φ) * Math.sin(Δλ);
-    var y = Math.sin(φ1) * Math.cos(φ2) * Math.cos(φ) * Math.cos(Δλ) - Math.cos(φ1) * Math.sin(φ2) * Math.cos(φ);
-    var z = Math.cos(φ1) * Math.cos(φ2) * Math.sin(φ) * Math.sin(Δλ);
-
-    if (z*z > x*x + y*y) return null; // great circle doesn't reach latitude
-
-    var λm = Math.atan2(-y, x);                  // longitude at max latitude
-    var Δλi = Math.acos(z / Math.sqrt(x*x+y*y)); // Δλ from λm to intersection points
-
-    var λi1 = λ1 + λm - Δλi;
-    var λi2 = λ1 + λm + Δλi;
-
-    return { lon1: (λi1.toDegrees()+540)%360-180, lon2: (λi2.toDegrees()+540)%360-180 }; // normalise to −180..+180°
-};
-
-
-/* Rhumb - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-
-/**
- * Returns the distance travelling from ‘this’ point to destination point along a rhumb line.
- *
- * @param   {L.LatLng} point - Latitude/longitude of destination point.
- * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
- * @returns {number} Distance in km between this point and destination point (same units as radius).
- *
- * @example
- *     var p1 = new L.LatLng(51.127, 1.338);
- *     var p2 = new L.LatLng(50.964, 1.853);
- *     var d = p1.distanceTo(p2); // 40.31 km
- */
-L.LatLng.prototype.rhumbDistanceTo = function(point, radius) {
-    radius = (radius === undefined) ? 6371e3 : Number(radius);
-
-    // see www.edwilliams.org/avform.htm#Rhumb
-
-    var R = radius;
-    var φ1 = this.lat.toRadians(), φ2 = point.lat.toRadians();
-    var Δφ = φ2 - φ1;
-    var Δλ = Math.abs(point.lng-this.lng).toRadians();
-    // if dLon over 180° take shorter rhumb line across the anti-meridian:
-    if (Δλ > Math.PI) Δλ -= 2*Math.PI;
-
-    // on Mercator projection, longitude distances shrink by latitude; q is the 'stretch factor'
-    // q becomes ill-conditioned along E-W line (0/0); use empirical tolerance to avoid it
-    var Δψ = Math.log(Math.tan(φ2/2+Math.PI/4)/Math.tan(φ1/2+Math.PI/4));
-    var q = Math.abs(Δψ) > 10e-12 ? Δφ/Δψ : Math.cos(φ1);
-
-    // distance is pythagoras on 'stretched' Mercator projection
-    var δ = Math.sqrt(Δφ*Δφ + q*q*Δλ*Δλ); // angular distance in radians
-    var dist = δ * R;
-
-    return dist;
-};
-
-
-/**
- * Returns the bearing from ‘this’ point to destination point along a rhumb line.
- *
- * @param   {L.LatLng} point - Latitude/longitude of destination point.
- * @returns {number} Bearing in degrees from north.
- *
- * @example
- *     var p1 = new L.LatLng(51.127, 1.338);
- *     var p2 = new L.LatLng(50.964, 1.853);
- *     var d = p1.rhumbBearingTo(p2); // 116.7 m
- */
-L.LatLng.prototype.rhumbBearingTo = function(point) {
-
-    var φ1 = this.lat.toRadians(), φ2 = point.lat.toRadians();
-    var Δλ = (point.lng-this.lng).toRadians();
-    // if dLon over 180° take shorter rhumb line across the anti-meridian:
-    if (Δλ >  Math.PI) Δλ -= 2*Math.PI;
-    if (Δλ < -Math.PI) Δλ += 2*Math.PI;
-
-    var Δψ = Math.log(Math.tan(φ2/2+Math.PI/4)/Math.tan(φ1/2+Math.PI/4));
-
-    var θ = Math.atan2(Δλ, Δψ);
-
-    return (θ.toDegrees()+360) % 360;
-};
-
-
-/**
- * Returns the destination point having travelled along a rhumb line from ‘this’ point the given
- * distance on the  given bearing.
- *
- * @param   {number} distance - Distance travelled, in same units as earth radius (default: metres).
- * @param   {number} bearing - Bearing in degrees from north.
- * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
- * @returns {L.LatLng} Destination point.
- *
- * @example
- *     var p1 = new L.LatLng(51.127, 1.338);
- *     var p2 = p1.rhumbDestinationPoint(40300, 116.7); // 50.9642°N, 001.8530°E
- */
-L.LatLng.prototype.rhumbDestinationPoint = function(distance, bearing, radius) {
-    radius = (radius === undefined) ? 6371e3 : Number(radius);
-
-    var δ = Number(distance) / radius; // angular distance in radians
-    var φ1 = this.lat.toRadians(), λ1 = this.lng.toRadians();
-    var θ = Number(bearing).toRadians();
-
-    var Δφ = δ * Math.cos(θ);
-    var φ2 = φ1 + Δφ;
-
-    // check for some daft bugger going past the pole, normalise latitude if so
-    if (Math.abs(φ2) > Math.PI/2) φ2 = φ2>0 ? Math.PI-φ2 : -Math.PI-φ2;
-
-    var Δψ = Math.log(Math.tan(φ2/2+Math.PI/4)/Math.tan(φ1/2+Math.PI/4));
-    var q = Math.abs(Δψ) > 10e-12 ? Δφ / Δψ : Math.cos(φ1); // E-W course becomes ill-conditioned with 0/0
-
-    var Δλ = δ*Math.sin(θ)/q;
-    var λ2 = λ1 + Δλ;
-
-    return new L.LatLng(φ2.toDegrees(), (λ2.toDegrees()+540) % 360 - 180); // normalise to −180..+180°
-};
-
-
-/**
- * Returns the loxodromic midpoint (along a rhumb line) between ‘this’ point and second point.
- *
- * @param   {L.LatLng} point - Latitude/longitude of second point.
- * @returns {L.LatLng} Midpoint between this point and second point.
- *
- * @example
- *     var p1 = new L.LatLng(51.127, 1.338);
- *     var p2 = new L.LatLng(50.964, 1.853);
- *     var pMid = p1.rhumbMidpointTo(p2); // 51.0455°N, 001.5957°E
- */
-L.LatLng.prototype.rhumbMidpointTo = function(point) {
-
-    // see mathforum.org/kb/message.jspa?messageID=148837
-
-    var φ1 = this.lat.toRadians(), λ1 = this.lng.toRadians();
-    var φ2 = point.lat.toRadians(), λ2 = point.lng.toRadians();
-
-    if (Math.abs(λ2-λ1) > Math.PI) λ1 += 2*Math.PI; // crossing anti-meridian
-
-    var φ3 = (φ1+φ2)/2;
-    var f1 = Math.tan(Math.PI/4 + φ1/2);
-    var f2 = Math.tan(Math.PI/4 + φ2/2);
-    var f3 = Math.tan(Math.PI/4 + φ3/2);
-    var λ3 = ( (λ2-λ1)*Math.log(f3) + λ1*Math.log(f2) - λ2*Math.log(f1) ) / Math.log(f2/f1);
-
-    if (!isFinite(λ3)) λ3 = (λ1+λ2)/2; // parallel of latitude
-
-    var p = L.LatLng(φ3.toDegrees(), (λ3.toDegrees()+540)%360-180); // normalise to −180..+180°
-
-    return p;
-};
-
-
-/* Area - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-
-
-/**
- * Calculates the area of a spherical polygon where the sides of the polygon are great circle
- * arcs joining the vertices.
- *
- * @param   {L.LatLng[]} polygon - Array of points defining vertices of the polygon
- * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
- * @returns {number} The area of the polygon, in the same units as radius.
- *
- * @example
- *   var polygon = [new L.LatLng(0,0), new L.LatLng(1,0), new L.LatLng(0,1)];
- *   var area = LatLng.areaOf(polygon); // 6.18e9 m²
- */
-L.LatLng.areaOf = function(polygon, radius) {
-    // uses method due to Karney: osgeo-org.1560.x6.nabble.com/Area-of-a-spherical-polygon-td3841625.html;
-    // for each edge of the polygon, tan(E/2) = tan(Δλ/2)·(tan(φ1/2) + tan(φ2/2)) / (1 + tan(φ1/2)·tan(φ2/2))
-    // where E is the spherical excess of the trapezium obtained by extending the edge to the equator
-
-    var R = (radius === undefined) ? 6371e3 : Number(radius);
-
-    // close polygon so that last point equals first point
-    var closed = polygon[0].equals(polygon[polygon.length-1]);
-    if (!closed) polygon.push(polygon[0]);
-
-    var nVertices = polygon.length - 1;
-
-    var S = 0; // spherical excess in steradians
-    for (var v=0; v<nVertices; v++) {
-        var φ1 = polygon[v].lat.toRadians();
-        var φ2 = polygon[v+1].lat.toRadians();
-        var Δλ = (polygon[v+1].lng - polygon[v].lng).toRadians();
-        var E = 2 * Math.atan2(Math.tan(Δλ/2) * (Math.tan(φ1/2)+Math.tan(φ2/2)), 1 + Math.tan(φ1/2)*Math.tan(φ2/2));
-        S += E;
-    }
-
-    if (isPoleEnclosedBy(polygon)) S = Math.abs(S) - 2*Math.PI;
-
-    var A = Math.abs(S * R*R); // area in units of R
-
-    if (!closed) polygon.pop(); // restore polygon to pristine condition
-
-    return A;
-
-    // returns whether polygon encloses pole: sum of course deltas around pole is 0° rather than
-    // normal ±360°: blog.element84.com/determining-if-a-spherical-polygon-contains-a-pole.html
-    function isPoleEnclosedBy(polygon) {
-        // TODO: any better test than this?
-        var ΣΔ = 0;
-        var prevBrng = polygon[0].bearingTo(polygon[1]);
-        var initBrng;
-        for (var v=0; v<polygon.length-1; v++) {
-            initBrng = polygon[v].bearingTo(polygon[v+1]);
-            var finalBrng = polygon[v].finalBearingTo(polygon[v+1]);
-            ΣΔ += (initBrng - prevBrng + 540) % 360 - 180;
-            ΣΔ += (finalBrng - initBrng + 540) % 360 - 180;
-            prevBrng = finalBrng;
-        }
-        initBrng = polygon[0].bearingTo(polygon[1]);
-        ΣΔ += (initBrng - prevBrng + 540) % 360 - 180;
-        // TODO: fix (intermittant) edge crossing pole - eg (85,90), (85,0), (85,-90)
-        var enclosed = Math.abs(ΣΔ) < 90; // 0°-ish
-        return enclosed;
-    }
-};
-
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-
-/** Extend Number object with method to convert numeric degrees to radians */
-if (Number.prototype.toRadians === undefined) {
-    Number.prototype.toRadians = function() { return this * Math.PI / 180; };
-}
-
-/** Extend Number object with method to convert radians to numeric (signed) degrees */
-if (Number.prototype.toDegrees === undefined) {
-    Number.prototype.toDegrees = function() { return this * 180 / Math.PI; };
-}
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-}(L, this, document));
-
-;
-/****************************************************************************
-	leaflet-polyline.js,
-
-	(c) 2018, FCOO
-
-	https://github.com/FCOO/leaflet-polyline
-	https://github.com/FCOO
-
-    Extend L.Polyline with options to draw "shadow" and "interactive"-zone
-
-****************************************************************************/
-(function ($, L, window, document, undefined) {
-    "use strict";
-    var beforeAndAfter = function(methodName, method, reverseOrder) {
-            method = method || L.Polyline.prototype[methodName];
-            return function(){
-                if (this.polylineList){
-                    var length = this.polylineList.length-1,
-                        firstIndex = reverseOrder ? length : 0,
-                        lastIndex  = reverseOrder ? 0 : length,
-                        result, i;
-                     for (i=firstIndex; reverseOrder ? i >= lastIndex : i <= lastIndex; reverseOrder ? i-- : i++ ){
-                        if (i == thisIndex)
-                            result = method.apply(this, arguments);
-                        else
-                            this.polylineList[i][methodName].apply(this.polylineList[i], arguments);
-                    }
-                    return result;
-                }
-                else
-                    return method.apply(this, arguments);
-            };
-        };
-
-    var defaultOptions = {
-            weight         : 2,  //The width of the line
-          //color          : '', //The color
-            colorName      : '', //Class-name to give the fill color
-            fillColorName  : '', //Same as colorName
-            borderColorName: '',  //Class-name to give the border color. "none" will hide the border
-            LineColorName  : '',  //Same as borderColorName
-
-
-            //fill       : false,  //True to add fill colored by fillColor or SOMETHING ELSE TODO
-            border         : false,  //True to add a semi-transparent white border to the line
-            transparent    : false,  //True to make the line semi-transparent
-            hover          : false,  //True to show big-shadow and 0.9 opacuity for lpl-transparent when hover
-            onlyShowOnHover: false, //When true the polyline/polygon is only visible on hover and popup-open. Need {shadow: false, hover: true}
-            shadow         : false,  //true to add big shadow to the line
-            shadowWhenPopupOpen     : false,  //When true a shadow is shown when the popup for the marker is open
-            tooltipHideWhenPopupOpen: false,  //True and tooltipPermanent: false => the tooltip is hidden when popup is displayed
-
-
-            //TODO zIndexWhenHover         : null,   //zIndex applied when the polyline/polygon is hover
-            //TODO zIndexWhenPopupOpen     : null,   //zIndex applied when the a popup is open on the polyline/polygon
-
-            className       : 'lpl-base',
-
-            borderWidth     : 1, //Width of border
-            shadowWidth     : 3, //Width of shadow
-            interactiveWidth: 5, //Width of interactive area
-
-        },
-
-        shadowIndex      = 0,
-        borderIndex      = 1,
-        thisIndex        = 2,
-        interactiveIndex = 3;
-
-        function getOptions( className, interactive ){
-            return $.extend({}, defaultOptions, {
-                       className     : className,
-                       addInteractive: false,
-                       interactive   : interactive,
-                   });
-        }
-
-
-    L.Polyline.include({
-        /*****************************************************
-        initialize
-        *****************************************************/
-        initialize: function( initialize ){
-            return function( latLngs, options ){
-                options = options || {};
-                if (!options.addInteractive)
-                    return initialize.call(this, latLngs, options );
-
-                options.weight = options.weight || options.width || defaultOptions.weight;
-                options.className = 'lpl-base';
-
-                initialize.call(this, latLngs, options );
-
-                this.currentOptions = {};
-
-                //polylineList contains the up to four differnet polyline/polygon used to create the border, shadow and interactive zones
-                this.polylineList = [null, null, null, null];
-
-                var thisConstructor = this instanceof L.Polygon ? L.polygon : L.polyline;
-
-                this.polylineList[borderIndex]      = thisConstructor( latLngs, getOptions('lpl-border',      false) );
-                this.polylineList[shadowIndex]      = thisConstructor( latLngs, getOptions('lpl-shadow',      false) );
-                this.polylineList[thisIndex]        = this;
-                this.polylineList[interactiveIndex] = thisConstructor( latLngs, getOptions('lpl-interactive', true ) );
-                this.interactivePolyline = this.polylineList[interactiveIndex]; //Easy access
-
-                this.interactivePolyline._parentPolyline = this;
-
-                this.on( 'add', this.setStyle, this );
-                this.on( 'remove', this.setInteractiveOff, this );
-
-                this.interactivePolyline
-                        .on( 'mouseover',    this._mouseover,    this )
-                        .on( 'mouseout',     this._mouseout,     this )
-                        .on( 'popupopen',    this._popupopen,    this )
-                        .on( 'popupclose',   this._popupclose,   this );
-
-
-                return this;
-            };
-        }(L.Polyline.prototype.initialize),
-
-
-        /*****************************************************
-        setStyle
-        *****************************************************/
-        setStyle: function(setStyle){
-            return function( style ){
-                function adjust(options){
-                    options = $.extend({}, options || {});
-                    options.weight = options.width || options.weight;
-                    options.colorName = options.colorName || options.fillColorName || options.colorName;
-                    options.borderColorName = options.borderColorName || options.lineColorName || options.borderColorName;
-                    return options;
-                }
-
-                if (!this.options.addInteractive)
-                    return setStyle.call(this, style );
-
-                this.options = $.extend(true,  adjust(defaultOptions), adjust(this.options), adjust(style) );
-
-                //Create the current options in a flat object
-                var options = $.extend({},  this.options );
-
-                //If there are options in options.polyline or options.LineString for polyline etc. => copy them into options.
-                //This makes it possible to add options in geoJSON-layer with different options for polygons and lines
-                $.each(this instanceof L.Polygon ? ['polygon', 'Polygon'] : ['polyline', 'Polyline', 'lineString', 'LineString'], function(index, name){
-                    if (options[name])
-                        $.extend(options, adjust(options[name]));
-                });
-
-                var saveAddInteractive = this.options.addInteractive;
-                this.options.addInteractive = false;
-
-                this.currentOptions = options;
-
-                ///Set line-width of the differnet polyline
-                this.polylineList[thisIndex].setStyle(       {weight: options.weight });
-                this.polylineList[borderIndex].setStyle(     {weight: options.weight + 2*options.borderWidth     });
-                this.polylineList[shadowIndex].setStyle(     {weight: options.weight + 2*options.shadowWidth     });
-                this.polylineList[interactiveIndex].setStyle({weight: options.weight + 2*options.interactiveWidth});
-
-                //Add class and colors to this and shadow
-                this._addClass(thisIndex, options.className);
-                this.setColor(options.colorName);
-                this.setBorderColor(options.borderColorName);
-                this._toggleClass(thisIndex, 'lpl-transparent', !!options.transparent);
-
-                //Show or hide border
-                this._toggleClass(borderIndex, 'lpl-show', !!options.border);
-
-                //Show or hide shadow
-                this._toggleClass(shadowIndex, 'lpl-show', !!options.shadow);
-
-                //Only show on hover
-                this._toggleClass(null, 'lpl-only-show-on-hover', !!options.onlyShowOnHover);
-
-                this.options.addInteractive = saveAddInteractive;
-
-                this.options.interactive = options.interactive;
-
-                //Check and set active-status if polyline is added to a map
-                 if (this._map)
-                    this.setInteractive(this.options.interactive);
-
-                return this;
-            };
-        }(L.Polyline.prototype.setStyle),
-
-        /*****************************************************
-        onAdd - Add Polyline, shadow- and inertactive LayerGroup
-        *****************************************************/
-        onAdd: beforeAndAfter( 'addTo', L.Polyline.prototype.onAdd ),
-
-        /*****************************************************
-        Bind tooltip to interactivePolyline (if any)
-        *****************************************************/
-        bindTooltip: function(bindTooltip){
-            return function(content, options){
-                options = options || {};
-                //Force sticky:true if not given
-                if (options.sticky === undefined)
-                    options.sticky = true;
-                bindTooltip.call(this.interactivePolyline || this, content, options);
-            };
-        }(L.Polyline.prototype.bindTooltip),
-
-        /*****************************************************
-        Bind popup to interactivePolyline (if any)
-        *****************************************************/
-        bindPopup: function(bindPopup){
-            return function(){
-                bindPopup.apply(this.interactivePolyline || this, arguments);
-            };
-        }(L.Polyline.prototype.bindPopup),
-
-
-        /*****************************************************
-        Open popup inside polygon or on polyline
-        *****************************************************/
-        openPopup: function(openPopup){
-            return function(layer, latlng){
-                var _this = this._parentPolyline || this;
-
-                //If not inside a filled polygon => adjust latlng to be on the line
-                if (latlng && (!(_this instanceof L.Polygon) ||  !_this.currentColorName) )
-                    latlng = L.GeometryUtil.closest(_this._map, _this, latlng);
-
-                openPopup.call(this, layer, latlng);
-            };
-        }(L.Polyline.prototype.openPopup),
-
-
-        /*****************************************************
-        setColor( colorName )
-        *****************************************************/
-        setColor: function( colorName ){
-            if (this.currentColorName)
-                this._removeClass(this, 'lpl-'+this.currentColorName);
-            if (colorName)
-                this._addClass(this, 'lpl-'+colorName);
-
-            this._toggleClass(interactiveIndex, 'lpl-fill', !!colorName);
-
-            this.currentColorName = colorName;
-        },
-
-        /*****************************************************
-        setBorderColor( borderColorName )
-        *****************************************************/
-        setBorderColor: function( borderColorName ){
-            if (this.currentBorderColorName)
-                this._removeClass(this, 'lpl-border-'+this.currentBorderColorName);
-            if (borderColorName){
-                this._addClass(this, 'lpl-border-'+borderColorName);
-                if (this.polylineList && this.polylineList[shadowIndex])
-                    this.polylineList[shadowIndex].setBorderColor(borderColorName);
-            }
-            this.currentBorderColorName = borderColorName;
-        },
-
-
-
-        /*****************************************************
-        _addClass, _removeClass, _toggleClass:
-        Add, remove and toggle class from a polyline
-        *****************************************************/
-        _eachPolyline: function( onlyPolyline, methodName, arg ){
-            var _this = this;
-            if (onlyPolyline != null){
-                if ($.isNumeric(onlyPolyline))
-                    onlyPolyline = this.polylineList[onlyPolyline];
-                if (onlyPolyline){
-                    var $path = $(onlyPolyline._path);
-                    $path[methodName].apply($path, arg);
-                }
-            }
-            else
-                $.each(this.polylineList, function( index, polyline ){
-                   _this._eachPolyline( polyline, methodName, arg );
-                });
-        },
-
-        _addClass: function( polyline, className){
-            this._eachPolyline( polyline, 'addClass', [className] );
-        },
-
-        _removeClass: function( polyline, className){
-            this._eachPolyline( polyline, 'removeClass', [className] );
-        },
-
-        _toggleClass: function( polyline, className, state){
-
-            this._eachPolyline( polyline, 'toggleClass', [className, state] );
-        },
-
-        /*****************************************************
-        _mouseover and _mouseout: Highlight polyline
-        *****************************************************/
-        _mouseover: function(/* mouseEvent */){
-             if (this.currentOptions.hover)
-                 this._addClass(null, 'lpl-hover');
-             if (this.currentOptions.onlyShowOnHover)
-                 this._removeClass(null, 'lpl-only-show-on-hover');
-        },
-
-        _mouseout: function(/* mouseEvent */){
-            if (this.currentOptions.hover)
-                 this._removeClass(null, 'lpl-hover');
-             if (this.currentOptions.onlyShowOnHover)
-                 this._addClass(null, 'lpl-only-show-on-hover');
-        },
-
-        /*****************************************************
-        _popupopen and _popupclose: Highlight polyline
-        *****************************************************/
-        _popupopen: function(){
-            if (this.currentOptions.tooltipHideWhenPopupOpen && !this.currentOptions.tooltipPermanent && this.interactivePolyline && this.interactivePolyline.hideTooltip)
-                this.interactivePolyline.hideTooltip();
-            if (this.currentOptions.shadowWhenPopupOpen && !this.currentOptions.shadow)
-                this._addClass(shadowIndex, 'lpl-show');
-             this._addClass(null, 'lpl-popup-open' );
-        },
-
-        _popupclose: function(){
-            if (this.currentOptions.tooltipHideWhenPopupOpen && this.interactivePolyline && this.interactivePolyline.hideTooltip)
-                this.interactivePolyline.showTooltip();
-            if (this.currentOptions.shadowWhenPopupOpen && !this.currentOptions.shadow)
-                this._removeClass(shadowIndex, 'lpl-show');
-             this._removeClass(null, 'lpl-popup-open' );
-        },
-
-        /*****************************************************
-        If polyline has addInteractive => All mouse-evnets on polyline get caught
-        by interactivePolyline and fired on this on clostes point
-        *****************************************************/
-        onMouseEventsOnInteractivePolyline: function( fn, context, mouseEvent ){
-            //If event has latLng (==MouseEvent) => Adjust mouseEvent to closest latlng on this
-            if (mouseEvent.latlng){
-                //If not inside a filled polygon => adjust latlng to be on the line
-                if (!(this instanceof L.Polygon) ||  !this.currentColorName){
-                    mouseEvent.latlng         = L.GeometryUtil.closest(this._map, this, mouseEvent.latlng);
-                    mouseEvent.layerPoint     = this._map.latLngToLayerPoint( mouseEvent.latlng );
-                    mouseEvent.containerPoint = this._map.latLngToContainerPoint( mouseEvent.latlng );
-                }
-            }
-            fn.call(context || this, mouseEvent );
-        },
-
-        _on: function( _on ){
-            return function(type, fn, context){
-                if (this.interactivePolyline &&
-                    ([
-                        'click', 'dblclick',
-                        'mousedown', 'mouseup', 'mouseover', 'mouseout', 'mousemove',
-                        'contextmenu',
-                        'popupopen', 'popupclose',
-                        'tooltipopen', 'tooltipclose'
-                    ].indexOf(type) != -1)
-                   ){
-
-                    //Create a function to re-direct the event from this.interactivePolyline to this with latLng corrected to closest to this
-                    return _on.call(
-                        this.interactivePolyline,
-                        type,
-                        $.proxy(this.onMouseEventsOnInteractivePolyline, this, fn, context),
-                        this
-                    );
-                    }
-                else
-                    return _on.apply(this, arguments );
-            };
-        }(L.Polyline.prototype._on),
-
-
-        /*****************************************************
-        onSetInteractive
-        *****************************************************/
-        onSetInteractive: function( /*on*/){
-        },
-
-        /*****************************************************
-        setInteractive( on ) - set the polyline interactive on or off
-        setInteractiveOn     - set the polyline interactive on
-        setInteractiveOff    - set the polyline interactive off
-        *****************************************************/
-        setInteractive: function( on ){
-            if (!this.options.addInteractive) return this;
-
-            if (on === undefined)
-                on = !this.isInteractive;
-
-            this.isInteractive = !!on;
-
-            //Toggle class "leaflet-interactive"
-            this._toggleClass( thisIndex,        "leaflet-interactive",  this.isInteractive);
-            this._toggleClass( interactiveIndex, "leaflet-interactive",  this.isInteractive);
-
-            this.onSetInteractive( this.isInteractive );
-            return this;
-        },
-
-        setInteractiveOn : function(){ return this.setInteractive( true  ); },
-        setInteractiveOff: function(){ return this.setInteractive( false ); },
-
-        /*****************************************************
-        setLatLngs - also called for shadow-polyline and interactive-polyline
-        *****************************************************/
-        setLatLngs: function( setLatLngs ){
-            return function(){
-                setLatLngs.apply(this, arguments);
-                $.each( this.polylineList, function( index, polyline ){
-                    setLatLngs.apply(polyline, arguments);
-                });
-            };
-        }(L.Polyline.prototype.setLatLngs ),
-
-        /*****************************************************
-        bringToFront, bringToBack, removeFrom:
-        All called for borderAndShadowLayerGroup and interactivePolyline
-        *****************************************************/
-        bringToFront: beforeAndAfter('bringToFront'),
-        bringToBack : beforeAndAfter('bringToBack', null, true),
-        removeFrom  : beforeAndAfter('removeFrom'),
-    });
-
-}(jQuery, L, this, document));
-
-
-;
 /****************************************************************************
 leaflet-bootstrap-control-button.js
 
@@ -74403,298 +73357,6 @@ Create leaflet-control for jquery-bootstrap modal-content:
         //*************************************
         L.control.bsModal     = function(options){ return new L.control.BsModal(options); };
         L.control.bsModalForm = function(options){ return new L.control.BsModalForm(options); };
-
-}(jQuery, L, this, document));
-
-
-;
-/****************************************************************************
-leaflet-bootstrap-marker.js,
-
-Create L.bsMarker = a round marker with options for color, shadow and pulsart
-
-****************************************************************************/
-(function ($, L, window, document, undefined) {
-    "use strict";
-
-    /*****************************************************
-    L.bsMarkerAsIcon
-    Return the options to create a icon locking like a bsMarker
-    with the given color and border-color
-    *****************************************************/
-    L.bsMarkerAsIcon = function(colorName, borderColorName, options){
-        colorName = colorName || 'white';
-        borderColorName = borderColorName || 'black';
-        return $.bsMarkerIcon('fa-lbm-icon-'+colorName, 'fa-lbm-icon-border-'+borderColorName, options);
-    };
-
-
-    var markerSizeList = [14, 20, 24], //MUST match $markerSizeList in _leaflet-bootstrap-marker.scss AND _leaflet-bootstrap-tooltip.scss
-        iconList = [];
-    $.each( markerSizeList, function( index, size ){
-        iconList.push( L.divIcon({iconSize: [size, size], className: 'lbm-icon lbm-icon-'+index }) );
-    });
-
-
-    //Extend L.Map with ignoreNextEvent(type) and includeNextEvent(type) to prevent the next firing of a event
-    L.Map.prototype.fire = function ( fire ){
-        return function ( type ) {
-            return this._ignoreNextEvent[type] ? this.includeNextEvent( type ) : fire.apply(this, arguments);
-        };
-    } (L.Map.prototype.fire);
-
-    L.Map.prototype.initialize = function (initialize) {
-        return function () {
-            this._ignoreNextEvent = {};
-            return initialize.apply(this, arguments);
-        };
-    } (L.Map.prototype.initialize);
-
-
-    L.Map.prototype.ignoreNextEvent = function( type ){
-        this._ignoreNextEvent[type] = true;
-        return this;
-    };
-    L.Map.prototype.includeNextEvent = function( type ){
-        this._ignoreNextEvent[type] = false;
-        return this;
-    };
-
-    var classNames = {
-            round        : 'lbm-round',
-            transparent  : 'lbm-transparent',
-            shadow       : 'lbm-shadow',
-            hover        : 'lbm-hover',
-            puls         : 'lbm-puls'
-        };
-
-    /*****************************************************
-    L.BsMarker
-    *****************************************************/
-    L.BsMarker = L.Marker.extend({
-        options: {
-            icon            : iconList[0],
-
-            iconSize        : 0,                //0: normal, 1. larger with icon or umber, 2: Very large (touch-mode)
-            iconClass       : '',               //Fontawesome Font class-name ("fa-home") for icon inside the marker
-            round           : true,             //If false the icon is square
-            number          : undefined,        //Number inside the marker
-
-            draggable       : false,            //Whether the marker is draggable with mouse/touch or not.
-            autoPan         : true,             //Set to true if you want the map to do panning animation when marker hits the edges.
-
-            useBigIcon      : false,            //True to make the icon big
-            bigIconWhenTouch: false,            //True to make big icon when window.bsIsTouch == true and options.draggable == true
-            transparent     : false,            //True to make the marker semi-transparent
-            hover           : false,            //True to show shadow and 0.9 opacuity for lbm-transparent when hover
-            shadow          : false,            //true to add a shadow to the marker
-            puls            : false,            //true to have a pulsart icon
-            colorName       : '',    	        //Class-name to give the color of the marker
-            borderColorName : '',               //Class-name to give the border-color
-            tooltip                 : null,     //Content of tooltip
-            tooltipPermanent        : false,    //Whether to open the tooltip permanently or only on mouseover.
-            tooltipHideWhenDragging : false,    //True and tooltipPermanent: false => the tooltip is hidden when dragged
-            tooltipHideWhenPopupOpen: false,    //True and tooltipPermanent: false => the tooltip is hidden when popup is displayed
-            shadowWhenPopupOpen     : true      //When true a big-sdhadow is shown when the popup for the marker is open
-        },
-
-        /*****************************************************
-        initialize
-        *****************************************************/
-        initialize: function(latLng, options){
-            L.Marker.prototype.initialize.call(this, latLng, options);
-
-            if (this.options.useBigIcon)
-                this.iconSizeIndex = 2;
-            else
-                //Change to big icon if bigIconWhenTouch == false and window.bsIsTouch == true and options.draggable == true
-                if (this.options.bigIconWhenTouch && this.options.draggable && window.bsIsTouch)
-                    this.iconSizeIndex = 2;
-                else
-                    this.iconSizeIndex = options.iconSize || 0;
-
-            //Create $icon to hold class-names
-            this.$icon = $('<div/>');
-
-            var _this = this;
-            $.each(['round', 'transparent', 'shadow', 'hover', 'puls'], function( index, id ){
-                _this.toggleOption(id, !!_this.options[id] );
-            });
-
-            if (this.options.colorName)
-                this.setColor(this.options.colorName);
-            if (this.options.borderColorName)
-                this.setBorderColor(this.options.borderColorName);
-
-            //this.setSize(this.iconSizeIndex);
-
-            this.on('dragstart', this._bsMarker_onDragStart, this );
-            this.on('dragend',   this._bsMarker_onDragEnd,   this );
-
-            this.on('popupopen',  this._popupopen, this);
-            this.on('popupclose', this._popupclose, this);
-        },
-
-        /*****************************************************
-        setSize
-        *****************************************************/
-        setSize: function(sizeIndex){
-
-            this.$icon.removeClass('lbm-icon-'+this.iconSizeIndex);
-            var className = this.$icon.get(0).className,
-                tooltip = this.getTooltip();
-            if (tooltip)
-                $(tooltip._container).removeClass('leaflet-tooltip-icon-'+this.iconSizeIndex);
-
-            this.iconSizeIndex = sizeIndex;
-
-            this.setIcon( iconList[sizeIndex] );
-            this.$icon = $(this._icon);
-            this.$icon.addClass(className+' lbm-icon-'+sizeIndex);
-            if (tooltip)
-                $(tooltip._container).addClass('leaflet-tooltip-icon-'+this.iconSizeIndex);
-        },
-
-
-        /*****************************************************
-        onAdd
-        *****************************************************/
-        onAdd: function( map ){
-            L.Marker.prototype.onAdd.call(this, map);
-
-
-            this.$content = null;
-
-            if (this.options.tooltip)
-                this.bindTooltip(this.options.tooltip, {
-                    sticky          : !this.options.tooltipPermanent,       //If true, the tooltip will follow the mouse instead of being fixed at the feature center.
-                    interactive     : false,                                //If true, the tooltip will listen to the feature events.
-                    permanent       : this.options.tooltipPermanent,        //Whether to open the tooltip permanently or only on mouseover.
-                    hideWhenDragging: this.options.tooltipHideWhenDragging  //True and tooltipPermanent: false => the tooltip is hidden when dragged
-                });
-
-            this.setSize(this.iconSizeIndex);
-            if (this.options.number !== undefined)
-                this.setNumber(this.options.number);
-            if (this.options.iconClass)
-                this.setIconClass(this.options.iconClass);
-
-        },
-
-        /*****************************************************
-        addClass, removeClass, toggleClass
-        *****************************************************/
-        addClass   : function(){ this.$icon.addClass.apply   ( this.$icon, arguments ); },
-        removeClass: function(){ this.$icon.removeClass.apply( this.$icon, arguments ); },
-        toggleClass: function(){ this.$icon.toggleClass.apply( this.$icon, arguments ); },
-
-        /*****************************************************
-        toggleOption(optionId) - Toggle the state of options[optionId]
-        *****************************************************/
-        toggleOption: function( optionId, state ){
-            this.options[optionId] = typeof state === "boolean" ? state : !this.options[optionId];
-            this.toggleClass( classNames[optionId], this.options[optionId]);
-        },
-
-        /*****************************************************
-        setColor( colorName )
-        *****************************************************/
-        setColor: function( colorName ){
-            if (this.colorName)
-                this.removeClass('lbm-'+this.colorName);
-            this.colorName = colorName;
-            if (this.colorName)
-                this.addClass('lbm-'+this.colorName);
-        },
-
-        /*****************************************************
-        setBorderColor( borderColorName )
-        *****************************************************/
-        setBorderColor: function( borderColorName ){
-            if (this.borderColorName)
-                this.removeClass('lbm-border-'+this.colorName);
-            this.borderColorName = borderColorName;
-            if (this.borderColorName)
-                this.addClass('lbm-border-'+this.borderColorName);
-        },
-
-        /*****************************************************
-        setIconClass( icon )
-        *****************************************************/
-        setIconClass: function( icon, minSize ){
-            if (minSize && (minSize > this.iconSizeIndex))
-                this.setSize( minSize );
-            this.$icon.empty();
-            $._bsCreateIcon('fa-home', this.$icon);
-        },
-        /*****************************************************
-        setNumber( number )
-        *****************************************************/
-        setNumber: function( number, minSize ){
-            if (minSize && (minSize > this.iconSizeIndex))
-                this.setSize( minSize );
-            this.$icon.empty();
-            $('<div/>')
-                .addClass('inner-text')
-                .text(number)
-                .appendTo( this.$icon );
-        },
-
-
-        /*****************************************************
-        asIcon()
-        *****************************************************/
-        asIcon: function( options ){
-            options = $.extend(
-                        this.options.round ? {} : {baseClass: 'fa-square'},
-                        options || {}
-                      );
-            return L.bsMarkerAsIcon(this.colorName, this.borderColorName, options);
-        },
-
-        /*****************************************************
-
-        *****************************************************/
-        _popupopen: function(){
-            this._bringToFront();
-            if (this.options.tooltipHideWhenPopupOpen && !this.options.tooltipPermanent)
-                this.hideTooltip();
-            if (this.options.shadowWhenPopupOpen && !this.options.shadow)
-                this.addClass( classNames['shadow'] );
-            if (this.options.transparent)
-                this.removeClass( classNames['transparent'] );
-            if (this.options.hover)
-                this.removeClass( classNames['hover'] );
-        },
-        _popupclose: function(){
-            if (this.options.tooltipHideWhenPopupOpen && !this.options.tooltipPermanent)
-                this.showTooltip();
-            if (this.options.shadowWhenPopupOpen && !this.options.shadow)
-                this.removeClass( classNames['shadow'] );
-            if (this.options.transparent)
-                this.addClass( classNames['transparent'] );
-            if (this.options.hover)
-                this.addClass( classNames['hover'] );
-        },
-
-        /*****************************************************
-        _bsMarker_onDragStart - Fired when the drag starts: Mark the map to ignore next click
-        _bsMarker_onDragEnd - Fired when the drag ends: Mark the map to include click within 10ms
-        *****************************************************/
-        _bsMarker_onDragStart: function(){
-            this._map.ignoreNextEvent('click');
-        },
-
-        _bsMarker_onDragEnd  : function(){
-            setTimeout( $.proxy( this._map.includeNextEvent, this._map, 'click'), 100 );
-        },
-
-    });
-
-
-    L.bsMarker = function bsMarker(latlng, options) {
-        return new L.BsMarker(latlng, options);
-    };
 
 }(jQuery, L, this, document));
 
@@ -74951,27 +73613,9 @@ Adjust standard Leaflet popup to display as Bootstrap modal
     };
 
 
-}(jQuery, L, this, document));
-
-
-
-
-;
-/****************************************************************************
-    leaflet-bootstrap.js,
-
-    (c) 2017, FCOO
-
-    https://github.com/FCOO/leaflet-bootstrap
-    https://github.com/FCOO
-
-****************************************************************************/
-(function (/*$, L/*, window, document, undefined*/) {
-    "use strict";
-
 
     /*********************************************************
-    Extend XX with methods to show and hide tooltip
+    Extend L.Layer with methods to show and hide tooltip
     *********************************************************/
     L.Layer.prototype.showTooltip = function() {
         var tooltip = this.getTooltip();
@@ -74989,11 +73633,346 @@ Adjust standard Leaflet popup to display as Bootstrap modal
         return this;
     };
 
+    /*********************************************************
+    Overwrite L.Layer.bindTooltip to check for this.options
+    regarding tooltip and add events to hide tooltips when
+    popup is open
+    *********************************************************/
+    L.Layer.prototype.bindTooltip = function( bindTooltip ){
+        return function(content, options){
+            if (this && this.options){
+                options =
+                    $.extend({
+                        sticky          : !this.options.tooltipPermanent,       //If true, the tooltip will follow the mouse instead of being fixed at the feature center.
+                        interactive     : false,                                //If true, the tooltip will listen to the feature events.
+                        permanent       : this.options.tooltipPermanent,        //Whether to open the tooltip permanently or only on mouseover.
+                        hideWhenDragging: this.options.tooltipHideWhenDragging  //True and tooltipPermanent: false => the tooltip is hidden when dragged
+                    }, options);
 
+                this.on('popupopen',  this._hideTooltipWhenPopupOpen,  this);
+                this.on('popupclose', this._showTooltipWhenPopupClose, this);
+            }
+            return bindTooltip.call( this, content, options );
+        };
+    }( L.Layer.prototype.bindTooltip );
+
+    L.Layer.prototype._hideTooltipWhenPopupOpen = function(){
+        if (this && this.options && this.options.tooltipHideWhenPopupOpen && !this.options.tooltipPermanent)
+            this.hideTooltip();
+    };
+
+    L.Layer.prototype._showTooltipWhenPopupClose = function(){
+        if (this && this.options && this.options.tooltipHideWhenPopupOpen && !this.options.tooltipPermanent)
+            this.showTooltip();
+    };
 
 }(jQuery, L, this, document));
 
 
+
+
+;
+/****************************************************************************
+    leaflet-bootstrap.js,
+
+    (c) 2017, FCOO
+
+    https://github.com/FCOO/leaflet-bootstrap
+    https://github.com/FCOO
+
+****************************************************************************/
+(function (/*$, L, window, document, undefined*/) {
+    "use strict";
+
+}(jQuery, L, this, document));
+
+
+
+
+;
+/****************************************************************************
+leaflet-bootstrap-marker.js,
+
+Create L.bsMarker = a round marker with options for color, shadow and pulsart
+
+****************************************************************************/
+(function ($, L, window, document, undefined) {
+    "use strict";
+
+    /*****************************************************
+    L.bsMarkerAsIcon
+    Return the options to create a icon locking like a bsMarker
+    with the given color and border-color
+    *****************************************************/
+    L.bsMarkerAsIcon = function(colorName, borderColorName, options){
+        colorName = colorName || 'white';
+        borderColorName = borderColorName || 'black';
+        return $.bsMarkerIcon('fa-lbm-icon-'+colorName, 'fa-lbm-icon-border-'+borderColorName, options);
+    };
+
+
+    var markerSizeList = [14, 20, 24], //MUST match $markerSizeList in _leaflet-bootstrap-marker.scss AND _leaflet-bootstrap-tooltip.scss
+        iconList = [];
+    $.each( markerSizeList, function( index, size ){
+        iconList.push( L.divIcon({iconSize: [size, size], className: 'lbm-icon lbm-icon-'+index }) );
+    });
+
+
+    //Extend L.Map with ignoreNextEvent(type) and includeNextEvent(type) to prevent the next firing of a event
+    L.Map.prototype.fire = function ( fire ){
+        return function ( type ) {
+            return this._ignoreNextEvent[type] ? this.includeNextEvent( type ) : fire.apply(this, arguments);
+        };
+    } (L.Map.prototype.fire);
+
+    L.Map.prototype.initialize = function (initialize) {
+        return function () {
+            this._ignoreNextEvent = {};
+            return initialize.apply(this, arguments);
+        };
+    } (L.Map.prototype.initialize);
+
+
+    L.Map.prototype.ignoreNextEvent = function( type ){
+        this._ignoreNextEvent[type] = true;
+        return this;
+    };
+    L.Map.prototype.includeNextEvent = function( type ){
+        this._ignoreNextEvent[type] = false;
+        return this;
+    };
+
+    var classNames = {
+            round        : 'lbm-round',
+            transparent  : 'lbm-transparent',
+            shadow       : 'lbm-shadow',
+            hover        : 'lbm-hover',
+            puls         : 'lbm-puls',
+            thickBorder  : 'lbm-thick-border'
+        };
+
+    /*****************************************************
+    L.BsMarker
+    *****************************************************/
+    L.BsMarker = L.Marker.extend({
+        options: {
+            icon            : iconList[0],
+
+            iconSize        : 0,         //0: normal, 1. larger with icon or umber, 2: Very large (touch-mode)
+            iconClass       : '',        //Fontawesome Font class-name ("fa-home") for icon inside the marker
+            round           : true,      //If false the icon is square
+            number          : undefined, //Number inside the marker
+
+            draggable       : false,     //Whether the marker is draggable with mouse/touch or not.
+            autoPan         : true,      //Set to true if you want the map to do panning animation when marker hits the edges.
+
+            useBigIcon      : false,     //True to make the icon big
+            bigIconWhenTouch: false,     //True to make big icon when window.bsIsTouch == true and options.draggable == true
+            transparent     : false,     //True to make the marker semi-transparent
+            hover           : false,     //True to show shadow and 0.9 opacuity for lbm-transparent when hover
+            shadow          : false,     //true to add a shadow to the marker
+            puls            : false,     //true to have a pulsart icon
+            colorName       : '',    	 //Class-name to give the color of the marker
+            borderColorName : '',        //Class-name to give the border-color
+            thickBorder     : false,    //true to have thicker border
+
+
+            tooltip                 : null,     //Content of tooltip
+            tooltipPermanent        : false,    //Whether to open the tooltip permanently or only on mouseover.
+            tooltipHideWhenDragging : false,    //True and tooltipPermanent: false => the tooltip is hidden when dragged
+            tooltipHideWhenPopupOpen: false,    //True and tooltipPermanent: false => the tooltip is hidden when popup is displayed
+            shadowWhenPopupOpen     : true      //When true a big-sdhadow is shown when the popup for the marker is open
+        },
+
+        /*****************************************************
+        initialize
+        *****************************************************/
+        initialize: function(latLng, options){
+            L.Marker.prototype.initialize.call(this, latLng, options);
+
+            if (this.options.useBigIcon)
+                this.iconSizeIndex = 2;
+            else
+                //Change to big icon if bigIconWhenTouch == false and window.bsIsTouch == true and options.draggable == true
+                if (this.options.bigIconWhenTouch && this.options.draggable && window.bsIsTouch)
+                    this.iconSizeIndex = 2;
+                else
+                    this.iconSizeIndex = this.options.iconSize || 0;
+
+            //Create $icon to hold class-names
+            this.$icon = $('<div/>');
+
+            var _this = this;
+            $.each(['round', 'transparent', 'shadow', 'hover', 'puls', 'thickBorder'], function( index, id ){
+                _this.toggleOption(id, !!_this.options[id] );
+            });
+
+            if (this.options.colorName)
+                this.setColor(this.options.colorName);
+            if (this.options.borderColorName)
+                this.setBorderColor(this.options.borderColorName);
+
+            //this.setSize(this.iconSizeIndex);
+
+            this.on('dragstart', this._bsMarker_onDragStart, this );
+            this.on('dragend',   this._bsMarker_onDragEnd,   this );
+
+            this.on('popupopen',  this._popupopen, this);
+            this.on('popupclose', this._popupclose, this);
+        },
+
+        /*****************************************************
+        setSize
+        *****************************************************/
+        setSize: function(sizeIndex){
+
+            this.$icon.removeClass('lbm-icon-'+this.iconSizeIndex);
+            var className = this.$icon.get(0).className,
+                tooltip = this.getTooltip();
+            if (tooltip)
+                $(tooltip._container).removeClass('leaflet-tooltip-icon-'+this.iconSizeIndex);
+
+            this.iconSizeIndex = sizeIndex;
+
+            this.setIcon( iconList[sizeIndex] );
+            this.$icon = $(this._icon);
+            this.$icon.addClass(className+' lbm-icon-'+sizeIndex);
+            if (tooltip)
+                $(tooltip._container).addClass('leaflet-tooltip-icon-'+this.iconSizeIndex);
+        },
+
+
+        /*****************************************************
+        onAdd
+        *****************************************************/
+        onAdd: function( map ){
+            L.Marker.prototype.onAdd.call(this, map);
+
+            this.$content = null;
+
+            if (this.options.tooltip)
+                this.bindTooltip(this.options.tooltip);
+
+            this.setSize(this.iconSizeIndex);
+            if (this.options.number !== undefined)
+                this.setNumber(this.options.number);
+            if (this.options.iconClass)
+                this.setIconClass(this.options.iconClass);
+
+        },
+
+        /*****************************************************
+        addClass, removeClass, toggleClass
+        *****************************************************/
+        addClass   : function(){ this.$icon.addClass.apply   ( this.$icon, arguments ); },
+        removeClass: function(){ this.$icon.removeClass.apply( this.$icon, arguments ); },
+        toggleClass: function(){ this.$icon.toggleClass.apply( this.$icon, arguments ); },
+
+        /*****************************************************
+        toggleOption(optionId) - Toggle the state of options[optionId]
+        *****************************************************/
+        toggleOption: function( optionId, state ){
+            this.options[optionId] = typeof state === "boolean" ? state : !this.options[optionId];
+            this.toggleClass( classNames[optionId], this.options[optionId]);
+        },
+
+        /*****************************************************
+        setColor( colorName )
+        *****************************************************/
+        setColor: function( colorName ){
+            if (this.colorName)
+                this.removeClass('lbm-'+this.colorName);
+            this.colorName = colorName;
+            if (this.colorName)
+                this.addClass('lbm-'+this.colorName);
+        },
+
+        /*****************************************************
+        setBorderColor( borderColorName )
+        *****************************************************/
+        setBorderColor: function( borderColorName ){
+            if (this.borderColorName)
+                this.removeClass('lbm-border-'+this.colorName);
+            this.borderColorName = borderColorName;
+            if (this.borderColorName)
+                this.addClass('lbm-border-'+this.borderColorName);
+        },
+
+        /*****************************************************
+        setIconClass( icon )
+        *****************************************************/
+        setIconClass: function( icon, minSize ){
+            if (minSize && (minSize > this.iconSizeIndex))
+                this.setSize( minSize );
+            this.$icon.empty();
+            $._bsCreateIcon('fa-home', this.$icon);
+        },
+        /*****************************************************
+        setNumber( number )
+        *****************************************************/
+        setNumber: function( number, minSize ){
+            if (minSize && (minSize > this.iconSizeIndex))
+                this.setSize( minSize );
+            this.$icon.empty();
+            $('<div/>')
+                .addClass('inner-text')
+                .text(number)
+                .appendTo( this.$icon );
+        },
+
+
+        /*****************************************************
+        asIcon()
+        *****************************************************/
+        asIcon: function( options ){
+            options = $.extend(
+                        this.options.round ? {} : {baseClass: 'fa-square'},
+                        options || {}
+                      );
+            return L.bsMarkerAsIcon(this.colorName, this.borderColorName, options);
+        },
+
+        /*****************************************************
+
+        *****************************************************/
+        _popupopen: function(){
+            this._bringToFront();
+            if (this.options.shadowWhenPopupOpen && !this.options.shadow)
+                this.addClass( classNames['shadow'] );
+            if (this.options.transparent)
+                this.removeClass( classNames['transparent'] );
+            if (this.options.hover)
+                this.removeClass( classNames['hover'] );
+        },
+        _popupclose: function(){
+            if (this.options.shadowWhenPopupOpen && !this.options.shadow)
+                this.removeClass( classNames['shadow'] );
+            if (this.options.transparent)
+                this.addClass( classNames['transparent'] );
+            if (this.options.hover)
+                this.addClass( classNames['hover'] );
+        },
+
+        /*****************************************************
+        _bsMarker_onDragStart - Fired when the drag starts: Mark the map to ignore next click
+        _bsMarker_onDragEnd - Fired when the drag ends: Mark the map to include click within 10ms
+        *****************************************************/
+        _bsMarker_onDragStart: function(){
+            this._map.ignoreNextEvent('click');
+        },
+
+        _bsMarker_onDragEnd  : function(){
+            setTimeout( $.proxy( this._map.includeNextEvent, this._map, 'click'), 100 );
+        },
+
+    });
+
+
+    L.bsMarker = function bsMarker(latlng, options) {
+        return new L.BsMarker(latlng, options);
+    };
+
+}(jQuery, L, this, document));
 
 
 ;
@@ -76457,4 +75436,1095 @@ latlng-format, a class to validate, format, and transform positions (eq. leaflet
 }(L, this, document));
 
 
+
+
+;
+/*****************************************************************************
+leaflet-latlng-geodesy.js
+
+This is a adjusted "Leaflet"-version of latlon-spherical.js from
+https://github.com/chrisveness/geodesy by Chris Veness
+See http://www.movable-type.co.uk/scripts/latlong.html
+
+The LatLon-object is replaced with standard Leaflet LatLng-object and the
+code is packed in a define-function
+
+
+*****************************************************************************/
+(function (L/*, window, document, undefined*/) {
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/* Latitude/longitude spherical geodesy tools                         (c) Chris Veness 2002-2017  */
+/*                                                                                   MIT Licence  */
+/* www.movable-type.co.uk/scripts/latlong.html                                                    */
+/* www.movable-type.co.uk/scripts/geodesy/docs/module-latlon-spherical.html                       */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+
+
+/**
+ * Library of geodesy functions for operations on a spherical earth model.
+ *
+ * @module   latlon-spherical
+ * @requires dms
+ */
+
+
+/**
+ * Returns the distance from ‘this’ point to destination point (using haversine formula).
+ *
+ * @param   {L.LatLng} point - Latitude/longitude of destination point.
+ * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
+ * @returns {number} Distance between this point and destination point, in same units as radius.
+ *
+ * @example
+ *     var p1 = new L.LatLng(52.205, 0.119);
+ *     var p2 = new L.LatLng(48.857, 2.351);
+ *     var d = p1.distanceTo(p2); // 404.3 km
+ */
+
+
+L.LatLng.prototype.distanceTo = function(point, radius) {
+    radius = (radius === undefined) ? 6371e3 : Number(radius);
+
+    // a = sin²(Δφ/2) + cos(φ1)⋅cos(φ2)⋅sin²(Δλ/2)
+    // tanδ = √(a) / √(1−a)
+    // see mathforum.org/library/drmath/view/51879.html for derivation
+
+    var R = radius;
+    var φ1 = this.lat.toRadians(),  λ1 = this.lng.toRadians();
+    var φ2 = point.lat.toRadians(), λ2 = point.lng.toRadians();
+    var Δφ = φ2 - φ1;
+    var Δλ = λ2 - λ1;
+
+    var a = Math.sin(Δφ/2) * Math.sin(Δφ/2)
+          + Math.cos(φ1) * Math.cos(φ2)
+          * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    var d = R * c;
+
+    return d;
+};
+
+
+/**
+ * Returns the (initial) bearing from ‘this’ point to destination point.
+ *
+ * @param   {L.LatLng} point - Latitude/longitude of destination point.
+ * @returns {number} Initial bearing in degrees from north.
+ *
+ * @example
+ *     var p1 = new L.LatLng(52.205, 0.119);
+ *     var p2 = new L.LatLng(48.857, 2.351);
+ *     var b1 = p1.bearingTo(p2); // 156.2°
+ */
+L.LatLng.prototype.bearingTo = function(point) {
+
+    // tanθ = sinΔλ⋅cosφ2 / cosφ1⋅sinφ2 − sinφ1⋅cosφ2⋅cosΔλ
+    // see mathforum.org/library/drmath/view/55417.html for derivation
+
+    var φ1 = this.lat.toRadians(), φ2 = point.lat.toRadians();
+    var Δλ = (point.lng-this.lng).toRadians();
+    var y = Math.sin(Δλ) * Math.cos(φ2);
+    var x = Math.cos(φ1)*Math.sin(φ2) -
+            Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+    var θ = Math.atan2(y, x);
+
+    return (θ.toDegrees()+360) % 360;
+};
+
+
+/**
+ * Returns final bearing arriving at destination destination point from ‘this’ point; the final bearing
+ * will differ from the initial bearing by varying degrees according to distance and latitude.
+ *
+ * @param   {L.LatLng} point - Latitude/longitude of destination point.
+ * @returns {number} Final bearing in degrees from north.
+ *
+ * @example
+ *     var p1 = new L.LatLng(52.205, 0.119);
+ *     var p2 = new L.LatLng(48.857, 2.351);
+ *     var b2 = p1.finalBearingTo(p2); // 157.9°
+ */
+L.LatLng.prototype.finalBearingTo = function(point) {
+
+    // get initial bearing from destination point to this point & reverse it by adding 180°
+    return ( point.bearingTo(this)+180 ) % 360;
+};
+
+
+/**
+ * Returns the midpoint between ‘this’ point and the supplied point.
+ *
+ * @param   {L.LatLng} point - Latitude/longitude of destination point.
+ * @returns {L.LatLng} Midpoint between this point and the supplied point.
+ *
+ * @example
+ *     var p1 = new L.LatLng(52.205, 0.119);
+ *     var p2 = new L.LatLng(48.857, 2.351);
+ *     var pMid = p1.midpointTo(p2); // 50.5363°N, 001.2746°E
+ */
+L.LatLng.prototype.midpointTo = function(point) {
+
+    // φm = atan2( sinφ1 + sinφ2, √( (cosφ1 + cosφ2⋅cosΔλ) ⋅ (cosφ1 + cosφ2⋅cosΔλ) ) + cos²φ2⋅sin²Δλ )
+    // λm = λ1 + atan2(cosφ2⋅sinΔλ, cosφ1 + cosφ2⋅cosΔλ)
+    // see mathforum.org/library/drmath/view/51822.html for derivation
+
+    var φ1 = this.lat.toRadians(), λ1 = this.lng.toRadians();
+    var φ2 = point.lat.toRadians();
+    var Δλ = (point.lng-this.lng).toRadians();
+
+    var Bx = Math.cos(φ2) * Math.cos(Δλ);
+    var By = Math.cos(φ2) * Math.sin(Δλ);
+
+    var x = Math.sqrt((Math.cos(φ1) + Bx) * (Math.cos(φ1) + Bx) + By * By);
+    var y = Math.sin(φ1) + Math.sin(φ2);
+    var φ3 = Math.atan2(y, x);
+
+    var λ3 = λ1 + Math.atan2(By, Math.cos(φ1) + Bx);
+
+    return new L.LatLng(φ3.toDegrees(), (λ3.toDegrees()+540)%360-180); // normalise to −180..+180°
+};
+
+
+/**
+ * Returns the point at given fraction between ‘this’ point and specified point.
+ *
+ * @param   {L.LatLng} point - Latitude/longitude of destination point.
+ * @param   {number} fraction - Fraction between the two points (0 = this point, 1 = specified point).
+ * @returns {L.LatLng} Intermediate point between this point and destination point.
+ *
+ * @example
+ *   let p1 = new L.LatLng(52.205, 0.119);
+ *   let p2 = new L.LatLng(48.857, 2.351);
+ *   let pMid = p1.intermediatePointTo(p2, 0.25); // 51.3721°N, 000.7073°E
+ */
+L.LatLng.prototype.intermediatePointTo = function(point, fraction) {
+
+    var φ1 = this.lat.toRadians(), λ1 = this.lng.toRadians();
+    var φ2 = point.lat.toRadians(), λ2 = point.lng.toRadians();
+    var sinφ1 = Math.sin(φ1), cosφ1 = Math.cos(φ1), sinλ1 = Math.sin(λ1), cosλ1 = Math.cos(λ1);
+    var sinφ2 = Math.sin(φ2), cosφ2 = Math.cos(φ2), sinλ2 = Math.sin(λ2), cosλ2 = Math.cos(λ2);
+
+    // distance between points
+    var Δφ = φ2 - φ1;
+    var Δλ = λ2 - λ1;
+    var a = Math.sin(Δφ/2) * Math.sin(Δφ/2)
+        + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    var δ = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    var A = Math.sin((1-fraction)*δ) / Math.sin(δ);
+    var B = Math.sin(fraction*δ) / Math.sin(δ);
+
+    var x = A * cosφ1 * cosλ1 + B * cosφ2 * cosλ2;
+    var y = A * cosφ1 * sinλ1 + B * cosφ2 * sinλ2;
+    var z = A * sinφ1 + B * sinφ2;
+
+    var φ3 = Math.atan2(z, Math.sqrt(x*x + y*y));
+    var λ3 = Math.atan2(y, x);
+
+    return new L.LatLng(φ3.toDegrees(), (λ3.toDegrees()+540)%360-180); // normalise lng to −180..+180°
+};
+
+
+/**
+ * Returns the destination point from ‘this’ point having travelled the given distance on the
+ * given initial bearing (bearing normally varies around path followed).
+ *
+ * @param   {number} distance - Distance travelled, in same units as earth radius (default: metres).
+ * @param   {number} bearing - Initial bearing in degrees from north.
+ * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
+ * @returns {L.LatLng} Destination point.
+ *
+ * @example
+ *     var p1 = new L.LatLng(51.4778, -0.0015);
+ *     var p2 = p1.destinationPoint(7794, 300.7); // 51.5135°N, 000.0983°W
+ */
+L.LatLng.prototype.destinationPoint = function(distance, bearing, radius) {
+    radius = (radius === undefined) ? 6371e3 : Number(radius);
+
+    // sinφ2 = sinφ1⋅cosδ + cosφ1⋅sinδ⋅cosθ
+    // tanΔλ = sinθ⋅sinδ⋅cosφ1 / cosδ−sinφ1⋅sinφ2
+    // see mathforum.org/library/drmath/view/52049.html for derivation
+
+    var δ = Number(distance) / radius; // angular distance in radians
+    var θ = Number(bearing).toRadians();
+
+    var φ1 = this.lat.toRadians();
+    var λ1 = this.lng.toRadians();
+
+    var sinφ1 = Math.sin(φ1), cosφ1 = Math.cos(φ1);
+    var sinδ = Math.sin(δ), cosδ = Math.cos(δ);
+    var sinθ = Math.sin(θ), cosθ = Math.cos(θ);
+
+    var sinφ2 = sinφ1*cosδ + cosφ1*sinδ*cosθ;
+    var φ2 = Math.asin(sinφ2);
+    var y = sinθ * sinδ * cosφ1;
+    var x = cosδ - sinφ1 * sinφ2;
+    var λ2 = λ1 + Math.atan2(y, x);
+
+    return new L.LatLng(φ2.toDegrees(), (λ2.toDegrees()+540)%360-180); // normalise to −180..+180°
+};
+
+
+/**
+ * Returns the point of intersection of two paths defined by point and bearing.
+ *
+ * @param   {L.LatLng} p1 - First point.
+ * @param   {number} brng1 - Initial bearing from first point.
+ * @param   {L.LatLng} p2 - Second point.
+ * @param   {number} brng2 - Initial bearing from second point.
+ * @returns {L.LatLng|null} Destination point (null if no unique intersection defined).
+ *
+ * @example
+ *     var p1 = L.LatLng(51.8853, 0.2545), brng1 = 108.547;
+ *     var p2 = L.LatLng(49.0034, 2.5735), brng2 =  32.435;
+ *     var pInt = LatLng.intersection(p1, brng1, p2, brng2); // 50.9078°N, 004.5084°E
+ */
+L.LatLng.intersection = function(p1, brng1, p2, brng2) {
+    // see www.edwilliams.org/avform.htm#Intersection
+
+    var φ1 = p1.lat.toRadians(), λ1 = p1.lng.toRadians();
+    var φ2 = p2.lat.toRadians(), λ2 = p2.lng.toRadians();
+    var θ13 = Number(brng1).toRadians(), θ23 = Number(brng2).toRadians();
+    var Δφ = φ2-φ1, Δλ = λ2-λ1;
+
+    // angular distance p1-p2
+    var δ12 = 2*Math.asin( Math.sqrt( Math.sin(Δφ/2)*Math.sin(Δφ/2)
+        + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)*Math.sin(Δλ/2) ) );
+    if (δ12 == 0) return null;
+
+    // initial/final bearings between points
+    var θa = Math.acos( ( Math.sin(φ2) - Math.sin(φ1)*Math.cos(δ12) ) / ( Math.sin(δ12)*Math.cos(φ1) ) );
+    if (isNaN(θa)) θa = 0; // protect against rounding
+    var θb = Math.acos( ( Math.sin(φ1) - Math.sin(φ2)*Math.cos(δ12) ) / ( Math.sin(δ12)*Math.cos(φ2) ) );
+
+    var θ12 = Math.sin(λ2-λ1)>0 ? θa : 2*Math.PI-θa;
+    var θ21 = Math.sin(λ2-λ1)>0 ? 2*Math.PI-θb : θb;
+
+    var α1 = θ13 - θ12; // angle 2-1-3
+    var α2 = θ21 - θ23; // angle 1-2-3
+
+    if (Math.sin(α1)==0 && Math.sin(α2)==0) return null; // infinite intersections
+    if (Math.sin(α1)*Math.sin(α2) < 0) return null;      // ambiguous intersection
+
+    var α3 = Math.acos( -Math.cos(α1)*Math.cos(α2) + Math.sin(α1)*Math.sin(α2)*Math.cos(δ12) );
+    var δ13 = Math.atan2( Math.sin(δ12)*Math.sin(α1)*Math.sin(α2), Math.cos(α2)+Math.cos(α1)*Math.cos(α3) );
+    var φ3 = Math.asin( Math.sin(φ1)*Math.cos(δ13) + Math.cos(φ1)*Math.sin(δ13)*Math.cos(θ13) );
+    var Δλ13 = Math.atan2( Math.sin(θ13)*Math.sin(δ13)*Math.cos(φ1), Math.cos(δ13)-Math.sin(φ1)*Math.sin(φ3) );
+    var λ3 = λ1 + Δλ13;
+
+    return new L.LatLng(φ3.toDegrees(), (λ3.toDegrees()+540)%360-180); // normalise to −180..+180°
+};
+
+
+/**
+ * Returns (signed) distance from ‘this’ point to great circle defined by start-point and end-point.
+ *
+ * @param   {L.LatLng} pathStart - Start point of great circle path.
+ * @param   {L.LatLng} pathEnd - End point of great circle path.
+ * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
+ * @returns {number} Distance to great circle (-ve if to left, +ve if to right of path).
+ *
+ * @example
+ *   var pCurrent = new L.LatLng(53.2611, -0.7972);
+ *   var p1 = new L.LatLng(53.3206, -1.7297);
+ *   var p2 = new L.LatLng(53.1887,  0.1334);
+ *   var d = pCurrent.crossTrackDistanceTo(p1, p2);  // -307.5 m
+ */
+L.LatLng.prototype.crossTrackDistanceTo = function(pathStart, pathEnd, radius) {
+    var R = (radius === undefined) ? 6371e3 : Number(radius);
+
+    var δ13 = pathStart.distanceTo(this, R) / R;
+    var θ13 = pathStart.bearingTo(this).toRadians();
+    var θ12 = pathStart.bearingTo(pathEnd).toRadians();
+
+    var δxt = Math.asin(Math.sin(δ13) * Math.sin(θ13-θ12));
+
+    return δxt * R;
+};
+
+
+/**
+ * Returns how far ‘this’ point is along a path from from start-point, heading towards end-point.
+ * That is, if a perpendicular is drawn from ‘this’ point to the (great circle) path, the along-track
+ * distance is the distance from the start point to where the perpendicular crosses the path.
+ *
+ * @param   {L.LatLng} pathStart - Start point of great circle path.
+ * @param   {L.LatLng} pathEnd - End point of great circle path.
+ * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
+ * @returns {number} Distance along great circle to point nearest ‘this’ point.
+ *
+ * @example
+ *   var pCurrent = new L.LatLng(53.2611, -0.7972);
+ *   var p1 = new L.LatLng(53.3206, -1.7297);
+ *   var p2 = new L.LatLng(53.1887,  0.1334);
+ *   var d = pCurrent.alongTrackDistanceTo(p1, p2);  // 62.331 km
+ */
+L.LatLng.prototype.alongTrackDistanceTo = function(pathStart, pathEnd, radius) {
+    var R = (radius === undefined) ? 6371e3 : Number(radius);
+
+    var δ13 = pathStart.distanceTo(this, R) / R;
+    var θ13 = pathStart.bearingTo(this).toRadians();
+    var θ12 = pathStart.bearingTo(pathEnd).toRadians();
+
+    var δxt = Math.asin(Math.sin(δ13) * Math.sin(θ13-θ12));
+
+    var δat = Math.acos(Math.cos(δ13) / Math.abs(Math.cos(δxt)));
+
+    return δat*Math.sign(Math.cos(θ12-θ13)) * R;
+};
+
+
+/**
+ * Returns maximum latitude reached when travelling on a great circle on given bearing from this
+ * point ('Clairaut's formula'). Negate the result for the minimum latitude (in the Southern
+ * hemisphere).
+ *
+ * The maximum latitude is independent of longitude; it will be the same for all points on a given
+ * latitude.
+ *
+ * @param {number} bearing - Initial bearing.
+ * @param {number} latitude - Starting latitude.
+ */
+L.LatLng.prototype.maxLatitude = function(bearing) {
+    var θ = Number(bearing).toRadians();
+
+    var φ = this.lat.toRadians();
+
+    var φMax = Math.acos(Math.abs(Math.sin(θ)*Math.cos(φ)));
+
+    return φMax.toDegrees();
+};
+
+
+/**
+ * Returns the pair of meridians at which a great circle defined by two points crosses the given
+ * latitude. If the great circle doesn't reach the given latitude, null is returned.
+ *
+ * @param {L.LatLng} point1 - First point defining great circle.
+ * @param {L.LatLng} point2 - Second point defining great circle.
+ * @param {number} latitude - Latitude crossings are to be determined for.
+ * @returns {Object|null} Object containing { lon1, lon2 } or null if given latitude not reached.
+ */
+L.LatLng.crossingParallels = function(point1, point2, latitude) {
+    var φ = Number(latitude).toRadians();
+
+    var φ1 = point1.lat.toRadians();
+    var λ1 = point1.lng.toRadians();
+    var φ2 = point2.lat.toRadians();
+    var λ2 = point2.lng.toRadians();
+
+    var Δλ = λ2 - λ1;
+
+    var x = Math.sin(φ1) * Math.cos(φ2) * Math.cos(φ) * Math.sin(Δλ);
+    var y = Math.sin(φ1) * Math.cos(φ2) * Math.cos(φ) * Math.cos(Δλ) - Math.cos(φ1) * Math.sin(φ2) * Math.cos(φ);
+    var z = Math.cos(φ1) * Math.cos(φ2) * Math.sin(φ) * Math.sin(Δλ);
+
+    if (z*z > x*x + y*y) return null; // great circle doesn't reach latitude
+
+    var λm = Math.atan2(-y, x);                  // longitude at max latitude
+    var Δλi = Math.acos(z / Math.sqrt(x*x+y*y)); // Δλ from λm to intersection points
+
+    var λi1 = λ1 + λm - Δλi;
+    var λi2 = λ1 + λm + Δλi;
+
+    return { lon1: (λi1.toDegrees()+540)%360-180, lon2: (λi2.toDegrees()+540)%360-180 }; // normalise to −180..+180°
+};
+
+
+/* Rhumb - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+/**
+ * Returns the distance travelling from ‘this’ point to destination point along a rhumb line.
+ *
+ * @param   {L.LatLng} point - Latitude/longitude of destination point.
+ * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
+ * @returns {number} Distance in km between this point and destination point (same units as radius).
+ *
+ * @example
+ *     var p1 = new L.LatLng(51.127, 1.338);
+ *     var p2 = new L.LatLng(50.964, 1.853);
+ *     var d = p1.distanceTo(p2); // 40.31 km
+ */
+L.LatLng.prototype.rhumbDistanceTo = function(point, radius) {
+    radius = (radius === undefined) ? 6371e3 : Number(radius);
+
+    // see www.edwilliams.org/avform.htm#Rhumb
+
+    var R = radius;
+    var φ1 = this.lat.toRadians(), φ2 = point.lat.toRadians();
+    var Δφ = φ2 - φ1;
+    var Δλ = Math.abs(point.lng-this.lng).toRadians();
+    // if dLon over 180° take shorter rhumb line across the anti-meridian:
+    if (Δλ > Math.PI) Δλ -= 2*Math.PI;
+
+    // on Mercator projection, longitude distances shrink by latitude; q is the 'stretch factor'
+    // q becomes ill-conditioned along E-W line (0/0); use empirical tolerance to avoid it
+    var Δψ = Math.log(Math.tan(φ2/2+Math.PI/4)/Math.tan(φ1/2+Math.PI/4));
+    var q = Math.abs(Δψ) > 10e-12 ? Δφ/Δψ : Math.cos(φ1);
+
+    // distance is pythagoras on 'stretched' Mercator projection
+    var δ = Math.sqrt(Δφ*Δφ + q*q*Δλ*Δλ); // angular distance in radians
+    var dist = δ * R;
+
+    return dist;
+};
+
+
+/**
+ * Returns the bearing from ‘this’ point to destination point along a rhumb line.
+ *
+ * @param   {L.LatLng} point - Latitude/longitude of destination point.
+ * @returns {number} Bearing in degrees from north.
+ *
+ * @example
+ *     var p1 = new L.LatLng(51.127, 1.338);
+ *     var p2 = new L.LatLng(50.964, 1.853);
+ *     var d = p1.rhumbBearingTo(p2); // 116.7 m
+ */
+L.LatLng.prototype.rhumbBearingTo = function(point) {
+
+    var φ1 = this.lat.toRadians(), φ2 = point.lat.toRadians();
+    var Δλ = (point.lng-this.lng).toRadians();
+    // if dLon over 180° take shorter rhumb line across the anti-meridian:
+    if (Δλ >  Math.PI) Δλ -= 2*Math.PI;
+    if (Δλ < -Math.PI) Δλ += 2*Math.PI;
+
+    var Δψ = Math.log(Math.tan(φ2/2+Math.PI/4)/Math.tan(φ1/2+Math.PI/4));
+
+    var θ = Math.atan2(Δλ, Δψ);
+
+    return (θ.toDegrees()+360) % 360;
+};
+
+
+/**
+ * Returns the destination point having travelled along a rhumb line from ‘this’ point the given
+ * distance on the  given bearing.
+ *
+ * @param   {number} distance - Distance travelled, in same units as earth radius (default: metres).
+ * @param   {number} bearing - Bearing in degrees from north.
+ * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
+ * @returns {L.LatLng} Destination point.
+ *
+ * @example
+ *     var p1 = new L.LatLng(51.127, 1.338);
+ *     var p2 = p1.rhumbDestinationPoint(40300, 116.7); // 50.9642°N, 001.8530°E
+ */
+L.LatLng.prototype.rhumbDestinationPoint = function(distance, bearing, radius) {
+    radius = (radius === undefined) ? 6371e3 : Number(radius);
+
+    var δ = Number(distance) / radius; // angular distance in radians
+    var φ1 = this.lat.toRadians(), λ1 = this.lng.toRadians();
+    var θ = Number(bearing).toRadians();
+
+    var Δφ = δ * Math.cos(θ);
+    var φ2 = φ1 + Δφ;
+
+    // check for some daft bugger going past the pole, normalise latitude if so
+    if (Math.abs(φ2) > Math.PI/2) φ2 = φ2>0 ? Math.PI-φ2 : -Math.PI-φ2;
+
+    var Δψ = Math.log(Math.tan(φ2/2+Math.PI/4)/Math.tan(φ1/2+Math.PI/4));
+    var q = Math.abs(Δψ) > 10e-12 ? Δφ / Δψ : Math.cos(φ1); // E-W course becomes ill-conditioned with 0/0
+
+    var Δλ = δ*Math.sin(θ)/q;
+    var λ2 = λ1 + Δλ;
+
+    return new L.LatLng(φ2.toDegrees(), (λ2.toDegrees()+540) % 360 - 180); // normalise to −180..+180°
+};
+
+
+/**
+ * Returns the loxodromic midpoint (along a rhumb line) between ‘this’ point and second point.
+ *
+ * @param   {L.LatLng} point - Latitude/longitude of second point.
+ * @returns {L.LatLng} Midpoint between this point and second point.
+ *
+ * @example
+ *     var p1 = new L.LatLng(51.127, 1.338);
+ *     var p2 = new L.LatLng(50.964, 1.853);
+ *     var pMid = p1.rhumbMidpointTo(p2); // 51.0455°N, 001.5957°E
+ */
+L.LatLng.prototype.rhumbMidpointTo = function(point) {
+
+    // see mathforum.org/kb/message.jspa?messageID=148837
+
+    var φ1 = this.lat.toRadians(), λ1 = this.lng.toRadians();
+    var φ2 = point.lat.toRadians(), λ2 = point.lng.toRadians();
+
+    if (Math.abs(λ2-λ1) > Math.PI) λ1 += 2*Math.PI; // crossing anti-meridian
+
+    var φ3 = (φ1+φ2)/2;
+    var f1 = Math.tan(Math.PI/4 + φ1/2);
+    var f2 = Math.tan(Math.PI/4 + φ2/2);
+    var f3 = Math.tan(Math.PI/4 + φ3/2);
+    var λ3 = ( (λ2-λ1)*Math.log(f3) + λ1*Math.log(f2) - λ2*Math.log(f1) ) / Math.log(f2/f1);
+
+    if (!isFinite(λ3)) λ3 = (λ1+λ2)/2; // parallel of latitude
+
+    var p = L.LatLng(φ3.toDegrees(), (λ3.toDegrees()+540)%360-180); // normalise to −180..+180°
+
+    return p;
+};
+
+
+/* Area - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
+
+/**
+ * Calculates the area of a spherical polygon where the sides of the polygon are great circle
+ * arcs joining the vertices.
+ *
+ * @param   {L.LatLng[]} polygon - Array of points defining vertices of the polygon
+ * @param   {number} [radius=6371e3] - (Mean) radius of earth (defaults to radius in metres).
+ * @returns {number} The area of the polygon, in the same units as radius.
+ *
+ * @example
+ *   var polygon = [new L.LatLng(0,0), new L.LatLng(1,0), new L.LatLng(0,1)];
+ *   var area = LatLng.areaOf(polygon); // 6.18e9 m²
+ */
+L.LatLng.areaOf = function(polygon, radius) {
+    // uses method due to Karney: osgeo-org.1560.x6.nabble.com/Area-of-a-spherical-polygon-td3841625.html;
+    // for each edge of the polygon, tan(E/2) = tan(Δλ/2)·(tan(φ1/2) + tan(φ2/2)) / (1 + tan(φ1/2)·tan(φ2/2))
+    // where E is the spherical excess of the trapezium obtained by extending the edge to the equator
+
+    var R = (radius === undefined) ? 6371e3 : Number(radius);
+
+    // close polygon so that last point equals first point
+    var closed = polygon[0].equals(polygon[polygon.length-1]);
+    if (!closed) polygon.push(polygon[0]);
+
+    var nVertices = polygon.length - 1;
+
+    var S = 0; // spherical excess in steradians
+    for (var v=0; v<nVertices; v++) {
+        var φ1 = polygon[v].lat.toRadians();
+        var φ2 = polygon[v+1].lat.toRadians();
+        var Δλ = (polygon[v+1].lng - polygon[v].lng).toRadians();
+        var E = 2 * Math.atan2(Math.tan(Δλ/2) * (Math.tan(φ1/2)+Math.tan(φ2/2)), 1 + Math.tan(φ1/2)*Math.tan(φ2/2));
+        S += E;
+    }
+
+    if (isPoleEnclosedBy(polygon)) S = Math.abs(S) - 2*Math.PI;
+
+    var A = Math.abs(S * R*R); // area in units of R
+
+    if (!closed) polygon.pop(); // restore polygon to pristine condition
+
+    return A;
+
+    // returns whether polygon encloses pole: sum of course deltas around pole is 0° rather than
+    // normal ±360°: blog.element84.com/determining-if-a-spherical-polygon-contains-a-pole.html
+    function isPoleEnclosedBy(polygon) {
+        // TODO: any better test than this?
+        var ΣΔ = 0;
+        var prevBrng = polygon[0].bearingTo(polygon[1]);
+        var initBrng;
+        for (var v=0; v<polygon.length-1; v++) {
+            initBrng = polygon[v].bearingTo(polygon[v+1]);
+            var finalBrng = polygon[v].finalBearingTo(polygon[v+1]);
+            ΣΔ += (initBrng - prevBrng + 540) % 360 - 180;
+            ΣΔ += (finalBrng - initBrng + 540) % 360 - 180;
+            prevBrng = finalBrng;
+        }
+        initBrng = polygon[0].bearingTo(polygon[1]);
+        ΣΔ += (initBrng - prevBrng + 540) % 360 - 180;
+        // TODO: fix (intermittant) edge crossing pole - eg (85,90), (85,0), (85,-90)
+        var enclosed = Math.abs(ΣΔ) < 90; // 0°-ish
+        return enclosed;
+    }
+};
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+/** Extend Number object with method to convert numeric degrees to radians */
+if (Number.prototype.toRadians === undefined) {
+    Number.prototype.toRadians = function() { return this * Math.PI / 180; };
+}
+
+/** Extend Number object with method to convert radians to numeric (signed) degrees */
+if (Number.prototype.toDegrees === undefined) {
+    Number.prototype.toDegrees = function() { return this * 180 / Math.PI; };
+}
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+}(L, this, document));
+
+;
+/****************************************************************************
+	leaflet-polyline.js,
+
+	(c) 2018, FCOO
+
+	https://github.com/FCOO/leaflet-polyline
+	https://github.com/FCOO
+
+    Extend L.Polyline with options to draw "shadow" and "interactive"-zone
+
+****************************************************************************/
+(function ($, L, window, document, undefined) {
+    "use strict";
+//    var beforeAndAfter = function(methodName, method, reverseOrder, notForLayerGroup) {
+    function beforeAndAfter(methodName, method, reverseOrder, notForLayerGroup) {
+        method = method || L.Polyline.prototype[methodName];
+        return function(){
+            function applyToInteractiveLayerGroup(arg){
+                if (this.interactiveLayerGroup && !notForLayerGroup)
+                    this.interactiveLayerGroup[methodName].apply(this.interactiveLayerGroup, arg);
+            }
+
+            if (this.polylineList){
+                var length = this.polylineList.length-1,
+                    firstIndex = reverseOrder ? length : 0,
+                    lastIndex  = reverseOrder ? 0 : length,
+                    result, i;
+
+                if (reverseOrder)
+                    applyToInteractiveLayerGroup.call( this, arguments );
+
+                 for (i=firstIndex; reverseOrder ? i >= lastIndex : i <= lastIndex; reverseOrder ? i-- : i++ )
+                    if (i == thisIndex)
+                        result = method.apply(this, arguments);
+                    else
+                        this.polylineList[i][methodName].apply(this.polylineList[i], arguments);
+
+                if (!reverseOrder)
+                    applyToInteractiveLayerGroup.call( this, arguments );
+
+                return result;
+            }
+            else
+                return method.apply(this, arguments);
+        };
+    };
+
+    function applyOnInteractivePolyline( methodName ){
+        return function( prototypeMethod ){
+                   return function(){
+                       return prototypeMethod.apply(this.interactivePolyline || this, arguments);
+                   };
+               }( L.Polyline.prototype[methodName] );
+    };
+
+
+    var defaultOptions = {
+            weight         : 2,  //The width of the line
+            colorName      : '', //Class-name to give the fill color
+            fillColorName  : '', //Same as colorName
+            borderColorName: '',  //Class-name to give the border color. "none" will hide the border
+            LineColorName  : '',  //Same as borderColorName
+
+
+            //fill       : false,  //True to add fill colored by fillColor or SOMETHING ELSE TODO
+            border         : false,  //True to add a semi-transparent white border to the line
+            transparent    : false,  //True to make the line semi-transparent
+            hover          : false,  //True to show big-shadow and 0.9 opacuity for lpl-transparent when hover
+            onlyShowOnHover: false,  //When true the polyline/polygon is only visible on hover and popup-open. Need {shadow: false, hover: true}
+
+            shadow               : false,  //true to add big shadow to the line
+            shadowWhenInteractive: false,  //When true a shadow is shown when the polyline is interactive
+            shadowWhenPopupOpen  : false,  //When true a big-sdhadow is shown when the popup for the marker is open
+
+            addInteractiveLayerGroup: false, //true to add this.interactiveLayerGroup to hold layers only visible when interactive is on
+            onSetInteractive        : null,  //function( on ) called when interactive is set on or off
+
+            //TODO zIndexWhenHover         : null,   //zIndex applied when the polyline/polygon is hover
+            //TODO zIndexWhenPopupOpen     : null,   //zIndex applied when the a popup is open on the polyline/polygon
+
+            className       : 'lpl-base',
+
+            borderWidth     : 1, //Width of border
+            shadowWidth     : 3, //Width of shadow
+            interactiveWidth: 5, //Width of interactive area
+
+        },
+
+        shadowIndex      = 0,
+        borderIndex      = 1,
+        thisIndex        = 2,
+        interactiveIndex = 3;
+
+    L.Polyline.include({
+        /*****************************************************
+        initialize
+        *****************************************************/
+        initialize: function( initialize ){
+            return function( latLngs, options ){
+                var _this = this;
+                function getOptions( className, interactive ){
+                    return $.extend({}, _this.options, defaultOptions, {
+                               className     : className,
+                               addInteractive: false,
+                               interactive   : interactive,
+                            });
+                }
+
+                options = options || {};
+                if (!options.addInteractive)
+                    return initialize.call(this, latLngs, options );
+
+                options.weight = options.weight || options.width || defaultOptions.weight;
+
+                initialize.call(this, latLngs, options );
+
+                this.currentOptions = {};
+
+                //polylineList contains the up to four different polyline/polygon used to create the border, shadow and interactive zones
+                this.polylineList = [null, null, null, null];
+
+                var thisConstructor = this instanceof L.Polygon ? L.polygon : L.polyline;
+
+                this.polylineList[borderIndex]      = thisConstructor( latLngs, getOptions('lpl-border',      false) );
+                this.polylineList[shadowIndex]      = thisConstructor( latLngs, getOptions('lpl-shadow',      false) );
+                this.polylineList[thisIndex]        = this;
+                this.polylineList[interactiveIndex] = thisConstructor( latLngs, getOptions('lpl-interactive', true ) );
+
+                this.interactivePolyline = this.polylineList[interactiveIndex]; //Easy access
+                this.interactivePolyline._parentPolyline = this;
+
+                if (this.options.addInteractiveLayerGroup)
+                    this.interactiveLayerGroup = L.layerGroup();
+
+                this.on( 'add', this.setStyle, this );
+                this.on( 'remove', this.setInteractiveOff, this );
+
+                this.interactivePolyline
+                        .on( 'mouseover',    this._mouseover,    this )
+                        .on( 'mouseout',     this._mouseout,     this )
+                        .on( 'popupopen',    this._popupopen,    this )
+                        .on( 'popupclose',   this._popupclose,   this );
+
+
+                return this;
+            };
+        }(L.Polyline.prototype.initialize),
+
+
+        /*****************************************************
+        setStyle
+        *****************************************************/
+        setStyle: function(setStyle){
+            return function( style ){
+                function adjust(options){
+                    options = $.extend({}, options || {});
+                    options.weight = options.width || options.weight;
+                    options.colorName = options.colorName || options.fillColorName || options.colorName;
+                    options.borderColorName = options.borderColorName || options.lineColorName || options.borderColorName;
+                    return options;
+                }
+
+                if (!this.options.addInteractive)
+                    return setStyle.call(this, style );
+
+                this.options = $.extend(true,  adjust(defaultOptions), adjust(this.options), adjust(style) );
+
+                //Create the current options in a flat object
+                var options = $.extend({},  this.options );
+
+                //If there are options in options.polyline or options.LineString for polyline etc. => copy them into options.
+                //This makes it possible to add options in geoJSON-layer with different options for polygons and lines
+                $.each(this instanceof L.Polygon ? ['polygon', 'Polygon'] : ['polyline', 'Polyline', 'lineString', 'LineString'], function(index, name){
+                    if (options[name])
+                        $.extend(options, adjust(options[name]));
+                });
+
+                var saveAddInteractive = this.options.addInteractive;
+                this.options.addInteractive = false;
+
+                this.currentOptions = options;
+
+                ///Set line-width of the differnet polyline
+                this.polylineList[thisIndex].setStyle(       {weight: options.weight });
+                this.polylineList[borderIndex].setStyle(     {weight: options.weight + 2*options.borderWidth     });
+                this.polylineList[shadowIndex].setStyle(     {weight: options.weight + 2*options.shadowWidth     });
+                this.polylineList[interactiveIndex].setStyle({weight: options.weight + 2*options.interactiveWidth});
+
+                //Add class and colors to this and shadow
+                this._addClass(thisIndex, options.className);
+                this.setColor(options.colorName);
+                this.setBorderColor(options.borderColorName);
+                this._toggleClass(thisIndex, 'lpl-transparent', !!options.transparent);
+
+                //Show or hide border
+                this.setBorder( options.border );
+
+                //Show or hide shadow
+                this.setShadow( options.shadow );
+
+                //Only show on hover
+                this._toggleClass(null, 'lpl-only-show-on-hover', !!options.onlyShowOnHover);
+
+                this.options.addInteractive = saveAddInteractive;
+
+                this.options.interactive = options.interactive;
+
+                //Check and set active-status if polyline is added to a map
+                 if (this._map)
+                    this.setInteractive(this.options.interactive);
+
+                return this;
+            };
+        }(L.Polyline.prototype.setStyle),
+
+        /*****************************************************
+        onAdd - Add Polyline, shadow- and inertactive LayerGroup
+        *****************************************************/
+        onAdd: beforeAndAfter( 'addTo', L.Polyline.prototype.onAdd ),
+
+
+
+        /*****************************************************
+        bindTooltip(), bindPopup(), unbindPopup(), closePopup(),
+        togglePopup(), isPopupOpen(), setPopupContent(),
+        getPopup() from interactivePolyline (if any)
+        *****************************************************/
+        bindTooltip    : applyOnInteractivePolyline( 'bindTooltip'     ),
+        bindPopup      : applyOnInteractivePolyline( 'bindPopup'       ),
+        unbindPopup    : applyOnInteractivePolyline( 'unbindPopup'     ),
+        closePopup     : applyOnInteractivePolyline( 'closePopup'      ),
+        togglePopup    : applyOnInteractivePolyline( 'togglePopup'     ),
+        isPopupOpen    : applyOnInteractivePolyline( 'isPopupOpen'     ),
+        setPopupContent: applyOnInteractivePolyline( 'setPopupContent' ),
+        getPopup       : applyOnInteractivePolyline( 'getPopup'        ),
+/*
+        bindTooltip
+        bindPopup
+        unbindPopup
+        closePopup      : function(closePopup)      { return function(){ return closePopup.apply(this.interactivePolyline      || this, arguments); }; }( L.Polyline.prototype.closePopup      ),
+        togglePopup     : function(togglePopup)     { return function(){ return togglePopup.apply(this.interactivePolyline     || this, arguments); }; }( L.Polyline.prototype.togglePopup     ),
+        isPopupOpen     : function(isPopupOpen)     { return function(){ return isPopupOpen.apply(this.interactivePolyline     || this, arguments); }; }( L.Polyline.prototype.isPopupOpen     ),
+        setPopupContent : function(setPopupContent) { return function(){ return setPopupContent.apply(this.interactivePolyline || this, arguments); }; }( L.Polyline.prototype.setPopupContent ),
+        getPopup        : function(getPopup)        { return function(){ return getPopup.apply(this.interactivePolyline        || this, arguments); }; }( L.Polyline.prototype.getPopup        ),
+
+*/
+
+        /*****************************************************
+        Open popup inside polygon or on polyline
+        *****************************************************/
+        openPopup: function(openPopup){
+            return function(layer, latlng){
+                var _this = this._parentPolyline || this;
+
+                //If not inside a filled polygon => adjust latlng to be on the line
+                if (latlng && (!(_this instanceof L.Polygon) ||  !_this.currentColorName) )
+                    latlng = L.GeometryUtil.closest(_this._map, _this, latlng);
+
+                openPopup.call(this, layer, latlng);
+            };
+        }(L.Polyline.prototype.openPopup),
+
+        /*****************************************************
+        setColor( colorName )
+        *****************************************************/
+        setColor: function( colorName ){
+            if (this.currentColorName)
+                this._removeClass(this, 'lpl-'+this.currentColorName);
+            if (colorName)
+                this._addClass(this, 'lpl-'+colorName);
+
+            this._toggleClass(interactiveIndex, 'lpl-fill', !!colorName);
+
+            this.currentColorName = colorName;
+        },
+
+        /*****************************************************
+        setBorderColor( borderColorName )
+        setLineColor( lineColorName )
+        *****************************************************/
+        setBorderColor: function( borderColorName ){
+            if (this.currentBorderColorName)
+                this._removeClass(this, 'lpl-border-'+this.currentBorderColorName);
+            if (borderColorName){
+                this._addClass(this, 'lpl-border-'+borderColorName);
+                if (this.polylineList && this.polylineList[shadowIndex])
+                    this.polylineList[shadowIndex].setBorderColor(borderColorName);
+            }
+            this.currentBorderColorName = borderColorName;
+        },
+        setLineColor: function( lineColorName ){
+            return this.setBorderColor( lineColorName );
+        },
+
+        /*****************************************************
+        setBorder( show )
+        Show or hide border
+        *****************************************************/
+        setBorder: function( show ){
+            this._toggleClass(borderIndex, 'lpl-show', !!show);
+        },
+
+        /*****************************************************
+        setBorder( show )
+        Show or hide shadow
+        *****************************************************/
+        setShadow: function( show ){
+            this._toggleClass(shadowIndex, 'lpl-show', !!show);
+        },
+
+        /*****************************************************
+        _addClass, _removeClass, _toggleClass:
+        Add, remove and toggle class from a polyline
+        *****************************************************/
+        _eachPolyline: function( onlyPolyline, methodName, arg ){
+            var _this = this;
+            if (onlyPolyline != null){
+                if ($.isNumeric(onlyPolyline))
+                    onlyPolyline = this.polylineList[onlyPolyline];
+                if (onlyPolyline){
+                    var $path = $(onlyPolyline._path);
+                    $path[methodName].apply($path, arg);
+                }
+            }
+            else
+                $.each(this.polylineList, function( index, polyline ){
+                   _this._eachPolyline( polyline, methodName, arg );
+                });
+        },
+
+        _addClass: function( polyline, className ){
+            this._eachPolyline( polyline, 'addClass', [className] );
+        },
+
+        _removeClass: function( polyline, className ){
+            this._eachPolyline( polyline, 'removeClass', [className] );
+        },
+
+        _toggleClass: function( polyline, className, state ){
+
+            this._eachPolyline( polyline, 'toggleClass', [className, state] );
+        },
+
+        /*****************************************************
+        _mouseover and _mouseout: Highlight polyline
+        *****************************************************/
+        _mouseover: function(/* mouseEvent */){
+             if (this.currentOptions.hover)
+                 this._addClass(null, 'lpl-hover');
+             if (this.currentOptions.onlyShowOnHover)
+                 this._removeClass(null, 'lpl-only-show-on-hover');
+        },
+
+        _mouseout: function(/* mouseEvent */){
+            if (this.currentOptions.hover)
+                 this._removeClass(null, 'lpl-hover');
+             if (this.currentOptions.onlyShowOnHover)
+                 this._addClass(null, 'lpl-only-show-on-hover');
+        },
+
+        /*****************************************************
+        _popupopen and _popupclose: Highlight polyline
+        *****************************************************/
+        _popupopen: function(){
+            if (this.currentOptions.shadowWhenPopupOpen && !this.currentOptions.shadow)
+                this._addClass(shadowIndex, 'lpl-show');
+             this._addClass(null, 'lpl-popup-open' );
+        },
+
+        _popupclose: function(){
+            if (this.currentOptions.shadowWhenPopupOpen && !this.currentOptions.shadow && !this.currentOptions.shadowWhenInteractive)
+                this._removeClass(shadowIndex, 'lpl-show');
+             this._removeClass(null, 'lpl-popup-open' );
+        },
+
+        /*****************************************************
+        If polyline has addInteractive => All mouse-evnets on polyline get caught
+        by interactivePolyline and fired on this on clostes point
+        *****************************************************/
+        onMouseEventsOnInteractivePolyline: function( fn, context, mouseEvent ){
+            //If event has latLng (==MouseEvent) => Adjust mouseEvent to closest latlng on this
+            if (mouseEvent.latlng){
+                //If not inside a filled polygon => adjust latlng to be on the line
+                if (!(this instanceof L.Polygon) ||  !this.currentColorName){
+                    mouseEvent.latlng         = L.GeometryUtil.closest(this._map, this, mouseEvent.latlng);
+                    mouseEvent.layerPoint     = this._map.latLngToLayerPoint( mouseEvent.latlng );
+                    mouseEvent.containerPoint = this._map.latLngToContainerPoint( mouseEvent.latlng );
+                }
+            }
+            fn.call(context || this, mouseEvent );
+        },
+
+        _on: function( _on ){
+            return function(type, fn, context){
+                if (this.interactivePolyline &&
+                    ([
+                        'click', 'dblclick',
+                        'mousedown', 'mouseup', 'mouseover', 'mouseout', 'mousemove',
+                        'contextmenu',
+                        'popupopen', 'popupclose',
+                        'tooltipopen', 'tooltipclose'
+                    ].indexOf(type) != -1)
+                   ){
+
+                    //Create a function to re-direct the event from this.interactivePolyline to this with latLng corrected to closest to this
+                    return _on.call(
+                        this.interactivePolyline,
+                        type,
+                        $.proxy(this.onMouseEventsOnInteractivePolyline, this, fn, context),
+                        this
+                    );
+                    }
+                else
+                    return _on.apply(this, arguments );
+            };
+        }(L.Polyline.prototype._on),
+
+
+        /*****************************************************
+        onSetInteractive
+        *****************************************************/
+        onSetInteractive: function( /*on*/){
+        },
+
+        /*****************************************************
+        setInteractive( on ) - set the polyline interactive on or off
+        setInteractiveOn     - set the polyline interactive on
+        setInteractiveOff    - set the polyline interactive off
+        *****************************************************/
+        setInteractive: function( on ){
+            if (!this.options.addInteractive) return this;
+            var originalIsInteractive = this.isInteractive;
+            if (on === undefined)
+                on = !this.isInteractive;
+
+            this.isInteractive = !!on;
+
+            //Toggle class "leaflet-interactive"
+            this._toggleClass( thisIndex,        "leaflet-interactive",  this.isInteractive);
+            this._toggleClass( interactiveIndex, "leaflet-interactive",  this.isInteractive, true);
+
+            if (this.options.shadowWhenInteractive)
+                this.setShadow( this.isInteractive );
+
+
+            //Add or remove interactiveLayerGroup
+            if (this.interactiveLayerGroup && this._map)
+                this._map[on ? 'addLayer' : 'removeLayer'](this.interactiveLayerGroup);
+
+            if (originalIsInteractive !== this.isInteractive){
+                this.onSetInteractive( this.isInteractive );
+                if (this.options.onSetInteractive)
+                    $.proxy(this.options.onSetInteractive, this.options.context || this)( this.isInteractive );
+            }
+
+            return this;
+        },
+
+        setInteractiveOn : function(){ return this.setInteractive( true  ); },
+        setInteractiveOff: function(){ return this.setInteractive( false ); },
+
+        /*****************************************************
+        setLatLngs, bringToFront, bringToBack, removeFrom:
+        All called for all polylines
+        *****************************************************/
+        setLatLngs  : beforeAndAfter('setLatLngs'  , null, false, true),
+        bringToFront: beforeAndAfter('bringToFront'                   ),
+        bringToBack : beforeAndAfter('bringToBack' , null, true       ),
+        removeFrom  : beforeAndAfter('removeFrom'                     ),
+    });
+
+}(jQuery, L, this, document));
 
