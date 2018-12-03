@@ -181,7 +181,7 @@
             largeMarkerOnLineIcon = L.bsMarkerAsIcon(colorClassName, colorClassName,  {extraClassName:'fa-lg fa-no-margin', partOfList: true, faClassName: mmmIcons.markerIcon  }),
             smallMarkerIcon       = L.bsMarkerAsIcon(colorClassName, colorClassName,  {extraClassName:'fa-xs',              partOfList: true, faClassName: mmmIcons.markerIcon  }),
             smallMarkerOnLineIcon =  L.bsMarkerAsIcon(colorClassName, colorClassName, {extraClassName:'fa-xs fa-no-margin', partOfList: true, faClassName: mmmIcons.markerIcon  }),
-            tooltipIcon           = L.bsMarkerAsIcon('white',        'black',         {extraClassName:'fa-no-margin',       partOfList: true, faClassName: mmmIcons.tooltipIcon }),
+            tooltipIcon           = L.bsMarkerAsIcon('white',        'black',         {extraClassName:'',                   partOfList: true, faClassName: mmmIcons.tooltipIcon }),
             lineIcon              = L.bsMarkerAsIcon(colorClassName, colorClassName,  {extraClassName:'fa-no-margin',       partOfList: true, faClassName: mmmIcons.lineIcon    });
 
 
