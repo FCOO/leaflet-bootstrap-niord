@@ -12658,7 +12658,7 @@ Icons for modal header inside a container
 ****************************************************/
 .header-icon-container {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   flex-shrink: 0;
   justify-content: center;
   margin-left: auto;

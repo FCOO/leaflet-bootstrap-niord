@@ -68845,7 +68845,9 @@ options
         $result.extend( bsModal_prototype );
 
         //Add close-icon and create modal content
-        options.icons = { close: { onClick: $.proxy( bsModal_prototype.close, $result) } };
+        options.icons = options.icons || {};
+        options.icons.close = { onClick: $.proxy( bsModal_prototype.close, $result) };
+
         $modalDialog._bsModalContent( options );
         $result.data('bsModalDialog', $modalDialog);
 
@@ -72043,6 +72045,13 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
 
     //Extend Niord.options
     ns.options = $.extend( true, {
+
+        //domainIcon = options for icon for popup and modal header for each domain
+        domainIcon: {
+
+        },
+
+
         //partIcon = Font-awesome icon for header of the different parts
         partIcon: {
             MAP        : 'fa-map-marker',
@@ -72163,6 +72172,10 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                 result.text.push('-', this.title );
                 break;
         }
+
+        //Add icon
+        result.icon = ns.options.domainIcon[this.domainId] || null;
+
         return result;
     };
 

@@ -20,6 +20,10 @@
     //window.Niord.options.leaflet.tileUrl = url for the tile-layer of the map inside the bsModal-window
     ns.options.leaflet.tileUrl = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
+    //window.Niord.options.leaflet.attribute = attribute for the tile-layer of the map inside the bsModal-window
+    ns.options.leaflet.attribution = '<i class="far fa-copyright"></i></i>&nbsp;<a target="_blank" href="https://www.openstreetmap.org/copyright/en">OpenStreetMap</a>';
+
+
     //window.Niord.options.leaflet.mapOptions = options for map-objects in modal-windows
     ns.options.leaflet.mapOptions = {
         zoomControl       : false,
@@ -40,6 +44,13 @@
         //maxZoom	: 18        //Maximum zoom level of the map. If not specified and at least one GridLayer or TileLayer is in the map, the highest of their maxZoom options will be used instead.
 
     };
+
+
+    //options for icon for popup and modal header for each domain
+    ns.options.domainIcon = {};
+    $.each(['FA', 'NM', 'NW', 'FE'], function(index, id){
+        ns.options.domainIcon[id] = $.bsMarkerIcon('fa-lbm-icon-niord-'+id, 'fa-lbm-icon-border-niord-'+id);
+    });
 
 
     /*
@@ -115,7 +126,13 @@
 
         map.insideExtendedModal = options.largeVersion;
 
-        L.tileLayer(ns.options.leaflet.tileUrl).addTo(map);
+        L.control.attribution({position: 'bottomright', prefix: ''}).addTo(map);
+        L.tileLayer(
+            ns.options.leaflet.tileUrl,
+            {attribution: ns.options.leaflet.attribution || ''}
+        ).addTo(map);
+
+
 
         //Save the map in the message and sync the maps in different modal-modes
         message.maps = message.maps || {};
