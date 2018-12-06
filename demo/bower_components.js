@@ -76113,7 +76113,7 @@ if (Number.prototype.toDegrees === undefined) {
             else
                 return method.apply(this, arguments);
         };
-    };
+    }
 
     function applyOnInteractivePolyline( methodName ){
         return function( prototypeMethod ){
@@ -76121,7 +76121,7 @@ if (Number.prototype.toDegrees === undefined) {
                        return prototypeMethod.apply(this.interactivePolyline || this, arguments);
                    };
                }( L.Polyline.prototype[methodName] );
-    };
+    }
 
 
     var defaultOptions = {
@@ -76283,12 +76283,6 @@ if (Number.prototype.toDegrees === undefined) {
             };
         }(L.Polyline.prototype.setStyle),
 
-        /*****************************************************
-        onAdd - Add Polyline, shadow- and inertactive LayerGroup
-        *****************************************************/
-        onAdd: beforeAndAfter( 'addTo', L.Polyline.prototype.onAdd ),
-
-
 
         /*****************************************************
         bindTooltip(), bindPopup(), unbindPopup(), closePopup(),
@@ -76303,17 +76297,6 @@ if (Number.prototype.toDegrees === undefined) {
         isPopupOpen    : applyOnInteractivePolyline( 'isPopupOpen'     ),
         setPopupContent: applyOnInteractivePolyline( 'setPopupContent' ),
         getPopup       : applyOnInteractivePolyline( 'getPopup'        ),
-/*
-        bindTooltip
-        bindPopup
-        unbindPopup
-        closePopup      : function(closePopup)      { return function(){ return closePopup.apply(this.interactivePolyline      || this, arguments); }; }( L.Polyline.prototype.closePopup      ),
-        togglePopup     : function(togglePopup)     { return function(){ return togglePopup.apply(this.interactivePolyline     || this, arguments); }; }( L.Polyline.prototype.togglePopup     ),
-        isPopupOpen     : function(isPopupOpen)     { return function(){ return isPopupOpen.apply(this.interactivePolyline     || this, arguments); }; }( L.Polyline.prototype.isPopupOpen     ),
-        setPopupContent : function(setPopupContent) { return function(){ return setPopupContent.apply(this.interactivePolyline || this, arguments); }; }( L.Polyline.prototype.setPopupContent ),
-        getPopup        : function(getPopup)        { return function(){ return getPopup.apply(this.interactivePolyline        || this, arguments); }; }( L.Polyline.prototype.getPopup        ),
-
-*/
 
         /*****************************************************
         Open popup inside polygon or on polyline
@@ -76529,14 +76512,23 @@ if (Number.prototype.toDegrees === undefined) {
         setInteractiveOn : function(){ return this.setInteractive( true  ); },
         setInteractiveOff: function(){ return this.setInteractive( false ); },
 
+
+
         /*****************************************************
-        setLatLngs, bringToFront, bringToBack, removeFrom:
+        onAdd - Add Polyline, shadow- and inertactive LayerGroup
+        *****************************************************/
+        onAdd   : beforeAndAfter( 'addTo',      L.Polyline.prototype.onAdd    ),
+        onRemove: beforeAndAfter( 'removeFrom', L.Polyline.prototype.onRemove ),
+
+        /*****************************************************
+        setLatLngs, bringToFront, bringToBack, remove,
+        removeFrom, onAdd, onRemove:
         All called for all polylines
         *****************************************************/
         setLatLngs  : beforeAndAfter('setLatLngs'  , null, false, true),
         bringToFront: beforeAndAfter('bringToFront'                   ),
         bringToBack : beforeAndAfter('bringToBack' , null, true       ),
-        removeFrom  : beforeAndAfter('removeFrom'                     ),
+
     });
 
 }(jQuery, L, this, document));

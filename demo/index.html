@@ -62,19 +62,29 @@
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors</a>'
         }).addTo(map);
 
+        var niordOnMap = true;
+        L.control.bsButton({
+            position: 'topleft',
+            icon:'fa-exchange-alt',
+            onClick: function(){
+                niordOnMap = !niordOnMap;
+                if (niordOnMap)
+                    niord.addTo(map)
+                else
+                    niord.removeFrom(map);
+            }
+        }).addTo(map)
+
         window.Niord.options.domainOnlyHover['FA'] = true;
-        map.addLayer(
-            new L.GeoJSON.Niord({
-                    domain:'FA NM FE NW',
-                    _domain:'FA FE',
-_messageId: 'NM-410-18',
-_messageId: 'NM-620-18', // NM-086-18 NM-830-18 NM-853-18',
-                    _messageId: 'NM-840-18',
-                    _messageId: 'NM-734-18'
-                })
-        );
-
-
+        var niord = new L.GeoJSON.Niord({
+                domain:'FA NM FE NW',
+                _domain:'FA FE',
+                _messageId: 'NM-910-18',
+                _messageId: 'NM-620-18', // NM-086-18 NM-830-18 NM-853-18',
+                _messageId: 'NM-840-18',
+                _messageId: 'NM-734-18'
+            });
+        niord.addTo(map);
 
 //        window.Niord.messages.getMessage('NM-768-18', function( message ){
 //HER        window.Niord.messages.getMessage('NM-444-17', function( message ){
