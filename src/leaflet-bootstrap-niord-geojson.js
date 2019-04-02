@@ -35,16 +35,18 @@
     function featureTypeIsPolygon( feature ){ return featureType( feature ) == 'Polygon';  }
     function featureTypeIsPoint( feature ){ return featureType( feature ) == 'Point';  }
 
-    function latLngAsText( latLng, lat, baseOptions ){
+    function latLngAsText( latLng, baseOptions, vfFormatOptions ){
         var result = $.extend({}, baseOptions || {}),
-            vfFormatId = ns.options.vfFormatId[lat ? 'lat' : 'lng'];
+            vfFormatId = ns.options.vfFormatId.latLng;
+        vfFormatOptions = vfFormatOptions || {separator: '<br>'};
 
         if (vfFormatId){
-            result.vfFormat = vfFormatId;
-            result.vfValue  = latLng[lat ? 'lat' : 'lng'];
+            result.vfFormat  = vfFormatId;
+            result.vfValue   = latLng;
+            result.vfOptions = vfFormatOptions;
         }
         else
-            result.text = lat ? latLng.formatLat() : latLng.formatLng();
+            result.text = latLng.format(vfFormatOptions);
 
         return result;
     }
@@ -130,15 +132,14 @@
 
                 var latLng = L.GeoJSON.coordsToLatLng(feature.geometry.coordinates);
                 result.push(
-                    latLngAsText(latLng, true,  {textClass: 'text-nowrap  text-center d-block text-monospace'}),
-                    latLngAsText(latLng, false, {textClass: 'text-nowrap  text-center d-block text-monospace'})
+                    latLngAsText(latLng, {textClass: 'text-nowrap  text-center d-block text-monospace'})
                 );
 
                 return {
                     width  : tooltip ? 120 : 100,
                     content: result,
                     extended: {
-                        content: result  //Include extended to work in extended modal windows
+                        content: result  //Include extended to work in extended modal windows. TODO: Must be fixed in jquery-bootstrap
                     }
                 };
             }
