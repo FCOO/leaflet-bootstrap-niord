@@ -15471,16 +15471,10 @@ Adjust dropdown-menu
 
 /***********************************************
 leaflet-bootstrap-marker.scss
-Style for bsMarker estimated to look like Google Maps
 
-The pulsate is a djusted version of leaflet-icon-pulse by Filip Zavadil
-https://github.com/mapshakers/leaflet-icon-pulse
+lbm-type-TYPE lbm-color-COLOR [lbm-border-color-COLOR] [lbm-transparent] [lbm-puls] [lbm-hover]
 
-
-lbm-icon lbm-COLOR [lbm-border-COLOR] [lbm-transparent] [lbm-puls] [lbm-hover]
-
-
-lbm-icon          : Standard icon with black border and tin white shadow
+lbm-type-TYPE     : Sets the different type of bsMarker
 lbm-[COLOR]       : Sets inner color to [COLOR]
 lbm-border-[COLOR]: border-color = [COLOR]
 
@@ -15490,607 +15484,1082 @@ lbm-transparent   : Inner color get opacity: 0.7
 lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
 ************************************************/
 /***********************************************
-leaflet-bootstrap-marker-mixin.scss
-Style for bsMarker estimated to look like Google Maps
 
-The pulsate is an adjusted version of leaflet-icon-pulse by Filip Zavadil
+leaflet-bootstrap-marker-colors.scss
+List of avaible color-name and values
+
+************************************************/
+/***********************************************************************
+
+leaflet-bootstrap-marker-mixin.scss
+
+*************************************************************************/
+/***********************************************************************
+marker-circle-color
+Create style for bsMarkerCircle in different colors
+*************************************************************************/
+/***********************************************************************
+lbm-circle-and-icon-classes
+Create class for bsMarkerCircle named $name with color and color-border
+*************************************************************************/
+/***********************************************************************
+lbm-marker-and-icon-classes
+Create class for bsMarkerCircle named $name with color and color-border
+*************************************************************************/
+/***********************************************************************
+fa-lbm-color
+Create class for color and border-color used by L.bsMarkerAsIcon (and $.bsMarkerAsIcon)
+to create fa-icon looking like the marker
+*************************************************************************/
+.fa-lbm-color-pink {
+  color: pink; }
+
+.fa-lbm-border-color-pink {
+  color: pink; }
+
+.fa-lbm-color-purple {
+  color: purple; }
+
+.fa-lbm-border-color-purple {
+  color: purple; }
+
+.fa-lbm-color-red {
+  color: red; }
+
+.fa-lbm-border-color-red {
+  color: red; }
+
+.fa-lbm-color-orange {
+  color: orange; }
+
+.fa-lbm-border-color-orange {
+  color: orange; }
+
+.fa-lbm-color-yellow {
+  color: yellow; }
+
+.fa-lbm-border-color-yellow {
+  color: yellow; }
+
+.fa-lbm-color-green {
+  color: green; }
+
+.fa-lbm-border-color-green {
+  color: green; }
+
+.fa-lbm-color-cyan {
+  color: cyan; }
+
+.fa-lbm-border-color-cyan {
+  color: cyan; }
+
+.fa-lbm-color-blue {
+  color: blue; }
+
+.fa-lbm-border-color-blue {
+  color: blue; }
+
+.fa-lbm-color-brown {
+  color: brown; }
+
+.fa-lbm-border-color-brown {
+  color: brown; }
+
+.fa-lbm-color-white {
+  color: white; }
+
+.fa-lbm-border-color-white {
+  color: white; }
+
+.fa-lbm-color-grey {
+  color: grey; }
+
+.fa-lbm-border-color-grey {
+  color: grey; }
+
+.fa-lbm-color-black {
+  color: black; }
+
+.fa-lbm-border-color-black {
+  color: black; }
+
+.fa-lbm-color-indigo {
+  color: indigo; }
+
+.fa-lbm-border-color-indigo {
+  color: indigo; }
+
+.fa-lbm-color-teal {
+  color: teal; }
+
+.fa-lbm-border-color-teal {
+  color: teal; }
+
+.fa-lbm-color-darkgray {
+  color: darkgray; }
+
+.fa-lbm-border-color-darkgray {
+  color: darkgray; }
+
+.fa-lbm-color-primary {
+  color: #007bff; }
+
+.fa-lbm-border-color-primary {
+  color: #007bff; }
+
+.fa-lbm-color-secondary {
+  color: #6c757d; }
+
+.fa-lbm-border-color-secondary {
+  color: #6c757d; }
+
+.fa-lbm-color-success {
+  color: #28a745; }
+
+.fa-lbm-border-color-success {
+  color: #28a745; }
+
+.fa-lbm-color-info {
+  color: #17a2b8; }
+
+.fa-lbm-border-color-info {
+  color: #17a2b8; }
+
+.fa-lbm-color-warning {
+  color: #ffc107; }
+
+.fa-lbm-border-color-warning {
+  color: #ffc107; }
+
+.fa-lbm-color-danger {
+  color: #dc3545; }
+
+.fa-lbm-border-color-danger {
+  color: #dc3545; }
+
+.fa-lbm-color-light {
+  color: #f8f9fa; }
+
+.fa-lbm-border-color-light {
+  color: #f8f9fa; }
+
+.fa-lbm-color-dark {
+  color: #343a40; }
+
+.fa-lbm-border-color-dark {
+  color: #343a40; }
+
+.fa-lbm-color-standard {
+  color: #4285F4; }
+
+.fa-lbm-border-color-standard {
+  color: #4285F4; }
+
+.lbm-base .inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: transparent; }
+  .lbm-base .inner.text {
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+    letter-spacing: 0px;
+    font-weight: bold;
+    white-space: nowrap;
+    width: 100%;
+    overflow: hidden; }
+
+.lbm-base.lbm-text-is-black .inner {
+  color: #000; }
+
+.lbm-base.lbm-text-is-white .inner {
+  color: #fff; }
+
+.lbm-base.lbm-base.lbm-size-xs {
+  font-size: 8px; }
+  .lbm-base.lbm-base.lbm-size-xs.lbm-scale-40 {
+    font-size: 3px; }
+  .lbm-base.lbm-base.lbm-size-xs.lbm-scale-50 {
+    font-size: 4px; }
+  .lbm-base.lbm-base.lbm-size-xs.lbm-scale-60 {
+    font-size: 5px; }
+  .lbm-base.lbm-base.lbm-size-xs.lbm-scale-70 {
+    font-size: 6px; }
+  .lbm-base.lbm-base.lbm-size-xs.lbm-scale-80 {
+    font-size: 6px; }
+  .lbm-base.lbm-base.lbm-size-xs.lbm-scale-90 {
+    font-size: 7px; }
+  .lbm-base.lbm-base.lbm-size-xs.lbm-scale-120 {
+    font-size: 10px; }
+  .lbm-base.lbm-base.lbm-size-xs.lbm-scale-130 {
+    font-size: 10px; }
+  .lbm-base.lbm-base.lbm-size-xs.lbm-scale-150 {
+    font-size: 12px; }
+
+.lbm-base.lbm-base.lbm-size-sm {
+  font-size: 14px; }
+  .lbm-base.lbm-base.lbm-size-sm.lbm-scale-40 {
+    font-size: 6px; }
+  .lbm-base.lbm-base.lbm-size-sm.lbm-scale-50 {
+    font-size: 7px; }
+  .lbm-base.lbm-base.lbm-size-sm.lbm-scale-60 {
+    font-size: 8px; }
+  .lbm-base.lbm-base.lbm-size-sm.lbm-scale-70 {
+    font-size: 10px; }
+  .lbm-base.lbm-base.lbm-size-sm.lbm-scale-80 {
+    font-size: 11px; }
+  .lbm-base.lbm-base.lbm-size-sm.lbm-scale-90 {
+    font-size: 13px; }
+  .lbm-base.lbm-base.lbm-size-sm.lbm-scale-120 {
+    font-size: 17px; }
+  .lbm-base.lbm-base.lbm-size-sm.lbm-scale-130 {
+    font-size: 18px; }
+  .lbm-base.lbm-base.lbm-size-sm.lbm-scale-150 {
+    font-size: 21px; }
+
+.lbm-base.lbm-base.lbm-size-nl {
+  font-size: 24px; }
+  .lbm-base.lbm-base.lbm-size-nl.lbm-scale-40 {
+    font-size: 10px; }
+  .lbm-base.lbm-base.lbm-size-nl.lbm-scale-50 {
+    font-size: 12px; }
+  .lbm-base.lbm-base.lbm-size-nl.lbm-scale-60 {
+    font-size: 14px; }
+  .lbm-base.lbm-base.lbm-size-nl.lbm-scale-70 {
+    font-size: 17px; }
+  .lbm-base.lbm-base.lbm-size-nl.lbm-scale-80 {
+    font-size: 19px; }
+  .lbm-base.lbm-base.lbm-size-nl.lbm-scale-90 {
+    font-size: 22px; }
+  .lbm-base.lbm-base.lbm-size-nl.lbm-scale-120 {
+    font-size: 29px; }
+  .lbm-base.lbm-base.lbm-size-nl.lbm-scale-130 {
+    font-size: 31px; }
+  .lbm-base.lbm-base.lbm-size-nl.lbm-scale-150 {
+    font-size: 36px; }
+
+.lbm-base.lbm-base.lbm-size-lg {
+  font-size: 32px; }
+  .lbm-base.lbm-base.lbm-size-lg.lbm-scale-40 {
+    font-size: 13px; }
+  .lbm-base.lbm-base.lbm-size-lg.lbm-scale-50 {
+    font-size: 16px; }
+  .lbm-base.lbm-base.lbm-size-lg.lbm-scale-60 {
+    font-size: 19px; }
+  .lbm-base.lbm-base.lbm-size-lg.lbm-scale-70 {
+    font-size: 22px; }
+  .lbm-base.lbm-base.lbm-size-lg.lbm-scale-80 {
+    font-size: 26px; }
+  .lbm-base.lbm-base.lbm-size-lg.lbm-scale-90 {
+    font-size: 29px; }
+  .lbm-base.lbm-base.lbm-size-lg.lbm-scale-120 {
+    font-size: 38px; }
+  .lbm-base.lbm-base.lbm-size-lg.lbm-scale-130 {
+    font-size: 42px; }
+  .lbm-base.lbm-base.lbm-size-lg.lbm-scale-150 {
+    font-size: 48px; }
+
+.lbm-base.lbm-base.lbm-size-xl {
+  font-size: 42px; }
+  .lbm-base.lbm-base.lbm-size-xl.lbm-scale-40 {
+    font-size: 17px; }
+  .lbm-base.lbm-base.lbm-size-xl.lbm-scale-50 {
+    font-size: 21px; }
+  .lbm-base.lbm-base.lbm-size-xl.lbm-scale-60 {
+    font-size: 25px; }
+  .lbm-base.lbm-base.lbm-size-xl.lbm-scale-70 {
+    font-size: 29px; }
+  .lbm-base.lbm-base.lbm-size-xl.lbm-scale-80 {
+    font-size: 34px; }
+  .lbm-base.lbm-base.lbm-size-xl.lbm-scale-90 {
+    font-size: 38px; }
+  .lbm-base.lbm-base.lbm-size-xl.lbm-scale-120 {
+    font-size: 50px; }
+  .lbm-base.lbm-base.lbm-size-xl.lbm-scale-130 {
+    font-size: 55px; }
+  .lbm-base.lbm-base.lbm-size-xl.lbm-scale-150 {
+    font-size: 63px; }
+
+.lbm-base.lbm-scale-inner-40 .inner * {
+  font-size: 0.4em; }
+
+.lbm-base.lbm-scale-inner-50 .inner * {
+  font-size: 0.5em; }
+
+.lbm-base.lbm-scale-inner-60 .inner * {
+  font-size: 0.6em; }
+
+.lbm-base.lbm-scale-inner-70 .inner * {
+  font-size: 0.7em; }
+
+.lbm-base.lbm-scale-inner-80 .inner * {
+  font-size: 0.8em; }
+
+.lbm-base.lbm-scale-inner-90 .inner * {
+  font-size: 0.9em; }
+
+.lbm-base.lbm-scale-inner-120 .inner * {
+  font-size: 1.2em; }
+
+.lbm-base.lbm-scale-inner-130 .inner * {
+  font-size: 1.3em; }
+
+.lbm-base.lbm-scale-inner-150 .inner * {
+  font-size: 1.5em; }
+
+.leaflet-tooltip-icon-xs.leaflet-tooltip-bottom {
+  margin-top: 7px; }
+
+.leaflet-tooltip-icon-xs.leaflet-tooltip-top {
+  margin-top: -7px; }
+
+.leaflet-tooltip-icon-xs.leaflet-tooltip-left {
+  margin-left: -7px; }
+
+.leaflet-tooltip-icon-xs.leaflet-tooltip-right {
+  margin-left: 7px; }
+
+.leaflet-tooltip-icon-sm.leaflet-tooltip-bottom {
+  margin-top: 10px; }
+
+.leaflet-tooltip-icon-sm.leaflet-tooltip-top {
+  margin-top: -10px; }
+
+.leaflet-tooltip-icon-sm.leaflet-tooltip-left {
+  margin-left: -10px; }
+
+.leaflet-tooltip-icon-sm.leaflet-tooltip-right {
+  margin-left: 10px; }
+
+.leaflet-tooltip-icon-nl.leaflet-tooltip-bottom {
+  margin-top: 15px; }
+
+.leaflet-tooltip-icon-nl.leaflet-tooltip-top {
+  margin-top: -15px; }
+
+.leaflet-tooltip-icon-nl.leaflet-tooltip-left {
+  margin-left: -15px; }
+
+.leaflet-tooltip-icon-nl.leaflet-tooltip-right {
+  margin-left: 15px; }
+
+.leaflet-tooltip-icon-lg.leaflet-tooltip-bottom {
+  margin-top: 19px; }
+
+.leaflet-tooltip-icon-lg.leaflet-tooltip-top {
+  margin-top: -19px; }
+
+.leaflet-tooltip-icon-lg.leaflet-tooltip-left {
+  margin-left: -19px; }
+
+.leaflet-tooltip-icon-lg.leaflet-tooltip-right {
+  margin-left: 19px; }
+
+.leaflet-tooltip-icon-xl.leaflet-tooltip-bottom {
+  margin-top: 24px; }
+
+.leaflet-tooltip-icon-xl.leaflet-tooltip-top {
+  margin-top: -24px; }
+
+.leaflet-tooltip-icon-xl.leaflet-tooltip-left {
+  margin-left: -24px; }
+
+.leaflet-tooltip-icon-xl.leaflet-tooltip-right {
+  margin-left: 24px; }
+
+/********************************************************************************
+
+leaflet-bootstrap-marker-circle.scss
+Style for bsMarkerCircle estimated to look like Google Maps
+
+The pulsate is a djusted version of leaflet-icon-pulse by Filip Zavadil
 https://github.com/mapshakers/leaflet-icon-pulse
 
-lbm-icon lbm-COLOR [lbm-border-COLOR] [lbm-transparent] [lbm-puls] [lbm-hover]
-
-lbm-icon          : Standard icon with black border and tin white shadow
-lbm-[COLOR]       : Sets inner color to [COLOR]
-lbm-border-[COLOR]: border-color = [COLOR]
-
-lbm-shadow        : Shadow in same color as inner color
-lbm-puls          : Has a pulsing ring
-lbm-transparent   : Inner color get opacity: 0.7
-lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
-************************************************/
-/**********************************************************
-lbm-marker-and-icon-classes
-**********************************************************/
+********************************************************************************/
 @keyframes pulsate {
   0% {
-    transform: scale(0.1, 0.1);
+    transform: scale(0.56, 0.56);
     opacity: 0; }
   50% {
     opacity: 1; }
   100% {
-    transform: scale(1.2, 1.2);
+    transform: scale(1, 1);
     opacity: 0; } }
 
-.lbm-icon {
+.lbm-type-circle {
   opacity: 1;
   border: 2px solid black;
   box-shadow: 0px 0px 0px 1px rgba(255, 255, 255, 0.5);
-  background-color: white;
+  background-color: #fff;
   color: #000;
-  border-color: black;
-  text-align: center; }
-  .lbm-icon.lbm-thick-border {
+  border-color: #000; }
+  .lbm-type-circle.lbm-thickBorder {
     border-width: 3px; }
-  .lbm-icon.lbm-round {
+  .lbm-type-circle.lbm-round {
     border-radius: 100%; }
-    .lbm-icon.lbm-round:before {
+    .lbm-type-circle.lbm-round:before {
       border-radius: 100%; }
-  .lbm-icon.lbm-transparent {
+  .lbm-type-circle.lbm-transparent {
     background-color: rgba(255, 255, 255, 0.7); }
-    .lbm-icon.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 255, 255, 0.9); }
-  .lbm-icon.lbm-shadow, .lbm-icon.leaflet-drag-target, .lbm-icon.lbm-hover:hover {
+  .lbm-type-circle.lbm-shadow, .lbm-type-circle.leaflet-drag-target, .lbm-type-circle.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.28); }
-  .lbm-icon:before {
-    box-shadow: 0 0 6px 2px white; }
-  .lbm-icon .inner-text {
-    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    letter-spacing: 0px;
-    font-weight: bold;
-    overflow: visible;
-    white-space: nowrap;
-    width: calc(100% + 2*2px);
-    margin-left: -2px;
-    overflow: hidden; }
-  .lbm-icon:before {
+  .lbm-type-circle:before {
+    box-shadow: 0 0 6px 2px #fff; }
+  .lbm-type-circle:before {
     display: none;
     position: absolute;
     content: "";
-    height: 300%;
-    width: 300%;
-    margin: -100% 0 0 -100%; }
-  .lbm-icon.lbm-puls:before {
+    height: calc(100% + 0.8em);
+    width: calc(100% + 0.8em);
+    margin: -0.4em 0 0 -0.4em; }
+  .lbm-type-circle.lbm-puls:before {
     display: block;
     animation: pulsate 1s ease-out;
     animation-iteration-count: infinite; }
+  .lbm-type-circle .inner {
+    font-size: calc(.7em - 4px); }
 
-.lbm-icon-0 {
-  font-size: 6px;
-  line-height: 1.6666666667; }
-
-.lbm-icon-1 {
-  font-size: 10px;
-  line-height: 1.6; }
-
-.lbm-icon-2 {
-  font-size: 13px;
-  line-height: 1.5384615385; }
-
-/*
-*/
-.lbm-pink {
+.lbm-type-circle.lbm-color-pink {
   background-color: pink;
   color: #000; }
-  .lbm-pink.lbm-transparent {
+  .lbm-type-circle.lbm-color-pink.lbm-transparent {
     background-color: rgba(255, 192, 203, 0.7); }
-    .lbm-pink.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-pink.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 192, 203, 0.9); }
-  .lbm-pink.lbm-shadow, .lbm-pink.leaflet-drag-target, .lbm-pink.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-pink.lbm-shadow, .lbm-type-circle.lbm-color-pink.leaflet-drag-target, .lbm-type-circle.lbm-color-pink.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 192, 203, 0.28); }
-  .lbm-pink:before {
+  .lbm-type-circle.lbm-color-pink:before {
     box-shadow: 0 0 6px 2px pink; }
 
-.lbm-border-pink {
+.lbm-type-circle.lbm-border-color-pink {
   border-color: pink; }
 
-.fa-lbm-icon-pink {
-  color: pink; }
-
-.fa-lbm-icon-border-pink {
-  color: pink; }
-
-.lbm-purple {
+.lbm-type-circle.lbm-color-purple {
   background-color: purple;
   color: #fff; }
-  .lbm-purple.lbm-transparent {
+  .lbm-type-circle.lbm-color-purple.lbm-transparent {
     background-color: rgba(128, 0, 128, 0.7); }
-    .lbm-purple.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-purple.lbm-transparent.lbm-hover:hover {
       background-color: rgba(128, 0, 128, 0.9); }
-  .lbm-purple.lbm-shadow, .lbm-purple.leaflet-drag-target, .lbm-purple.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-purple.lbm-shadow, .lbm-type-circle.lbm-color-purple.leaflet-drag-target, .lbm-type-circle.lbm-color-purple.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(128, 0, 128, 0.28); }
-  .lbm-purple:before {
+  .lbm-type-circle.lbm-color-purple:before {
     box-shadow: 0 0 6px 2px purple; }
 
-.lbm-border-purple {
+.lbm-type-circle.lbm-border-color-purple {
   border-color: purple; }
 
-.fa-lbm-icon-purple {
-  color: purple; }
-
-.fa-lbm-icon-border-purple {
-  color: purple; }
-
-.lbm-red {
+.lbm-type-circle.lbm-color-red {
   background-color: red;
   color: #000; }
-  .lbm-red.lbm-transparent {
+  .lbm-type-circle.lbm-color-red.lbm-transparent {
     background-color: rgba(255, 0, 0, 0.7); }
-    .lbm-red.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-red.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 0, 0, 0.9); }
-  .lbm-red.lbm-shadow, .lbm-red.leaflet-drag-target, .lbm-red.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-red.lbm-shadow, .lbm-type-circle.lbm-color-red.leaflet-drag-target, .lbm-type-circle.lbm-color-red.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 0, 0, 0.28); }
-  .lbm-red:before {
+  .lbm-type-circle.lbm-color-red:before {
     box-shadow: 0 0 6px 2px red; }
 
-.lbm-border-red {
+.lbm-type-circle.lbm-border-color-red {
   border-color: red; }
 
-.fa-lbm-icon-red {
-  color: red; }
-
-.fa-lbm-icon-border-red {
-  color: red; }
-
-.lbm-orange {
+.lbm-type-circle.lbm-color-orange {
   background-color: orange;
   color: #000; }
-  .lbm-orange.lbm-transparent {
+  .lbm-type-circle.lbm-color-orange.lbm-transparent {
     background-color: rgba(255, 165, 0, 0.7); }
-    .lbm-orange.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-orange.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 165, 0, 0.9); }
-  .lbm-orange.lbm-shadow, .lbm-orange.leaflet-drag-target, .lbm-orange.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-orange.lbm-shadow, .lbm-type-circle.lbm-color-orange.leaflet-drag-target, .lbm-type-circle.lbm-color-orange.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 165, 0, 0.28); }
-  .lbm-orange:before {
+  .lbm-type-circle.lbm-color-orange:before {
     box-shadow: 0 0 6px 2px orange; }
 
-.lbm-border-orange {
+.lbm-type-circle.lbm-border-color-orange {
   border-color: orange; }
 
-.fa-lbm-icon-orange {
-  color: orange; }
-
-.fa-lbm-icon-border-orange {
-  color: orange; }
-
-.lbm-yellow {
+.lbm-type-circle.lbm-color-yellow {
   background-color: yellow;
   color: #000; }
-  .lbm-yellow.lbm-transparent {
+  .lbm-type-circle.lbm-color-yellow.lbm-transparent {
     background-color: rgba(255, 255, 0, 0.7); }
-    .lbm-yellow.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-yellow.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 255, 0, 0.9); }
-  .lbm-yellow.lbm-shadow, .lbm-yellow.leaflet-drag-target, .lbm-yellow.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-yellow.lbm-shadow, .lbm-type-circle.lbm-color-yellow.leaflet-drag-target, .lbm-type-circle.lbm-color-yellow.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 255, 0, 0.28); }
-  .lbm-yellow:before {
+  .lbm-type-circle.lbm-color-yellow:before {
     box-shadow: 0 0 6px 2px yellow; }
 
-.lbm-border-yellow {
+.lbm-type-circle.lbm-border-color-yellow {
   border-color: yellow; }
 
-.fa-lbm-icon-yellow {
-  color: yellow; }
-
-.fa-lbm-icon-border-yellow {
-  color: yellow; }
-
-.lbm-green {
+.lbm-type-circle.lbm-color-green {
   background-color: green;
   color: #fff; }
-  .lbm-green.lbm-transparent {
+  .lbm-type-circle.lbm-color-green.lbm-transparent {
     background-color: rgba(0, 128, 0, 0.7); }
-    .lbm-green.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-green.lbm-transparent.lbm-hover:hover {
       background-color: rgba(0, 128, 0, 0.9); }
-  .lbm-green.lbm-shadow, .lbm-green.leaflet-drag-target, .lbm-green.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-green.lbm-shadow, .lbm-type-circle.lbm-color-green.leaflet-drag-target, .lbm-type-circle.lbm-color-green.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(0, 128, 0, 0.28); }
-  .lbm-green:before {
+  .lbm-type-circle.lbm-color-green:before {
     box-shadow: 0 0 6px 2px green; }
 
-.lbm-border-green {
+.lbm-type-circle.lbm-border-color-green {
   border-color: green; }
 
-.fa-lbm-icon-green {
-  color: green; }
-
-.fa-lbm-icon-border-green {
-  color: green; }
-
-.lbm-cyan {
+.lbm-type-circle.lbm-color-cyan {
   background-color: cyan;
   color: #000; }
-  .lbm-cyan.lbm-transparent {
+  .lbm-type-circle.lbm-color-cyan.lbm-transparent {
     background-color: rgba(0, 255, 255, 0.7); }
-    .lbm-cyan.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-cyan.lbm-transparent.lbm-hover:hover {
       background-color: rgba(0, 255, 255, 0.9); }
-  .lbm-cyan.lbm-shadow, .lbm-cyan.leaflet-drag-target, .lbm-cyan.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-cyan.lbm-shadow, .lbm-type-circle.lbm-color-cyan.leaflet-drag-target, .lbm-type-circle.lbm-color-cyan.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(0, 255, 255, 0.28); }
-  .lbm-cyan:before {
+  .lbm-type-circle.lbm-color-cyan:before {
     box-shadow: 0 0 6px 2px cyan; }
 
-.lbm-border-cyan {
+.lbm-type-circle.lbm-border-color-cyan {
   border-color: cyan; }
 
-.fa-lbm-icon-cyan {
-  color: cyan; }
-
-.fa-lbm-icon-border-cyan {
-  color: cyan; }
-
-.lbm-blue {
+.lbm-type-circle.lbm-color-blue {
   background-color: blue;
   color: #fff; }
-  .lbm-blue.lbm-transparent {
+  .lbm-type-circle.lbm-color-blue.lbm-transparent {
     background-color: rgba(0, 0, 255, 0.7); }
-    .lbm-blue.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-blue.lbm-transparent.lbm-hover:hover {
       background-color: rgba(0, 0, 255, 0.9); }
-  .lbm-blue.lbm-shadow, .lbm-blue.leaflet-drag-target, .lbm-blue.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-blue.lbm-shadow, .lbm-type-circle.lbm-color-blue.leaflet-drag-target, .lbm-type-circle.lbm-color-blue.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(0, 0, 255, 0.28); }
-  .lbm-blue:before {
+  .lbm-type-circle.lbm-color-blue:before {
     box-shadow: 0 0 6px 2px blue; }
 
-.lbm-border-blue {
+.lbm-type-circle.lbm-border-color-blue {
   border-color: blue; }
 
-.fa-lbm-icon-blue {
-  color: blue; }
-
-.fa-lbm-icon-border-blue {
-  color: blue; }
-
-.lbm-brown {
+.lbm-type-circle.lbm-color-brown {
   background-color: brown;
   color: #fff; }
-  .lbm-brown.lbm-transparent {
+  .lbm-type-circle.lbm-color-brown.lbm-transparent {
     background-color: rgba(165, 42, 42, 0.7); }
-    .lbm-brown.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-brown.lbm-transparent.lbm-hover:hover {
       background-color: rgba(165, 42, 42, 0.9); }
-  .lbm-brown.lbm-shadow, .lbm-brown.leaflet-drag-target, .lbm-brown.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-brown.lbm-shadow, .lbm-type-circle.lbm-color-brown.leaflet-drag-target, .lbm-type-circle.lbm-color-brown.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(165, 42, 42, 0.28); }
-  .lbm-brown:before {
+  .lbm-type-circle.lbm-color-brown:before {
     box-shadow: 0 0 6px 2px brown; }
 
-.lbm-border-brown {
+.lbm-type-circle.lbm-border-color-brown {
   border-color: brown; }
 
-.fa-lbm-icon-brown {
-  color: brown; }
-
-.fa-lbm-icon-border-brown {
-  color: brown; }
-
-.lbm-white {
+.lbm-type-circle.lbm-color-white {
   background-color: white;
   color: #000; }
-  .lbm-white.lbm-transparent {
+  .lbm-type-circle.lbm-color-white.lbm-transparent {
     background-color: rgba(255, 255, 255, 0.7); }
-    .lbm-white.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-white.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 255, 255, 0.9); }
-  .lbm-white.lbm-shadow, .lbm-white.leaflet-drag-target, .lbm-white.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-white.lbm-shadow, .lbm-type-circle.lbm-color-white.leaflet-drag-target, .lbm-type-circle.lbm-color-white.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.28); }
-  .lbm-white:before {
+  .lbm-type-circle.lbm-color-white:before {
     box-shadow: 0 0 6px 2px white; }
 
-.lbm-border-white {
+.lbm-type-circle.lbm-border-color-white {
   border-color: white; }
 
-.fa-lbm-icon-white {
-  color: white; }
-
-.fa-lbm-icon-border-white {
-  color: white; }
-
-.lbm-grey {
+.lbm-type-circle.lbm-color-grey {
   background-color: grey;
   color: #000; }
-  .lbm-grey.lbm-transparent {
+  .lbm-type-circle.lbm-color-grey.lbm-transparent {
     background-color: rgba(128, 128, 128, 0.7); }
-    .lbm-grey.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-grey.lbm-transparent.lbm-hover:hover {
       background-color: rgba(128, 128, 128, 0.9); }
-  .lbm-grey.lbm-shadow, .lbm-grey.leaflet-drag-target, .lbm-grey.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-grey.lbm-shadow, .lbm-type-circle.lbm-color-grey.leaflet-drag-target, .lbm-type-circle.lbm-color-grey.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(128, 128, 128, 0.28); }
-  .lbm-grey:before {
+  .lbm-type-circle.lbm-color-grey:before {
     box-shadow: 0 0 6px 2px grey; }
 
-.lbm-border-grey {
+.lbm-type-circle.lbm-border-color-grey {
   border-color: grey; }
 
-.fa-lbm-icon-grey {
-  color: grey; }
-
-.fa-lbm-icon-border-grey {
-  color: grey; }
-
-.lbm-black {
+.lbm-type-circle.lbm-color-black {
   background-color: black;
   color: #fff; }
-  .lbm-black.lbm-transparent {
+  .lbm-type-circle.lbm-color-black.lbm-transparent {
     background-color: rgba(0, 0, 0, 0.7); }
-    .lbm-black.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-black.lbm-transparent.lbm-hover:hover {
       background-color: rgba(0, 0, 0, 0.9); }
-  .lbm-black.lbm-shadow, .lbm-black.leaflet-drag-target, .lbm-black.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-black.lbm-shadow, .lbm-type-circle.lbm-color-black.leaflet-drag-target, .lbm-type-circle.lbm-color-black.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(0, 0, 0, 0.28); }
-  .lbm-black:before {
+  .lbm-type-circle.lbm-color-black:before {
     box-shadow: 0 0 6px 2px black; }
 
-.lbm-border-black {
+.lbm-type-circle.lbm-border-color-black {
   border-color: black; }
 
-.fa-lbm-icon-black {
-  color: black; }
-
-.fa-lbm-icon-border-black {
-  color: black; }
-
-.lbm-indigo {
+.lbm-type-circle.lbm-color-indigo {
   background-color: indigo;
   color: #fff; }
-  .lbm-indigo.lbm-transparent {
+  .lbm-type-circle.lbm-color-indigo.lbm-transparent {
     background-color: rgba(75, 0, 130, 0.7); }
-    .lbm-indigo.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-indigo.lbm-transparent.lbm-hover:hover {
       background-color: rgba(75, 0, 130, 0.9); }
-  .lbm-indigo.lbm-shadow, .lbm-indigo.leaflet-drag-target, .lbm-indigo.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-indigo.lbm-shadow, .lbm-type-circle.lbm-color-indigo.leaflet-drag-target, .lbm-type-circle.lbm-color-indigo.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(75, 0, 130, 0.28); }
-  .lbm-indigo:before {
+  .lbm-type-circle.lbm-color-indigo:before {
     box-shadow: 0 0 6px 2px indigo; }
 
-.lbm-border-indigo {
+.lbm-type-circle.lbm-border-color-indigo {
   border-color: indigo; }
 
-.fa-lbm-icon-indigo {
-  color: indigo; }
-
-.fa-lbm-icon-border-indigo {
-  color: indigo; }
-
-.lbm-teal {
+.lbm-type-circle.lbm-color-teal {
   background-color: teal;
   color: #fff; }
-  .lbm-teal.lbm-transparent {
+  .lbm-type-circle.lbm-color-teal.lbm-transparent {
     background-color: rgba(0, 128, 128, 0.7); }
-    .lbm-teal.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-teal.lbm-transparent.lbm-hover:hover {
       background-color: rgba(0, 128, 128, 0.9); }
-  .lbm-teal.lbm-shadow, .lbm-teal.leaflet-drag-target, .lbm-teal.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-teal.lbm-shadow, .lbm-type-circle.lbm-color-teal.leaflet-drag-target, .lbm-type-circle.lbm-color-teal.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(0, 128, 128, 0.28); }
-  .lbm-teal:before {
+  .lbm-type-circle.lbm-color-teal:before {
     box-shadow: 0 0 6px 2px teal; }
 
-.lbm-border-teal {
+.lbm-type-circle.lbm-border-color-teal {
   border-color: teal; }
 
-.fa-lbm-icon-teal {
-  color: teal; }
-
-.fa-lbm-icon-border-teal {
-  color: teal; }
-
-.lbm-darkgray {
+.lbm-type-circle.lbm-color-darkgray {
   background-color: darkgray;
   color: #000; }
-  .lbm-darkgray.lbm-transparent {
+  .lbm-type-circle.lbm-color-darkgray.lbm-transparent {
     background-color: rgba(169, 169, 169, 0.7); }
-    .lbm-darkgray.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-darkgray.lbm-transparent.lbm-hover:hover {
       background-color: rgba(169, 169, 169, 0.9); }
-  .lbm-darkgray.lbm-shadow, .lbm-darkgray.leaflet-drag-target, .lbm-darkgray.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-darkgray.lbm-shadow, .lbm-type-circle.lbm-color-darkgray.leaflet-drag-target, .lbm-type-circle.lbm-color-darkgray.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(169, 169, 169, 0.28); }
-  .lbm-darkgray:before {
+  .lbm-type-circle.lbm-color-darkgray:before {
     box-shadow: 0 0 6px 2px darkgray; }
 
-.lbm-border-darkgray {
+.lbm-type-circle.lbm-border-color-darkgray {
   border-color: darkgray; }
 
-.fa-lbm-icon-darkgray {
-  color: darkgray; }
-
-.fa-lbm-icon-border-darkgray {
-  color: darkgray; }
-
-.lbm-primary {
+.lbm-type-circle.lbm-color-primary {
   background-color: #007bff;
   color: #000; }
-  .lbm-primary.lbm-transparent {
+  .lbm-type-circle.lbm-color-primary.lbm-transparent {
     background-color: rgba(0, 123, 255, 0.7); }
-    .lbm-primary.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-primary.lbm-transparent.lbm-hover:hover {
       background-color: rgba(0, 123, 255, 0.9); }
-  .lbm-primary.lbm-shadow, .lbm-primary.leaflet-drag-target, .lbm-primary.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-primary.lbm-shadow, .lbm-type-circle.lbm-color-primary.leaflet-drag-target, .lbm-type-circle.lbm-color-primary.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(0, 123, 255, 0.28); }
-  .lbm-primary:before {
+  .lbm-type-circle.lbm-color-primary:before {
     box-shadow: 0 0 6px 2px #007bff; }
 
-.lbm-border-primary {
+.lbm-type-circle.lbm-border-color-primary {
   border-color: #007bff; }
 
-.fa-lbm-icon-primary {
-  color: #007bff; }
-
-.fa-lbm-icon-border-primary {
-  color: #007bff; }
-
-.lbm-secondary {
+.lbm-type-circle.lbm-color-secondary {
   background-color: #6c757d;
   color: #fff; }
-  .lbm-secondary.lbm-transparent {
+  .lbm-type-circle.lbm-color-secondary.lbm-transparent {
     background-color: rgba(108, 117, 125, 0.7); }
-    .lbm-secondary.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-secondary.lbm-transparent.lbm-hover:hover {
       background-color: rgba(108, 117, 125, 0.9); }
-  .lbm-secondary.lbm-shadow, .lbm-secondary.leaflet-drag-target, .lbm-secondary.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-secondary.lbm-shadow, .lbm-type-circle.lbm-color-secondary.leaflet-drag-target, .lbm-type-circle.lbm-color-secondary.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(108, 117, 125, 0.28); }
-  .lbm-secondary:before {
+  .lbm-type-circle.lbm-color-secondary:before {
     box-shadow: 0 0 6px 2px #6c757d; }
 
-.lbm-border-secondary {
+.lbm-type-circle.lbm-border-color-secondary {
   border-color: #6c757d; }
 
-.fa-lbm-icon-secondary {
-  color: #6c757d; }
-
-.fa-lbm-icon-border-secondary {
-  color: #6c757d; }
-
-.lbm-success {
+.lbm-type-circle.lbm-color-success {
   background-color: #28a745;
   color: #000; }
-  .lbm-success.lbm-transparent {
+  .lbm-type-circle.lbm-color-success.lbm-transparent {
     background-color: rgba(40, 167, 69, 0.7); }
-    .lbm-success.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-success.lbm-transparent.lbm-hover:hover {
       background-color: rgba(40, 167, 69, 0.9); }
-  .lbm-success.lbm-shadow, .lbm-success.leaflet-drag-target, .lbm-success.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-success.lbm-shadow, .lbm-type-circle.lbm-color-success.leaflet-drag-target, .lbm-type-circle.lbm-color-success.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(40, 167, 69, 0.28); }
-  .lbm-success:before {
+  .lbm-type-circle.lbm-color-success:before {
     box-shadow: 0 0 6px 2px #28a745; }
 
-.lbm-border-success {
+.lbm-type-circle.lbm-border-color-success {
   border-color: #28a745; }
 
-.fa-lbm-icon-success {
-  color: #28a745; }
-
-.fa-lbm-icon-border-success {
-  color: #28a745; }
-
-.lbm-info {
+.lbm-type-circle.lbm-color-info {
   background-color: #17a2b8;
   color: #000; }
-  .lbm-info.lbm-transparent {
+  .lbm-type-circle.lbm-color-info.lbm-transparent {
     background-color: rgba(23, 162, 184, 0.7); }
-    .lbm-info.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-info.lbm-transparent.lbm-hover:hover {
       background-color: rgba(23, 162, 184, 0.9); }
-  .lbm-info.lbm-shadow, .lbm-info.leaflet-drag-target, .lbm-info.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-info.lbm-shadow, .lbm-type-circle.lbm-color-info.leaflet-drag-target, .lbm-type-circle.lbm-color-info.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(23, 162, 184, 0.28); }
-  .lbm-info:before {
+  .lbm-type-circle.lbm-color-info:before {
     box-shadow: 0 0 6px 2px #17a2b8; }
 
-.lbm-border-info {
+.lbm-type-circle.lbm-border-color-info {
   border-color: #17a2b8; }
 
-.fa-lbm-icon-info {
-  color: #17a2b8; }
-
-.fa-lbm-icon-border-info {
-  color: #17a2b8; }
-
-.lbm-warning {
+.lbm-type-circle.lbm-color-warning {
   background-color: #ffc107;
   color: #000; }
-  .lbm-warning.lbm-transparent {
+  .lbm-type-circle.lbm-color-warning.lbm-transparent {
     background-color: rgba(255, 193, 7, 0.7); }
-    .lbm-warning.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-warning.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 193, 7, 0.9); }
-  .lbm-warning.lbm-shadow, .lbm-warning.leaflet-drag-target, .lbm-warning.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-warning.lbm-shadow, .lbm-type-circle.lbm-color-warning.leaflet-drag-target, .lbm-type-circle.lbm-color-warning.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 193, 7, 0.28); }
-  .lbm-warning:before {
+  .lbm-type-circle.lbm-color-warning:before {
     box-shadow: 0 0 6px 2px #ffc107; }
 
-.lbm-border-warning {
+.lbm-type-circle.lbm-border-color-warning {
   border-color: #ffc107; }
 
-.fa-lbm-icon-warning {
-  color: #ffc107; }
-
-.fa-lbm-icon-border-warning {
-  color: #ffc107; }
-
-.lbm-danger {
+.lbm-type-circle.lbm-color-danger {
   background-color: #dc3545;
   color: #000; }
-  .lbm-danger.lbm-transparent {
+  .lbm-type-circle.lbm-color-danger.lbm-transparent {
     background-color: rgba(220, 53, 69, 0.7); }
-    .lbm-danger.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-danger.lbm-transparent.lbm-hover:hover {
       background-color: rgba(220, 53, 69, 0.9); }
-  .lbm-danger.lbm-shadow, .lbm-danger.leaflet-drag-target, .lbm-danger.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-danger.lbm-shadow, .lbm-type-circle.lbm-color-danger.leaflet-drag-target, .lbm-type-circle.lbm-color-danger.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(220, 53, 69, 0.28); }
-  .lbm-danger:before {
+  .lbm-type-circle.lbm-color-danger:before {
     box-shadow: 0 0 6px 2px #dc3545; }
 
-.lbm-border-danger {
+.lbm-type-circle.lbm-border-color-danger {
   border-color: #dc3545; }
 
-.fa-lbm-icon-danger {
-  color: #dc3545; }
-
-.fa-lbm-icon-border-danger {
-  color: #dc3545; }
-
-.lbm-light {
+.lbm-type-circle.lbm-color-light {
   background-color: #f8f9fa;
   color: #000; }
-  .lbm-light.lbm-transparent {
+  .lbm-type-circle.lbm-color-light.lbm-transparent {
     background-color: rgba(248, 249, 250, 0.7); }
-    .lbm-light.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-light.lbm-transparent.lbm-hover:hover {
       background-color: rgba(248, 249, 250, 0.9); }
-  .lbm-light.lbm-shadow, .lbm-light.leaflet-drag-target, .lbm-light.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-light.lbm-shadow, .lbm-type-circle.lbm-color-light.leaflet-drag-target, .lbm-type-circle.lbm-color-light.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(248, 249, 250, 0.28); }
-  .lbm-light:before {
+  .lbm-type-circle.lbm-color-light:before {
     box-shadow: 0 0 6px 2px #f8f9fa; }
 
-.lbm-border-light {
+.lbm-type-circle.lbm-border-color-light {
   border-color: #f8f9fa; }
 
-.fa-lbm-icon-light {
-  color: #f8f9fa; }
-
-.fa-lbm-icon-border-light {
-  color: #f8f9fa; }
-
-.lbm-dark {
+.lbm-type-circle.lbm-color-dark {
   background-color: #343a40;
   color: #fff; }
-  .lbm-dark.lbm-transparent {
+  .lbm-type-circle.lbm-color-dark.lbm-transparent {
     background-color: rgba(52, 58, 64, 0.7); }
-    .lbm-dark.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-dark.lbm-transparent.lbm-hover:hover {
       background-color: rgba(52, 58, 64, 0.9); }
-  .lbm-dark.lbm-shadow, .lbm-dark.leaflet-drag-target, .lbm-dark.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-dark.lbm-shadow, .lbm-type-circle.lbm-color-dark.leaflet-drag-target, .lbm-type-circle.lbm-color-dark.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(52, 58, 64, 0.28); }
-  .lbm-dark:before {
+  .lbm-type-circle.lbm-color-dark:before {
     box-shadow: 0 0 6px 2px #343a40; }
 
-.lbm-border-dark {
+.lbm-type-circle.lbm-border-color-dark {
   border-color: #343a40; }
 
-.fa-lbm-icon-dark {
-  color: #343a40; }
-
-.fa-lbm-icon-border-dark {
-  color: #343a40; }
-
-.lbm-standard {
+.lbm-type-circle.lbm-color-standard {
   background-color: #4285F4;
   color: #000; }
-  .lbm-standard.lbm-transparent {
+  .lbm-type-circle.lbm-color-standard.lbm-transparent {
     background-color: rgba(66, 133, 244, 0.7); }
-    .lbm-standard.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-standard.lbm-transparent.lbm-hover:hover {
       background-color: rgba(66, 133, 244, 0.9); }
-  .lbm-standard.lbm-shadow, .lbm-standard.leaflet-drag-target, .lbm-standard.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-standard.lbm-shadow, .lbm-type-circle.lbm-color-standard.leaflet-drag-target, .lbm-type-circle.lbm-color-standard.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(66, 133, 244, 0.28); }
-  .lbm-standard:before {
+  .lbm-type-circle.lbm-color-standard:before {
     box-shadow: 0 0 6px 2px #4285F4; }
 
-.lbm-border-standard {
+.lbm-type-circle.lbm-border-color-standard {
   border-color: #4285F4; }
 
-.fa-lbm-icon-standard {
-  color: #4285F4; }
+/***********************************************
 
-.fa-lbm-icon-border-standard {
-  color: #4285F4; }
+_leaflet-bootstrap-marker-icon.scss,
 
-/*
-//fa-pulsate - fontawesome class for pulsate icons
-.fa-pulsate {
+************************************************/
+@keyframes icon-pulsate {
+  0% {
+    transform: scale(1, 1);
+    opacity: 0; }
+  50% {
+    opacity: .5; }
+  100% {
+    transform: scale(1.8, 1.8);
+    opacity: 0; } }
 
-    animation: pulsate 1s ease-out;
-    animation-iteration-count: infinite;
-    animation-delay: 1.1s;
-}
+.lbm-type-icon .lbm-content-outer {
+  width: 100%;
+  height: 100%; }
 
-*/
+.lbm-type-icon .lbm-content {
+  display: block;
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  text-align: center; }
+  .lbm-type-icon .lbm-content.lbm-content-puls {
+    font-size: 1em;
+    top: 0;
+    visibility: hidden; }
+  .lbm-type-icon .lbm-content.lbm-content-shadow {
+    font-size: 1em;
+    top: -1em;
+    -webkit-text-stroke-color: rgba(255, 255, 255, 0.5);
+    -moz-text-stroke-color: rgba(255, 255, 255, 0.5);
+    -webkit-text-stroke-width: 2px;
+    -moz-text-stroke-width: 2px; }
+  .lbm-type-icon .lbm-content.lbm-content-background {
+    font-size: 1em;
+    top: -2em; }
+  .lbm-type-icon .lbm-content.lbm-content-border {
+    font-size: 1em;
+    top: -3em; }
+
+.lbm-type-icon .inner {
+  position: relative;
+  left: 0;
+  top: calc(-4em / 0.5);
+  width: 100%;
+  height: 100%;
+  line-height: 2;
+  font-size: 0.5em; }
+
+.lbm-type-icon.lbm-transparent .lbm-content-background {
+  opacity: 0.7; }
+
+.lbm-type-icon.lbm-transparent.lbm-hover:hover .lbm-content-background {
+  opacity: 0.9; }
+
+.lbm-type-icon.lbm-puls .lbm-content-puls {
+  visibility: visible;
+  animation: icon-pulsate 1s ease-out;
+  animation-iteration-count: infinite; }
+
+.lbm-type-icon.lbm-shadow .lbm-content-shadow, .lbm-type-icon.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(255, 255, 255, 0.5);
+  -moz-text-stroke-color: rgba(255, 255, 255, 0.5);
+  -webkit-text-stroke-width: 10px;
+  -moz-text-stroke-width: 10px; }
+
+.lbm-type-icon.lbm-no-fill .lbm-content-border {
+  top: -2em; }
+
+.lbm-type-icon.lbm-scale-y-40 .lbm-content {
+  line-height: 0.4; }
+  .lbm-type-icon.lbm-scale-y-40 .lbm-content.lbm-content-puls {
+    top: 0; }
+  .lbm-type-icon.lbm-scale-y-40 .lbm-content.lbm-content-shadow {
+    top: -0.4em; }
+  .lbm-type-icon.lbm-scale-y-40 .lbm-content.lbm-content-background {
+    top: -0.8em; }
+  .lbm-type-icon.lbm-scale-y-40 .lbm-content.lbm-content-border {
+    top: -1.2em; }
+
+.lbm-type-icon.lbm-scale-y-50 .lbm-content {
+  line-height: 0.5; }
+  .lbm-type-icon.lbm-scale-y-50 .lbm-content.lbm-content-puls {
+    top: 0; }
+  .lbm-type-icon.lbm-scale-y-50 .lbm-content.lbm-content-shadow {
+    top: -0.5em; }
+  .lbm-type-icon.lbm-scale-y-50 .lbm-content.lbm-content-background {
+    top: -1em; }
+  .lbm-type-icon.lbm-scale-y-50 .lbm-content.lbm-content-border {
+    top: -1.5em; }
+
+.lbm-type-icon.lbm-scale-y-60 .lbm-content {
+  line-height: 0.6; }
+  .lbm-type-icon.lbm-scale-y-60 .lbm-content.lbm-content-puls {
+    top: 0; }
+  .lbm-type-icon.lbm-scale-y-60 .lbm-content.lbm-content-shadow {
+    top: -0.6em; }
+  .lbm-type-icon.lbm-scale-y-60 .lbm-content.lbm-content-background {
+    top: -1.2em; }
+  .lbm-type-icon.lbm-scale-y-60 .lbm-content.lbm-content-border {
+    top: -1.8em; }
+
+.lbm-type-icon.lbm-scale-y-70 .lbm-content {
+  line-height: 0.7; }
+  .lbm-type-icon.lbm-scale-y-70 .lbm-content.lbm-content-puls {
+    top: 0; }
+  .lbm-type-icon.lbm-scale-y-70 .lbm-content.lbm-content-shadow {
+    top: -0.7em; }
+  .lbm-type-icon.lbm-scale-y-70 .lbm-content.lbm-content-background {
+    top: -1.4em; }
+  .lbm-type-icon.lbm-scale-y-70 .lbm-content.lbm-content-border {
+    top: -2.1em; }
+
+.lbm-type-icon.lbm-scale-y-80 .lbm-content {
+  line-height: 0.8; }
+  .lbm-type-icon.lbm-scale-y-80 .lbm-content.lbm-content-puls {
+    top: 0; }
+  .lbm-type-icon.lbm-scale-y-80 .lbm-content.lbm-content-shadow {
+    top: -0.8em; }
+  .lbm-type-icon.lbm-scale-y-80 .lbm-content.lbm-content-background {
+    top: -1.6em; }
+  .lbm-type-icon.lbm-scale-y-80 .lbm-content.lbm-content-border {
+    top: -2.4em; }
+
+.lbm-type-icon.lbm-scale-y-90 .lbm-content {
+  line-height: 0.9; }
+  .lbm-type-icon.lbm-scale-y-90 .lbm-content.lbm-content-puls {
+    top: 0; }
+  .lbm-type-icon.lbm-scale-y-90 .lbm-content.lbm-content-shadow {
+    top: -0.9em; }
+  .lbm-type-icon.lbm-scale-y-90 .lbm-content.lbm-content-background {
+    top: -1.8em; }
+  .lbm-type-icon.lbm-scale-y-90 .lbm-content.lbm-content-border {
+    top: -2.7em; }
+
+.lbm-type-icon.lbm-scale-y-120 .lbm-content {
+  line-height: 1.2; }
+  .lbm-type-icon.lbm-scale-y-120 .lbm-content.lbm-content-puls {
+    top: 0; }
+  .lbm-type-icon.lbm-scale-y-120 .lbm-content.lbm-content-shadow {
+    top: -1.2em; }
+  .lbm-type-icon.lbm-scale-y-120 .lbm-content.lbm-content-background {
+    top: -2.4em; }
+  .lbm-type-icon.lbm-scale-y-120 .lbm-content.lbm-content-border {
+    top: -3.6em; }
+
+.lbm-type-icon.lbm-scale-y-130 .lbm-content {
+  line-height: 1.3; }
+  .lbm-type-icon.lbm-scale-y-130 .lbm-content.lbm-content-puls {
+    top: 0; }
+  .lbm-type-icon.lbm-scale-y-130 .lbm-content.lbm-content-shadow {
+    top: -1.3em; }
+  .lbm-type-icon.lbm-scale-y-130 .lbm-content.lbm-content-background {
+    top: -2.6em; }
+  .lbm-type-icon.lbm-scale-y-130 .lbm-content.lbm-content-border {
+    top: -3.9em; }
+
+.lbm-type-icon.lbm-scale-y-150 .lbm-content {
+  line-height: 1.5; }
+  .lbm-type-icon.lbm-scale-y-150 .lbm-content.lbm-content-puls {
+    top: 0; }
+  .lbm-type-icon.lbm-scale-y-150 .lbm-content.lbm-content-shadow {
+    top: -1.5em; }
+  .lbm-type-icon.lbm-scale-y-150 .lbm-content.lbm-content-background {
+    top: -3em; }
+  .lbm-type-icon.lbm-scale-y-150 .lbm-content.lbm-content-border {
+    top: -4.5em; }
+
+.lbm-type-icon.lbm-color-pink.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-pink.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-pink.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(255, 192, 203, 0.28);
+  -moz-text-stroke-color: rgba(255, 192, 203, 0.28); }
+
+.lbm-type-icon.lbm-color-purple.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-purple.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-purple.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(128, 0, 128, 0.28);
+  -moz-text-stroke-color: rgba(128, 0, 128, 0.28); }
+
+.lbm-type-icon.lbm-color-red.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-red.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-red.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(255, 0, 0, 0.28);
+  -moz-text-stroke-color: rgba(255, 0, 0, 0.28); }
+
+.lbm-type-icon.lbm-color-orange.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-orange.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-orange.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(255, 165, 0, 0.28);
+  -moz-text-stroke-color: rgba(255, 165, 0, 0.28); }
+
+.lbm-type-icon.lbm-color-yellow.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-yellow.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-yellow.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(255, 255, 0, 0.28);
+  -moz-text-stroke-color: rgba(255, 255, 0, 0.28); }
+
+.lbm-type-icon.lbm-color-green.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-green.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-green.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(0, 128, 0, 0.28);
+  -moz-text-stroke-color: rgba(0, 128, 0, 0.28); }
+
+.lbm-type-icon.lbm-color-cyan.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-cyan.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-cyan.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(0, 255, 255, 0.28);
+  -moz-text-stroke-color: rgba(0, 255, 255, 0.28); }
+
+.lbm-type-icon.lbm-color-blue.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-blue.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-blue.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(0, 0, 255, 0.28);
+  -moz-text-stroke-color: rgba(0, 0, 255, 0.28); }
+
+.lbm-type-icon.lbm-color-brown.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-brown.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-brown.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(165, 42, 42, 0.28);
+  -moz-text-stroke-color: rgba(165, 42, 42, 0.28); }
+
+.lbm-type-icon.lbm-color-white.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-white.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-white.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(255, 255, 255, 0.28);
+  -moz-text-stroke-color: rgba(255, 255, 255, 0.28); }
+
+.lbm-type-icon.lbm-color-grey.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-grey.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-grey.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(128, 128, 128, 0.28);
+  -moz-text-stroke-color: rgba(128, 128, 128, 0.28); }
+
+.lbm-type-icon.lbm-color-black.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-black.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-black.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(0, 0, 0, 0.28);
+  -moz-text-stroke-color: rgba(0, 0, 0, 0.28); }
+
+.lbm-type-icon.lbm-color-indigo.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-indigo.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-indigo.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(75, 0, 130, 0.28);
+  -moz-text-stroke-color: rgba(75, 0, 130, 0.28); }
+
+.lbm-type-icon.lbm-color-teal.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-teal.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-teal.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(0, 128, 128, 0.28);
+  -moz-text-stroke-color: rgba(0, 128, 128, 0.28); }
+
+.lbm-type-icon.lbm-color-darkgray.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-darkgray.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-darkgray.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(169, 169, 169, 0.28);
+  -moz-text-stroke-color: rgba(169, 169, 169, 0.28); }
+
+.lbm-type-icon.lbm-color-primary.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-primary.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-primary.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(0, 123, 255, 0.28);
+  -moz-text-stroke-color: rgba(0, 123, 255, 0.28); }
+
+.lbm-type-icon.lbm-color-secondary.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-secondary.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-secondary.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(108, 117, 125, 0.28);
+  -moz-text-stroke-color: rgba(108, 117, 125, 0.28); }
+
+.lbm-type-icon.lbm-color-success.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-success.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-success.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(40, 167, 69, 0.28);
+  -moz-text-stroke-color: rgba(40, 167, 69, 0.28); }
+
+.lbm-type-icon.lbm-color-info.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-info.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-info.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(23, 162, 184, 0.28);
+  -moz-text-stroke-color: rgba(23, 162, 184, 0.28); }
+
+.lbm-type-icon.lbm-color-warning.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-warning.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-warning.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(255, 193, 7, 0.28);
+  -moz-text-stroke-color: rgba(255, 193, 7, 0.28); }
+
+.lbm-type-icon.lbm-color-danger.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-danger.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-danger.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(220, 53, 69, 0.28);
+  -moz-text-stroke-color: rgba(220, 53, 69, 0.28); }
+
+.lbm-type-icon.lbm-color-light.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-light.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-light.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(248, 249, 250, 0.28);
+  -moz-text-stroke-color: rgba(248, 249, 250, 0.28); }
+
+.lbm-type-icon.lbm-color-dark.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-dark.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-dark.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(52, 58, 64, 0.28);
+  -moz-text-stroke-color: rgba(52, 58, 64, 0.28); }
+
+.lbm-type-icon.lbm-color-standard.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-standard.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-standard.lbm-hover:hover .lbm-content-shadow {
+  -webkit-text-stroke-color: rgba(66, 133, 244, 0.28);
+  -moz-text-stroke-color: rgba(66, 133, 244, 0.28); }
+
+/***********************************************
+
+_leaflet-bootstrap-marker-standard.scss,
+
+Adjust font-size and top for .inner to fit inside a fa-map-marker icon
+************************************************/
+.lbm-type-icon-standard .lbm-content-outer .inner {
+  font-size: calc(.5em / 1.2);
+  top: calc(-4.1em / 0.5 * 1.2); }
 
 /***********************************************
     leaflet-polyline.scss

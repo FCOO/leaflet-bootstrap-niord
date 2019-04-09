@@ -8,27 +8,28 @@
 
 
 ************************************************/
-/***********************************************
+/***********************************************************************
+
 leaflet-bootstrap-marker-mixin.scss
-Style for bsMarker estimated to look like Google Maps
 
-The pulsate is an adjusted version of leaflet-icon-pulse by Filip Zavadil
-https://github.com/mapshakers/leaflet-icon-pulse
-
-lbm-icon lbm-COLOR [lbm-border-COLOR] [lbm-transparent] [lbm-puls] [lbm-hover]
-
-lbm-icon          : Standard icon with black border and tin white shadow
-lbm-[COLOR]       : Sets inner color to [COLOR]
-lbm-border-[COLOR]: border-color = [COLOR]
-
-lbm-shadow        : Shadow in same color as inner color
-lbm-puls          : Has a pulsing ring
-lbm-transparent   : Inner color get opacity: 0.7
-lbm-hover         : When hover: get shadow and opacity: 0.9 for ibm-transparent
-************************************************/
-/**********************************************************
+*************************************************************************/
+/***********************************************************************
+marker-circle-color
+Create style for bsMarkerCircle in different colors
+*************************************************************************/
+/***********************************************************************
+lbm-circle-and-icon-classes
+Create class for bsMarkerCircle named $name with color and color-border
+*************************************************************************/
+/***********************************************************************
 lbm-marker-and-icon-classes
-**********************************************************/
+Create class for bsMarkerCircle named $name with color and color-border
+*************************************************************************/
+/***********************************************************************
+fa-lbm-color
+Create class for color and border-color used by L.bsMarkerAsIcon (and $.bsMarkerAsIcon)
+to create fa-icon looking like the marker
+*************************************************************************/
 /***********************************************
     _leaflet-polyline-mixin.scss
 
@@ -39,25 +40,25 @@ lbm-marker-and-icon-classes
 
 ************************************************/
 /* Create the style for the four different domains */
-.lbm-niord-FA {
+.lbm-type-circle.lbm-color-niord-FA {
   background-color: white;
   color: #000; }
-  .lbm-niord-FA.lbm-transparent {
+  .lbm-type-circle.lbm-color-niord-FA.lbm-transparent {
     background-color: rgba(255, 255, 255, 0.7); }
-    .lbm-niord-FA.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-niord-FA.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 255, 255, 0.9); }
-  .lbm-niord-FA.lbm-shadow, .lbm-niord-FA.leaflet-drag-target, .lbm-niord-FA.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-niord-FA.lbm-shadow, .lbm-type-circle.lbm-color-niord-FA.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-FA.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.28); }
-  .lbm-niord-FA:before {
+  .lbm-type-circle.lbm-color-niord-FA:before {
     box-shadow: 0 0 6px 2px white; }
 
-.lbm-border-niord-FA {
+.lbm-type-circle.lbm-border-color-niord-FA {
   border-color: #7c0043; }
 
-.fa-lbm-icon-niord-FA {
+.fa-lbm-color-niord-FA {
   color: white; }
 
-.fa-lbm-icon-border-niord-FA {
+.fa-lbm-border-color-niord-FA {
   color: #7c0043; }
 
 .lpl-base.lpl-niord-FA {
@@ -67,25 +68,25 @@ lbm-marker-and-icon-classes
 .lpl-shadow.lpl-border-niord-FA {
   stroke: #7c0043; }
 
-.lbm-niord-NM {
+.lbm-type-circle.lbm-color-niord-NM {
   background-color: white;
   color: #000; }
-  .lbm-niord-NM.lbm-transparent {
+  .lbm-type-circle.lbm-color-niord-NM.lbm-transparent {
     background-color: rgba(255, 255, 255, 0.7); }
-    .lbm-niord-NM.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-niord-NM.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 255, 255, 0.9); }
-  .lbm-niord-NM.lbm-shadow, .lbm-niord-NM.leaflet-drag-target, .lbm-niord-NM.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-niord-NM.lbm-shadow, .lbm-type-circle.lbm-color-niord-NM.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-NM.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.28); }
-  .lbm-niord-NM:before {
+  .lbm-type-circle.lbm-color-niord-NM:before {
     box-shadow: 0 0 6px 2px white; }
 
-.lbm-border-niord-NM {
+.lbm-type-circle.lbm-border-color-niord-NM {
   border-color: #7c0043; }
 
-.fa-lbm-icon-niord-NM {
+.fa-lbm-color-niord-NM {
   color: white; }
 
-.fa-lbm-icon-border-niord-NM {
+.fa-lbm-border-color-niord-NM {
   color: #7c0043; }
 
 .lpl-base.lpl-niord-NM {
@@ -95,25 +96,25 @@ lbm-marker-and-icon-classes
 .lpl-shadow.lpl-border-niord-NM {
   stroke: #7c0043; }
 
-.lbm-niord-NW {
+.lbm-type-circle.lbm-color-niord-NW {
   background-color: #e2007a;
   color: #fff; }
-  .lbm-niord-NW.lbm-transparent {
+  .lbm-type-circle.lbm-color-niord-NW.lbm-transparent {
     background-color: rgba(226, 0, 122, 0.7); }
-    .lbm-niord-NW.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-niord-NW.lbm-transparent.lbm-hover:hover {
       background-color: rgba(226, 0, 122, 0.9); }
-  .lbm-niord-NW.lbm-shadow, .lbm-niord-NW.leaflet-drag-target, .lbm-niord-NW.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-niord-NW.lbm-shadow, .lbm-type-circle.lbm-color-niord-NW.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-NW.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(226, 0, 122, 0.28); }
-  .lbm-niord-NW:before {
+  .lbm-type-circle.lbm-color-niord-NW:before {
     box-shadow: 0 0 6px 2px #e2007a; }
 
-.lbm-border-niord-NW {
+.lbm-type-circle.lbm-border-color-niord-NW {
   border-color: #7c0043; }
 
-.fa-lbm-icon-niord-NW {
+.fa-lbm-color-niord-NW {
   color: #e2007a; }
 
-.fa-lbm-icon-border-niord-NW {
+.fa-lbm-border-color-niord-NW {
   color: #7c0043; }
 
 .lpl-base.lpl-niord-NW {
@@ -123,25 +124,25 @@ lbm-marker-and-icon-classes
 .lpl-shadow.lpl-border-niord-NW {
   stroke: #7c0043; }
 
-.lbm-niord-FE {
+.lbm-type-circle.lbm-color-niord-FE {
   background-color: #e2007a;
   color: #fff; }
-  .lbm-niord-FE.lbm-transparent {
+  .lbm-type-circle.lbm-color-niord-FE.lbm-transparent {
     background-color: rgba(226, 0, 122, 0.7); }
-    .lbm-niord-FE.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-niord-FE.lbm-transparent.lbm-hover:hover {
       background-color: rgba(226, 0, 122, 0.9); }
-  .lbm-niord-FE.lbm-shadow, .lbm-niord-FE.leaflet-drag-target, .lbm-niord-FE.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-niord-FE.lbm-shadow, .lbm-type-circle.lbm-color-niord-FE.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-FE.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(226, 0, 122, 0.28); }
-  .lbm-niord-FE:before {
+  .lbm-type-circle.lbm-color-niord-FE:before {
     box-shadow: 0 0 6px 2px #e2007a; }
 
-.lbm-border-niord-FE {
+.lbm-type-circle.lbm-border-color-niord-FE {
   border-color: #7c0043; }
 
-.fa-lbm-icon-niord-FE {
+.fa-lbm-color-niord-FE {
   color: #e2007a; }
 
-.fa-lbm-icon-border-niord-FE {
+.fa-lbm-border-color-niord-FE {
   color: #7c0043; }
 
 .lpl-base.lpl-niord-FE {

@@ -49,15 +49,18 @@
     //options for icon for popup and modal header for each domain
     ns.options.domainIcon = {};
     $.each(['FA', 'NM', 'NW', 'FE'], function(index, id){
-        ns.options.domainIcon[id] = $.bsMarkerIcon('fa-lbm-icon-niord-'+id, 'fa-lbm-icon-border-niord-'+id);
+        ns.options.domainIcon[id] = L.bsMarkerAsIcon('niord-'+id, 'niord-'+id);
     });
 
 
     /*
-    The map inside a modal can display the points and (poly)lines in up to tree different mode with different levels of details :
-        FULL  : All points are displayed as bsMarker size 2 and with fixed tooltips
-        NORMAL: All regular Points are displayed as bsMarker size 2. LineString and Polyline Points are displayed as small dots = bsMarker size 0
-        SMALL : All regular Points are displayed as bsMarker size 1. LineString and Polyline Points are not displayed.
+    On the map inside a modal window, the single points and the points in a (poly)line can be displayed in up to tree different mode with different levels of details.
+    All points are bsMarkerCircle with differnet size and with or without number inside
+        Mode    Single points                                       Points in (poly)line
+        -----   -------------------------------------               --------------------------------------
+        FULL  : size = 'normal' with number and fixed tooltips      size = 'normal' with number
+        NORMAL: size = 'normal' with number                         size = 'small'
+        SMALL : size = "small"                                      Not displayed
     */
 
     //In Niord const are created. mmm = modalMapMode

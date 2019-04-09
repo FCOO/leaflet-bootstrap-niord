@@ -65,7 +65,6 @@
             mode: 0,
             addInteractive: true,
             transparent   : true,
-
         },
 
         //initialize
@@ -180,6 +179,8 @@
 
         /********************************************************
         filter
+        Return true/false to set whether a point is displayed or not
+        depending on the mode (SMALL, NORMAL or FULL)
         ********************************************************/
         filter: function (feature/*, layer*/) {
             var typeIsPoint = featureTypeIsPoint(feature);
@@ -189,6 +190,7 @@
                     return true;
 
                 case ns.mmmSmall:
+                    //Do not show points in lines when displayed in small mode
                     return !feature.properties.isLinePoint;
 
                 default:
@@ -199,33 +201,44 @@
 
         /********************************************************
         pointToLayer
+        Create a marker for the point
+        The size of the marker is given by the mode and single or line point:
+        Mode    Single points                                       Points in (poly)line
+        -----   -------------------------------------               --------------------------------------
+        FULL  : size = 'normal' with number and fixed tooltips      size = 'normal' with number
+        NORMAL: size = 'normal' with number                         size = 'small'
+        SMALL : size = "small"                                      Not displayed
+
         ********************************************************/
         pointToLayer: function (feature, latlng) {
             var inModal       = !!this.options.mode,
                 pathClassName = 'niord-' + featureMessage(feature).domainId,
-                iconSize;
+                size,
+                iconSize = {width: 1, height: 1};
 
             //Defines icon-size
             switch (this.options.mode){
-                case ns.mmmFull  : iconSize = 1; break;
-                case ns.mmmNormal: iconSize = !feature.properties.isLinePoint ? 1 : 0; break;
-                case ns.mmmSmall : iconSize = 0; break;
-                default          : iconSize = 0;
+                case ns.mmmFull  : size = 'normal'; break;
+                case ns.mmmNormal: size = feature.properties.isLinePoint ? 'small' : 'normal'; break;
+                case ns.mmmSmall : size = 'small'; break;
+                default          : size = 'small';
             }
-            if (iconSize && window.bsIsTouch)
-                iconSize = 2;
 
-            var result = L.bsMarker(latlng, {
-                            draggable       : false,
+            //Special case: Adjust icon-size in full no-touch mode
+            if ((this.options.mode == ns.mmmFull) && !window.bsIsTouch){
+                iconSize = {width: 20/24, height: 20/24};
+            }
+
+            var result = L.bsMarkerCircle(latlng, {
+                            size: size,
+                            iconSize: iconSize,
+
                             colorName       : pathClassName,
                             borderColorName : pathClassName,
-                            useBigIcon      : false,
-                            iconSize        : iconSize,
-                            number          : iconSize ? feature.properties.coordIndex : undefined,
+                            number          : size == 'normal' ? feature.properties.coordIndex : undefined,
                             transparent     : !inModal,
                             hover           : true,
                             puls            : false,
-                            bigIconWhenTouch: true,
                             interactive     : true,
                             tooltip                 : this._tooltip(feature),
                             tooltipPermanent        : this.options.mode == ns.mmmFull,
