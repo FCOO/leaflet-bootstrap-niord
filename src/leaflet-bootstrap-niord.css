@@ -8,6 +8,8 @@
 
 
 ************************************************/
+/* stylelint-disable order/properties-alphabetical-order */
+/* stylelint-enable */
 /***********************************************************************
 
 leaflet-bootstrap-marker-mixin.scss
@@ -40,114 +42,114 @@ to create fa-icon looking like the marker
 
 ************************************************/
 /* Create the style for the four different domains */
-.lbm-type-circle.lbm-color-niord-FA {
+.lbm-type-circle.lbm-color-niord-fa {
   background-color: white;
   color: #000; }
-  .lbm-type-circle.lbm-color-niord-FA.lbm-transparent {
+  .lbm-type-circle.lbm-color-niord-fa.lbm-transparent {
     background-color: rgba(255, 255, 255, 0.7); }
-    .lbm-type-circle.lbm-color-niord-FA.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-niord-fa.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 255, 255, 0.9); }
-  .lbm-type-circle.lbm-color-niord-FA.lbm-shadow, .lbm-type-circle.lbm-color-niord-FA.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-FA.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-niord-fa.lbm-shadow, .lbm-type-circle.lbm-color-niord-fa.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-fa.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.28); }
-  .lbm-type-circle.lbm-color-niord-FA:before {
+  .lbm-type-circle.lbm-color-niord-fa:before {
     box-shadow: 0 0 6px 2px white; }
 
-.lbm-type-circle.lbm-border-color-niord-FA {
+.lbm-type-circle.lbm-border-color-niord-fa {
   border-color: #7c0043; }
 
-.fa-lbm-color-niord-FA {
+.fa-lbm-color-niord-fa {
   color: white; }
 
-.fa-lbm-border-color-niord-FA {
+.fa-lbm-border-color-niord-fa {
   color: #7c0043; }
 
-.lpl-base.lpl-niord-FA {
+.lpl-base.lpl-niord-fa {
   fill: white; }
 
-.lpl-base.lpl-border-niord-FA,
-.lpl-shadow.lpl-border-niord-FA {
+.lpl-base.lpl-border-niord-fa,
+.lpl-shadow.lpl-border-niord-fa {
   stroke: #7c0043; }
 
-.lbm-type-circle.lbm-color-niord-NM {
+.lbm-type-circle.lbm-color-niord-nm {
   background-color: white;
   color: #000; }
-  .lbm-type-circle.lbm-color-niord-NM.lbm-transparent {
+  .lbm-type-circle.lbm-color-niord-nm.lbm-transparent {
     background-color: rgba(255, 255, 255, 0.7); }
-    .lbm-type-circle.lbm-color-niord-NM.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-niord-nm.lbm-transparent.lbm-hover:hover {
       background-color: rgba(255, 255, 255, 0.9); }
-  .lbm-type-circle.lbm-color-niord-NM.lbm-shadow, .lbm-type-circle.lbm-color-niord-NM.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-NM.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-niord-nm.lbm-shadow, .lbm-type-circle.lbm-color-niord-nm.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-nm.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.28); }
-  .lbm-type-circle.lbm-color-niord-NM:before {
+  .lbm-type-circle.lbm-color-niord-nm:before {
     box-shadow: 0 0 6px 2px white; }
 
-.lbm-type-circle.lbm-border-color-niord-NM {
+.lbm-type-circle.lbm-border-color-niord-nm {
   border-color: #7c0043; }
 
-.fa-lbm-color-niord-NM {
+.fa-lbm-color-niord-nm {
   color: white; }
 
-.fa-lbm-border-color-niord-NM {
+.fa-lbm-border-color-niord-nm {
   color: #7c0043; }
 
-.lpl-base.lpl-niord-NM {
+.lpl-base.lpl-niord-nm {
   fill: white; }
 
-.lpl-base.lpl-border-niord-NM,
-.lpl-shadow.lpl-border-niord-NM {
+.lpl-base.lpl-border-niord-nm,
+.lpl-shadow.lpl-border-niord-nm {
   stroke: #7c0043; }
 
-.lbm-type-circle.lbm-color-niord-NW {
+.lbm-type-circle.lbm-color-niord-nw {
   background-color: #e2007a;
   color: #fff; }
-  .lbm-type-circle.lbm-color-niord-NW.lbm-transparent {
+  .lbm-type-circle.lbm-color-niord-nw.lbm-transparent {
     background-color: rgba(226, 0, 122, 0.7); }
-    .lbm-type-circle.lbm-color-niord-NW.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-niord-nw.lbm-transparent.lbm-hover:hover {
       background-color: rgba(226, 0, 122, 0.9); }
-  .lbm-type-circle.lbm-color-niord-NW.lbm-shadow, .lbm-type-circle.lbm-color-niord-NW.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-NW.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-niord-nw.lbm-shadow, .lbm-type-circle.lbm-color-niord-nw.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-nw.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(226, 0, 122, 0.28); }
-  .lbm-type-circle.lbm-color-niord-NW:before {
+  .lbm-type-circle.lbm-color-niord-nw:before {
     box-shadow: 0 0 6px 2px #e2007a; }
 
-.lbm-type-circle.lbm-border-color-niord-NW {
+.lbm-type-circle.lbm-border-color-niord-nw {
   border-color: #7c0043; }
 
-.fa-lbm-color-niord-NW {
+.fa-lbm-color-niord-nw {
   color: #e2007a; }
 
-.fa-lbm-border-color-niord-NW {
+.fa-lbm-border-color-niord-nw {
   color: #7c0043; }
 
-.lpl-base.lpl-niord-NW {
+.lpl-base.lpl-niord-nw {
   fill: #e2007a; }
 
-.lpl-base.lpl-border-niord-NW,
-.lpl-shadow.lpl-border-niord-NW {
+.lpl-base.lpl-border-niord-nw,
+.lpl-shadow.lpl-border-niord-nw {
   stroke: #7c0043; }
 
-.lbm-type-circle.lbm-color-niord-FE {
+.lbm-type-circle.lbm-color-niord-fe {
   background-color: #e2007a;
   color: #fff; }
-  .lbm-type-circle.lbm-color-niord-FE.lbm-transparent {
+  .lbm-type-circle.lbm-color-niord-fe.lbm-transparent {
     background-color: rgba(226, 0, 122, 0.7); }
-    .lbm-type-circle.lbm-color-niord-FE.lbm-transparent.lbm-hover:hover {
+    .lbm-type-circle.lbm-color-niord-fe.lbm-transparent.lbm-hover:hover {
       background-color: rgba(226, 0, 122, 0.9); }
-  .lbm-type-circle.lbm-color-niord-FE.lbm-shadow, .lbm-type-circle.lbm-color-niord-FE.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-FE.lbm-hover:hover {
+  .lbm-type-circle.lbm-color-niord-fe.lbm-shadow, .lbm-type-circle.lbm-color-niord-fe.leaflet-drag-target, .lbm-type-circle.lbm-color-niord-fe.lbm-hover:hover {
     box-shadow: 0px 0px 0px 5px rgba(226, 0, 122, 0.28); }
-  .lbm-type-circle.lbm-color-niord-FE:before {
+  .lbm-type-circle.lbm-color-niord-fe:before {
     box-shadow: 0 0 6px 2px #e2007a; }
 
-.lbm-type-circle.lbm-border-color-niord-FE {
+.lbm-type-circle.lbm-border-color-niord-fe {
   border-color: #7c0043; }
 
-.fa-lbm-color-niord-FE {
+.fa-lbm-color-niord-fe {
   color: #e2007a; }
 
-.fa-lbm-border-color-niord-FE {
+.fa-lbm-border-color-niord-fe {
   color: #7c0043; }
 
-.lpl-base.lpl-niord-FE {
+.lpl-base.lpl-niord-fe {
   fill: #e2007a; }
 
-.lpl-base.lpl-border-niord-FE,
-.lpl-shadow.lpl-border-niord-FE {
+.lpl-base.lpl-border-niord-fe,
+.lpl-shadow.lpl-border-niord-fe {
   stroke: #7c0043; }

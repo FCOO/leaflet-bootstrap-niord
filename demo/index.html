@@ -51,13 +51,46 @@
         window.bsIsTouch = false;
         window.bsIsTouch = (window.location.search =='?touch');
 
-        window.Niord.options.normalModalExtendable = true;
+        window.Niord.options.normalModalExtendable = !window.bsIsTouch;
+
+        $.valueFormat.add({
+            id    : 'TEST_DATE_WEEKDAY',
+            format: function( m ){
+                return moment(m).format('dddd DD. MMM YYYY');
+            }
+        });
+        $.valueFormat.add({
+            id    : 'TEST_DATE',
+            format: function( m ){
+                return moment(m).format("DD. MMM YYYY");
+            }
+        });
+
+        window.Niord.options.vfFormatId.date_weekday = 'TEST_DATE_WEEKDAY';
+        window.Niord.options.vfFormatId.date = 'TEST_DATE';
+
+
 
         L.LatLng.setFormat( latLngFormat.LATLNGFORMAT_DMM   ); //Change format to Degrees Decimal minutes (N65 30.258')
 //        L.LatLng.setFormat( latLngFormat.LATLNGFORMAT_NAC   ); //Change format to NAC
 
 
-        var map = L.map('map').setView([56.2, 11.5], 6);
+        var map = L.map('map', {
+            bsPositionControl: true,
+            bsPositionOptions: {
+                isExtended        : true,
+                showCursorPosition: false,
+            },
+        })
+        .setView([56.2, 11.5], 6)
+
+/*
+        .addContextmenuItems([
+            {text:'MAP: Gode',       width: 200, onClick: function(latlng){ console.log('MAP 1',this, latlng); }},
+            {text:'MAP: S.... Gode', onClick: function(latlng){ console.log('MAP 1',this, latlng); }}
+        ]);
+*/
+
 		L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 		    maxZoom: 18,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors</a>'
@@ -76,10 +109,10 @@
             }
         }).addTo(map)
 
-        window.Niord.options.domainOnlyHover['FA'] = true;
+        window.Niord.options.domainOnlyHover['fa'] = true;
         var niord = new L.GeoJSON.Niord({
-                domain:'FA NM FE NW',
-                _domain:'FA FE',
+                domain:'fa nm fe nw',
+                _domain:'fa fe',
                 _messageId: 'NM-910-18',
                 _messageId: 'NM-620-18', // NM-086-18 NM-830-18 NM-853-18',
                 _messageId: 'NM-840-18',

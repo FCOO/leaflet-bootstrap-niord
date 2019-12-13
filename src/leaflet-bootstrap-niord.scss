@@ -40,16 +40,16 @@ $dark-purple: #e2007a;
 //$dark-purple: rgb(139,0,139);
 $darkest-purple: darken($dark-purple, 20%);
 
-//FA - All Danish firing areas are defined as miscellaneous Notices to Mariners in the "niord-fa" domain.
-@include niord( 'FA', white, $darkest-purple);
+//fa - All Danish firing areas are defined as miscellaneous Notices to Mariners in the "niord-fa" domain.
+@include niord( 'fa', white, $darkest-purple);
 
-//NM - All Danish Notices to Mariners are produced in the "niord-nm" domain.
-@include niord( 'NM', white, $darkest-purple);
+//nm - All Danish Notices to Mariners are produced in the "niord-nm" domain.
+@include niord( 'nm', white, $darkest-purple);
 
-//NW - All Danish navigational warnings are produced in the "niord-nw" domain.
-@include niord( 'NW', $dark-purple, $darkest-purple);
+//nw - All Danish navigational warnings are produced in the "niord-nw" domain.
+@include niord( 'nw', $dark-purple, $darkest-purple);
 
-//FE - The actual firing exercises are maintained as local navigational warnings in the "niord-fe" domain.
-@include niord( 'FE', $dark-purple, $darkest-purple);
+//fe - The actual firing exercises are maintained as local navigational warnings in the "niord-fe" domain.
+@include niord( 'fe', $dark-purple, $darkest-purple);
 
 

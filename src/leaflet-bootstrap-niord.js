@@ -48,7 +48,7 @@
 
     //options for icon for popup and modal header for each domain
     ns.options.domainIcon = {};
-    $.each(['FA', 'NM', 'NW', 'FE'], function(index, id){
+    $.each(['fa', 'nm', 'nw', 'fe'], function(index, id){
         ns.options.domainIcon[id] = L.bsMarkerAsIcon('niord-'+id, 'niord-'+id);
     });
 
@@ -76,6 +76,15 @@
         tooltipIcon: 'fa-square' //TODO: Require font-awesome Pro
     };
 
+    //Extend Niord.Messages to include contextmenu
+    $.extend(ns.Messages.prototype, L.BsContextmenu.contextmenuInclude);
+
+    //Add default contextmenu-items to global object ns.messages
+    if (ns.messages.asModal)
+        ns.messages.addContextmenuItems([
+            {icon: 'fa-th-list', lineBefore: true, text: {da:'Vis alle...', en:'Show all...'}, onClick: $.proxy(ns.messages.asModal, ns.messages) },
+        ]);
+
     //Extend Niord.Message with function to sync different maps
     ns.Message.prototype.maps_update_center_and_zoom = function(event){
         if (this.doNotUpdate) return;
@@ -93,14 +102,14 @@
         this.doNotUpdate = false;
     };
 
-
     ns.Message.prototype.maps_update_geojson_layer = function( newModalMapMode ){
         if (this.doNotUpdate) return;
         this.doNotUpdate = true;
         var _this = this;
+
         $.each(this.maps, function(id, _map){
 
-            if (_map.niordDetailSelectList)
+            if (_map.niordDetailSelectList && _map.niordDetailSelectList.data('popover_radiogroup'))
                 _map.niordDetailSelectList.data('popover_radiogroup').setSelected( newModalMapMode );
 
             $.each(_map.niordGeoJSONLayers, function(id, layer){ layer.remove(); } );
@@ -205,7 +214,8 @@
             lineIcon              = L.bsMarkerAsIcon(colorClassName, colorClassName,  {extraClassName:'fa-no-margin',       partOfList: true, faClassName: mmmIcons.lineIcon    });
 
 
-        var list = [], selectedId;
+        var list       = [],
+            selectedId = message.currentModalMapMode;
         $.each( ns.mmmList, function( index, mmm ){
             var listItem = {id: mmm, icon: []};
             switch (mmm){
@@ -242,9 +252,6 @@
             }
         });
 
-
-        message.maps_update_geojson_layer( selectedId );
-
         map.niordDetailSelectList =
             $(controlButton.getContainer())
                 .bsSelectListPopover({
@@ -259,6 +266,7 @@
                     list        : list
                 });
 
+        message.maps_update_geojson_layer( selectedId );
 
         //Resize the map and set view to geoJSON-objects when the outer element is resized
         $element.resize( function(){

@@ -52,12 +52,29 @@
     }
 
 
+    function featureAddContextmenu(element, feature){
+        var message = featureMessage( feature );
+
+        element
+//            .setContextmenuHeader( message.bsHeaderOptions('SMALL') )
+            .addContextmenuItems([
+                message.bsHeaderOptions('SMALL'),
+                {
+                    icon : 'fa-window-maximize',
+                    text : {da:'Vis...', en:'Show...'},
+                    width: 120,
+                    onClick: $.proxy(message.asModal, message)
+                }
+            ])
+            .setContextmenuParent(message.messages);
+    }
+
     /***********************************************************************************************
     L.GeoJSON.Niord(options) Create a geoJSONLayer
     options
         message  : Niord.Message (optional). Only add geometry from message
         messageId: string (optional).        Only add geometry from Message with id == messageId
-        domain   : string (default = '').    Domain(s) of message to add. Eq. "NW" or "FA FE"
+        domain   : string (default = '').    Domain(s) of message to add. Eq. "nw" or "fa fe"
     ***********************************************************************************************/
     L.GeoJSON.Niord = L.GeoJSON.extend({
     //Default options
@@ -136,10 +153,7 @@
 
                 return {
                     width  : tooltip ? 120 : 100,
-                    content: result,
-                    extended: {
-                        content: result  //Include extended to work in extended modal windows. TODO: Must be fixed in jquery-bootstrap
-                    }
+                    content: result
                 };
             }
             else
@@ -194,8 +208,8 @@
                     return !feature.properties.isLinePoint;
 
                 default:
-                    //Do not show points for domains FA and FE
-                    return !typeIsPoint || ($.inArray(featureMessage(feature).domainId, ['FA', 'FE']) == -1);
+                    //Do not show points for domains fa and fe
+                    return !typeIsPoint || ($.inArray(featureMessage(feature).domainId, ['fa', 'fe']) == -1);
             }
         },
 
@@ -249,9 +263,8 @@
 
                     });
 
-            //Add popup. Bug fix: Since the large map is displayed in modal extended mode the popup content is set to be extended
+            //Add popup
             var popupOptions = this._popup(feature);
-            popupOptions.isExtended = !!this.options.insideExtendedModal;
             result.bindPopup( popupOptions );
 
             return result;
@@ -261,6 +274,9 @@
         onEachFeature
         ********************************************************/
         onEachFeature: function (feature, layer){
+            //Add contextmenu
+            featureAddContextmenu( layer, feature );
+
             if (!featureTypeIsPoint(feature) && !this.options.mode){
                 layer.bindPopup( this._popup(feature) );
                 layer.bindTooltip( this._tooltip(feature), {sticky: true} );
@@ -339,10 +355,10 @@
                     MultiPolygon    : 999
                 },
                 domainIdSortValue = {
-                    NM: 0.4,
-                    NW: 0.3,
-                    FA: 0.2,
-                    FE: 0.1
+                    nm: 0.4,
+                    nw: 0.3,
+                    fa: 0.2,
+                    fe: 0.1
                 };
 
 
