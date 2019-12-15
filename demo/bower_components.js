@@ -71703,11 +71703,29 @@ options
         }
     }
 
+    function _updateFixedAndFooterInOptions( options ){
+        //Adjust options if footer: true or extendedContent: true
+        //If options.extended.fixedContent == true and/or options.extended.footer == true => normal and extended uses same fixed and/or footer content
+        if (options.extended) {
+            //If common fixed content => add it as normal fixed content
+            if ((options.fixedContent === true) || (options.extended.fixedContent === true)) {
+                options.fixedContent = options.fixedContent === true ? options.extended.fixedContent : options.fixedContent;
+                options.extended.fixedContent = options.extended.fixedContent === true ? options.fixedContent : options.extended.fixedContent;
+            }
+
+            //If common footer content => add it as extended footer content
+            if ((options.footer === true) || (options.extended.footer === true)) {
+                options.footer = options.footer === true ? options.extended.footer : options.footer;
+                options.extended.footer = options.extended.footer === true ? options.footer : options.extended.footer;
+            }
+        }
+    }
+
+
     /******************************************************
     prototype for bsModal
     ******************************************************/
     var bsModal_prototype = {
-
         show  : function(){
                     this.modal('show');
 
@@ -71755,6 +71773,7 @@ options
             this.setHeaderIconEnabled(id, true);
         },
 
+
         /******************************************************
         update
         Empty and replace the content of the header, content, fixed-content, footer and
@@ -71767,7 +71786,7 @@ options
         update: function( options ){
             var _this = this;
             //***********************************************************
-            function updateElement( $element, newOptions, methodName, param ){
+            function updateElement( test, $element, newOptions, methodName, param ){
                 if ($element && newOptions){
                     $element.empty();
                     $element[methodName](newOptions, param);
@@ -71777,8 +71796,10 @@ options
 
             //Update header
             var $iconContainer = this.bsModal.$header.find('.header-icon-container').detach();
-            updateElement(this.bsModal.$header, options, '_bsHeaderAndIcons');
+            updateElement(0, this.bsModal.$header, options, '_bsHeaderAndIcons');
             this.bsModal.$header.append($iconContainer);
+
+            _updateFixedAndFooterInOptions(options);
 
             //Update the tree size-contents
             $.each([null, 'minimized', 'extended'], function(index, id){
@@ -71786,16 +71807,13 @@ options
                     contentOptions = id ? options[id]       : options;
 
                 if (containers && contentOptions){
-                    updateElement( containers.$fixedContent, contentOptions.fixedContent, '_bsAddHtml',       true );
-                    updateElement( containers.$content,      contentOptions.content,      '_bsAppendContent', contentOptions.contentContext );
-                    updateElement( containers.$footer,       contentOptions.footer === true ? '' : contentOptions.footer,       '_bsAddHtml' );
+                    updateElement( 1, containers.$fixedContent, contentOptions.fixedContent, '_bsAddHtml',       true );
+                    updateElement( 2, containers.$content,      contentOptions.content,      '_bsAppendContent', contentOptions.contentContext );
+                    updateElement( 3, containers.$footer,       contentOptions.footer,       '_bsAddHtml' );
                 }
             });
-
-
             return this;
         }
-
     };
 
     /******************************************************
@@ -71803,7 +71821,7 @@ options
     Create the body and footer content (exc header and bottoms)
     of a modal inside this. Created elements are saved in parts
     ******************************************************/
-    $.fn._bsModalBodyAndFooter = function(size, options, parts, className, noClassNameForFixed, noClassNameForFooter){
+    $.fn._bsModalBodyAndFooter = function(size, options, parts, className){
 
         //Set variables used to set scroll-bar (if any)
         var hasScroll       = !!options.scroll,
@@ -71825,14 +71843,15 @@ options
             $modalFixedContent = parts.$fixedContent =
                 $('<div/>')
                     .addClass('modal-body-fixed')
-                    .toggleClass(className, !noClassNameForFixed)
+                    .addClass(className || '')
                     .addClass(scrollbarClass )
-                    .toggleClass('no-vertical-padding',         !!/*options*/fixedOptions.noVerticalPadding)
-                    .toggleClass('no-horizontal-padding',       !!/*options*/fixedOptions.noHorizontalPadding)
-                    .toggleClass('modal-body-semi-transparent', !!/*options*/fixedOptions.semiTransparent)
-                    .toggleClass('modal-type-' + options.type,  !!/*options*/fixedOptions.type)
+                    .toggleClass('no-vertical-padding',         !!fixedOptions.noVerticalPadding)
+                    .toggleClass('no-horizontal-padding',       !!fixedOptions.noHorizontalPadding)
+                    .toggleClass('modal-body-semi-transparent', !!fixedOptions.semiTransparent)
+                    .toggleClass('modal-type-' + options.type,  !!fixedOptions.type)
                     .addClass(options.fixedClassName || '')
                     .appendTo( this );
+
         if (options.fixedContent)
             $modalFixedContent._bsAddHtml( options.fixedContent, true );
 
@@ -71875,9 +71894,9 @@ options
         //Add footer
         parts.$footer =
                 $('<div/>')
-                    .addClass('modal-footer-header ' + (noClassNameForFooter ? '' : className))
+                    .addClass('modal-footer-header ' + className)
                     .appendTo( this )
-                    ._bsAddHtml( options.footer === true ? '' : options.footer );
+                    ._bsAddHtml( options.footer );
 
         //Add onClick to all elements - if nedded
         if (options.onClick){
@@ -72049,23 +72068,7 @@ options
         }
 
         //If options.extended.fixedContent == true and/or options.extended.footer == true => normal and extended uses same fixed and/or footer content
-        var noClassNameForFixed = false,
-            noClassNameForFooter = false;
-        if (options.extended) {
-            //If common fixed content => add it as normal fixed content
-            if ((options.fixedContent === true) || (options.extended.fixedContent === true)) {
-                noClassNameForFixed = true;
-                options.fixedContent = options.extended.fixedContent === true ? options.fixedContent : options.extended.fixedContent;
-                options.extended.fixedContent = '';
-            }
-
-            //If common footer content => add it as extended footer content
-            if ((options.footer === true) || (options.extended.footer === true)) {
-                noClassNameForFooter = true;
-                options.extended.footer = options.extended.footer === true ? options.footer : options.extended.footer;
-                options.footer = '';
-            }
-        }
+        _updateFixedAndFooterInOptions(options);
 
         //Create minimized content
         if (options.minimized){
@@ -72103,14 +72106,14 @@ options
                     modalDiminish :
                     null;
 
-        $modalContent._bsModalBodyAndFooter('normal', options, this.bsModal, '', noClassNameForFixed, false );
+        $modalContent._bsModalBodyAndFooter('normal', options, this.bsModal);
 
         //Create extended content (if any)
         if (options.extended){
             this.bsModal.extended = {};
             if (options.extended.clickable)
                 options.extended.onClick = options.extended.onClick || modalDiminish;
-            $modalContent._bsModalBodyAndFooter( 'extended', options.extended, this.bsModal.extended, '', false, noClassNameForFooter );
+            $modalContent._bsModalBodyAndFooter( 'extended', options.extended, this.bsModal.extended);
         }
 
         //Add buttons (if any). Allways hidden for minimized
@@ -76065,7 +76068,6 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
 
         },
 
-
         //partIcon = Font-awesome icon for header of the different parts
         partIcon: {
             MAP        : 'fa-map-marker',
@@ -76111,7 +76113,12 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         isSet: function( id ){
             var value = ns.options[id];
             return !!value && ($.isFunction(value) ? value() : !!value);
-        }
+        },
+
+        //Icons for filter and reset-buttons
+        filterIcon     : 'fa-filter',
+        resetFilterIcon: null
+
 
     }, ns.options || {} );
 
@@ -77120,8 +77127,8 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
             var bsModalOptions = {
                 header     : '',
                 buttons    : [
-                    {_icon: 'fa-filter', text:{da:'Nulstil', en:'Reset'}, onClick: $.proxy(this.resetFilter, this)},
-                    {icon: 'fa-filter', text:{da:'Filter', en:'Filter'}, onClick: $.proxy(this.filterAsModalForm, this)}
+                    {icon: ns.options.resetFilterIcon, text:{da:'Nulstil', en:'Reset'}, onClick: $.proxy(this.resetFilter, this)},
+                    {icon: ns.options.filterIcon,      text:{da:'Filter', en:'Filter'}, onClick: $.proxy(this.filterAsModalForm, this)}
                 ],
                 flexWidth  : !displayInSmallTable,
                 extraWidth : !displayInSmallTable,
@@ -77233,11 +77240,12 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
 
             var modalEditOptions = {
                     header: {
-                        icon: 'fa-filter',
+                        icon: ns.options.filterIcon,
                         text: {da:'Filter', en:'Filter'},
                     },
                     closeWithoutWarning: true,
                     buttons:[{
+                        icon   : ns.options.resetFilterIcon,
                         text   : {da:'Reset', en:'Reset'},
                         onClick: $.proxy( function(){
                                      this.filterBsModalForm.setValues({
@@ -77329,7 +77337,7 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         function hasValue(value){ return (value && (value != 'ALL')); }
 
         var _this         = this,
-            textArray     = [{icon: 'fa-filter'}],
+            textArray     = [{icon: ns.options.filterIcon}],
             filterOptions = this.filterOptions,
             filterExist   = false;
 
@@ -84167,15 +84175,13 @@ https://github.com/nerik/leaflet-graphicscale
         initialize: function(options){
             this.options.onToggle = $.proxy(this._updateScales, this);
 
-            //Set default bsButtonBox-options
+            //Set default BsButtonBox-options and own options
             L.Control.BsButtonBox.prototype.initialize.call(this, options);
-
-            //Set own options
             L.Util.setOptions(this, options);
 
             //Set default tooltip-diretion
             if (!this.options.tooltipDirection)
-                this.options.tooltipDirection = (options.position.indexOf('top') !== -1) ? 'bottom' : 'top';
+                this.options.tooltipDirection = (this.options.position.indexOf('top') !== -1) ? 'bottom' : 'top';
 
             //Set popup-items
             this.options.popupList = [
@@ -84185,7 +84191,7 @@ https://github.com/nerik/leaflet-graphicscale
                 },
                 {
                     radioGroupId: 'bsScale',
-                    type:'radio',
+                    type        :'radio',
                     closeOnClick: true,
                     onChange: $.proxy(this.setMode, this),
                     list: [
@@ -84341,6 +84347,8 @@ https://github.com/nerik/leaflet-graphicscale
         },
 
         _update: function () {
+            if (!this._map._loaded) return;
+
             var bounds = this._map.getBounds(),
                 centerLat = bounds.getCenter().lat,
                 //length of an half world arc at current lat
@@ -84402,7 +84410,8 @@ https://github.com/nerik/leaflet-graphicscale
                     var totalWidthPxScore = 1-(maxUnitsWidthPx - totalWidthPx) / maxUnitsWidthPx;
                     totalWidthPxScore *= 10;
 
-                    var score = unit.unitScore + numUnitsScore + totalWidthPxScore;
+                    //Never allow scale to be wider that maxUnitsWidthPx
+                    var score = totalWidthPx > maxUnitsWidthPx ? 0 : unit.unitScore + numUnitsScore + totalWidthPxScore;
 
                     //penalty when unit / numUnits association looks weird
                     if (
@@ -84410,7 +84419,7 @@ https://github.com/nerik/leaflet-graphicscale
                         unit.unitDivision === 0.5 && numUnits === 3 ||
                         unit.unitDivision === 0.25 && numUnits === 5
                     ) {
-                        score -= 2;
+                        score -= 10;
                     }
 
                     scale.score = score;
@@ -84529,12 +84538,13 @@ https://github.com/nerik/leaflet-graphicscale
 
     //********************************************************************************
     L.Map.mergeOptions({
-        bsScaleControl: false
+        bsScaleControl: false,
+        bsScaleOptions: {}
     });
 
     L.Map.addInitHook(function () {
         if (this.options.bsScaleControl) {
-            this.bsScaleControl = new L.Control.BsScale();
+            this.bsScaleControl = new L.Control.BsScale(this.options.bsScaleOptions);
             this.addControl(this.bsScaleControl);
         }
     });
@@ -84872,6 +84882,7 @@ Options for selectiong position-format and to activate context-menu
             popupPlacement  : 'top',
             tooltipDirection: 'top',
 
+NIELS: 'DAV do',
             content     : {
                 semiTransparent    : true,
                 clickable          : true,
@@ -84888,9 +84899,10 @@ Options for selectiong position-format and to activate context-menu
         },
 
         initialize: function ( options ) {
-            //Set default BsButtonBox-options
+            //Set default BsButtonBox-options and own options
             L.Control.BsButtonBox.prototype.initialize.call(this, options);
             L.Util.setOptions(this, options);
+
 
             this.options.onToggle = $.proxy( this.setCenterMarker, this );
 
@@ -84938,11 +84950,13 @@ Options for selectiong position-format and to activate context-menu
         onAdd: function(map){
             //Create pane to contain marker for map center. Is placed just below popup-pane
             if (!map.getPane(controlPositionMarkerPane)){
-                var zIndex = $(map.getPanes().popupPane).css('z-index');
-
                 map.createPane(controlPositionMarkerPane);
-                map[controlPositionMarkerPane] = map.getPane(controlPositionMarkerPane);
-                $(map[controlPositionMarkerPane]).css('z-index', zIndex-1 );
+
+                map.on('load', function(){
+                    var zIndex = $(map.getPanes().popupPane).css('z-index');
+                    map[controlPositionMarkerPane] = map.getPane(controlPositionMarkerPane);
+                    $(map[controlPositionMarkerPane]).css('z-index', zIndex-1 );
+                });
             }
 
             //Append the cross in the center of the map
@@ -85017,8 +85031,8 @@ Options for selectiong position-format and to activate context-menu
                 ._bsAppendContent( mapCenterOptions );
 
             //Use the added class name to find the two containers for cursor- and map center position
-            this.$cursorPosition = $contentContainer.find('.cursor').parent().empty().addClass('position text-monospace').text('12345');
-            this.$centerPosition = $contentContainer.find('.center').parent().empty().addClass('position text-monospace').text('654321');
+            this.$cursorPosition = $contentContainer.find('.cursor').parent().empty().addClass('position text-monospace').html('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+            this.$centerPosition = $contentContainer.find('.center').parent().empty().addClass('position text-monospace').html('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
 
             if (this.options.inclContextmenu){
                 //Remove tooltips from the two buttons to the right
@@ -85288,7 +85302,7 @@ Can be used as leaflet standard zoom control with Bootstrap style
                 options.addOnClose = false;
             }
 
-            //Set default BsButtonBox-options
+            //Set default BsButtonBox-options and own options
             L.Control.BsButtonBox.prototype.initialize.call(this, options);
             L.Util.setOptions(this, options);
 
