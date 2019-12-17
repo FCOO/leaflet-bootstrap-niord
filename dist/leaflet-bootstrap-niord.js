@@ -497,7 +497,7 @@
         message.mapZoom   = map.getZoom();
         $.each(this.maps, function(id, map){
             if (!map.doNotUpdate)
-                map.setView(message.mapCenter, message.mapZoom, {animate: false});
+                map.setView(message.mapCenter, message.mapZoom, {animate: false, reset: true});
         });
         this.doNotUpdate = false;
     };
@@ -672,7 +672,7 @@
         $element.resize( function(){
             map.invalidateSize();
             if (map.niordMessage.geoJSONBoundsFitted)
-                map.setView( map.niordMessage.mapCenter, map.niordMessage.mapZoom, {animate: false} );
+                map.setView( map.niordMessage.mapCenter, map.niordMessage.mapZoom, {animate: false, reset: true} );
             else {
                 map.fitNiordBounds();
                 map.niordMessage.geoJSONBoundsFitted = true;
