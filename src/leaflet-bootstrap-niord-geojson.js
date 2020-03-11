@@ -386,7 +386,6 @@
             });
 
             geoJSON.features.sort( function( f1,f2 ){ return f2.properties.sortValue - f1.properties.sortValue; });
-
             this.addData(geoJSON);
 
         },
