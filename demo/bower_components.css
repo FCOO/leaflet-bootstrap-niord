@@ -5172,8 +5172,6 @@ Class ps__rail added by jquery-scroll-container
 
 
 ************************************************/
-/* stylelint-disable order/properties-alphabetical-order */
-/* stylelint-enable */
 /***********************************************
 SET AND ADJUST BOOTSTRAP DEFAULT VALUES
 ************************************************/
@@ -12494,10 +12492,10 @@ select.selectpicker {
   .has-error .bootstrap-select .dropdown-toggle,
   .error .bootstrap-select .dropdown-toggle,
   .bootstrap-select.is-invalid .dropdown-toggle,
-  .was-validated .bootstrap-select .selectpicker:invalid + .dropdown-toggle {
+  .was-validated .bootstrap-select select:invalid + .dropdown-toggle {
     border-color: #b94a48; }
   .bootstrap-select.is-valid .dropdown-toggle,
-  .was-validated .bootstrap-select .selectpicker:valid + .dropdown-toggle {
+  .was-validated .bootstrap-select select:valid + .dropdown-toggle {
     border-color: #28a745; }
   .bootstrap-select.fit-width {
     width: auto !important; }
@@ -12840,6 +12838,10 @@ BUTTON AND MODAL
 Opacity for semi-transparent and transparent content
 ************************************************************/
 /************************************************************
+SQUARE BUTTONS
+Dimentions for square buttons with only icons
+************************************************************/
+/************************************************************
 LABEL
 Font-sizes for labels are same siae as header but incl a xxs-size
 ************************************************************/
@@ -12973,6 +12975,15 @@ Bootstrap allready have the following classes
 .font-italic
 
 */
+.opacity-0 {
+  opacity: 0; }
+
+.opacity-50 {
+  opacity: 50; }
+
+.opacity-100 {
+  opacity: 100; }
+
 .container-icon-and-text:not(.fa-stack) > span:not(:last-child),
 .container-icon-and-text:not(.fa-stack) > a:not(:last-child),
 .container-icon-and-text:not(.fa-stack) > .container-stacked-icons:not(:last-child):not(.fa-no-margin),
@@ -13061,9 +13072,6 @@ div.btn, div.list-group-item {
     ************************************************************/
   /************************************************************
     Special version to have square buttons (with only icon)
-    ************************************************************/
-  /************************************************************
-    Special version to have extra large icon
     ************************************************************/ }
   .btn.btn-standard.min-width {
     min-width: 5em; }
@@ -13175,6 +13183,21 @@ div.btn, div.list-group-item {
       z-index: 4; }
     .mouse-hover .btn.btn-standard.transparent:hover:not(:focus):not(:disabled):not(.disabled) {
       border-color: rgba(0, 0, 0, 0.15); }
+    .btn.btn-standard.transparent.active {
+      color: #fff;
+      background: #007bff linear-gradient(180deg, #268fff, #007bff) repeat-x; }
+      .mouse-hover .hover .btn.btn-standard.transparent.active:not(:active):not(:disabled):not(.disabled),
+      .mouse-hover .btn.btn-standard.transparent.active.hover:not(:active):not(:disabled):not(.disabled),
+      .mouse-hover .btn.btn-standard.transparent.active:hover:not(:active):not(:disabled):not(.disabled) {
+        color: #f2f2f2;
+        background: #006fe6 linear-gradient(180deg, #2684e9, #006fe6) repeat-x; }
+      .btn.btn-standard.transparent.active:active {
+        color: #ececec;
+        background: #0069d9 linear-gradient(180deg, #267fde, #0069d9) repeat-x; }
+      .btn.btn-standard.transparent.active.disabled, .btn.btn-standard.transparent.active:disabled {
+        opacity: 1 !important;
+        color: rgba(255, 255, 255, 0.65);
+        background: #007bff linear-gradient(180deg, #268fff, #007bff) repeat-x; }
     .btn.btn-standard.transparent.disabled, .btn.btn-standard.transparent:disabled {
       opacity: 1 !important;
       color: rgba(212, 212, 212, 0.65);
@@ -13191,30 +13214,50 @@ div.btn, div.list-group-item {
     .btn.btn-standard.semi-transparent:active {
       color: #40464c;
       background: rgba(226, 230, 234, 0.75); }
+    .btn.btn-standard.semi-transparent.active {
+      color: #fff;
+      background: #007bff linear-gradient(180deg, #268fff, #007bff) repeat-x; }
+      .mouse-hover .hover .btn.btn-standard.semi-transparent.active:not(:active):not(:disabled):not(.disabled),
+      .mouse-hover .btn.btn-standard.semi-transparent.active.hover:not(:active):not(:disabled):not(.disabled),
+      .mouse-hover .btn.btn-standard.semi-transparent.active:hover:not(:active):not(:disabled):not(.disabled) {
+        color: #f2f2f2;
+        background: #006fe6 linear-gradient(180deg, #2684e9, #006fe6) repeat-x; }
+      .btn.btn-standard.semi-transparent.active:active {
+        color: #ececec;
+        background: #0069d9 linear-gradient(180deg, #267fde, #0069d9) repeat-x; }
+      .btn.btn-standard.semi-transparent.active.disabled, .btn.btn-standard.semi-transparent.active:disabled {
+        opacity: 1 !important;
+        color: rgba(255, 255, 255, 0.65);
+        background: #007bff linear-gradient(180deg, #268fff, #007bff) repeat-x; }
     .btn.btn-standard.semi-transparent.disabled, .btn.btn-standard.semi-transparent:disabled {
       opacity: 1 !important;
       color: rgba(81, 89, 97, 0.65);
       background: rgba(248, 249, 250, 0.5); }
   .btn.btn-standard.square {
-    overflow: hidden;
-    height: calc(2 * 0.3125rem + 1.5rem + 2 * 1px);
-    min-width: calc(2 * 0.3125rem + 1.5rem + 2 * 1px);
-    padding: 0.3125rem; }
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    height: 2.25rem;
+    width: 2.25rem; }
     .btn.btn-standard.square.btn-sm, .btn-group-sm > .btn.btn-standard.square {
-      height: calc(2 * 0.25rem + 1.21875rem + 2 * 1px);
-      min-width: calc(2 * 0.25rem + 1.21875rem + 2 * 1px);
-      padding: 0.25rem; }
+      height: 1.84375rem;
+      width: 1.84375rem; }
+    .btn.btn-standard.square.big-icon {
+      font-size: 1.625rem; }
+    .btn.btn-standard.square.btn-sm.big-icon, .btn-group-sm > .btn.btn-standard.square.big-icon {
+      font-size: 1.3125rem; }
     .btn.btn-standard.square > i.fa {
+      width: 1.25em;
+      height: 1em;
       text-align: center; }
-  .btn.btn-standard.big-icon {
+  .btn.btn-standard.extra-large-icon {
     line-height: 1;
     padding: 0.25rem !important;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    font-size: 1.625rem; }
-    .btn.btn-standard.big-icon.btn-sm, .btn-group-sm > .btn.btn-standard.big-icon {
-      font-size: 1.21875rem; }
+    font-size: 2rem; }
 
 /************************************************************
 Modernizr-test for elements with class="active" when selected
@@ -13250,6 +13293,11 @@ BUTTON-GROUP
   .input-group .btn-group .btn,
   .btn-group:not(.btn-group-vertical).btn-group-full-width .btn {
     flex: 1 0 10px; }
+
+.btn-group:not(.btn-group-vertical).btn-group-center-in-parent {
+  width: auto;
+  margin: auto;
+  display: block; }
 
 .btn-group.btn-group-border, .btn-group-vertical.btn-group-border {
   border: 1px solid #afb4ba;
@@ -13842,7 +13890,7 @@ bsSelectList
       color: rgba(81, 89, 97, 0.65);
       background: #f8f9fa linear-gradient(180deg, #f9fafb, #f8f9fa) repeat-x; }
   .dropdown-menu .dropdown-header, .selectList .dropdown-header {
-    font-weight: 400;
+    font-weight: 700;
     display: flex;
     align-items: center;
     cursor: default;
@@ -13868,7 +13916,7 @@ bsSelectList
   border-radius: 0.1875rem; }
 
 .selectList.selectList-sm .dropdown-header, .dropdown-menu.dropdown-menu-sm .dropdown-header {
-  font-weight: 400;
+  font-weight: 700;
   display: flex;
   align-items: center;
   cursor: default;
@@ -13892,7 +13940,7 @@ bsSelectList
   border-radius: 0.125rem; }
 
 .selectList.selectList-xs .dropdown-header, .dropdown-menu.dropdown-menu-xs .dropdown-header {
-  font-weight: 400;
+  font-weight: 700;
   display: flex;
   align-items: center;
   cursor: default;
@@ -13983,6 +14031,14 @@ body.modal-open .modal {
     display: initial !important; }
   .modal-dialog .modal-content.no-modal-minimized > .show-for-modal-minimized {
     display: none !important; }
+  .modal-dialog .modal-content.modal-minimized-always-max-height.modal-minimized > .show-for-modal-minimized {
+    display: flex !important; }
+  .modal-dialog .modal-content.modal-minimized-always-max-height.modal-minimized > .hide-for-modal-minimized {
+    display: none !important; }
+  .modal-dialog .modal-content.modal-minimized-always-max-height.no-modal-minimized > .hide-for-modal-minimized {
+    display: flex !important; }
+  .modal-dialog .modal-content.modal-minimized-always-max-height.no-modal-minimized > .show-for-modal-minimized {
+    display: none !important; }
   .modal-dialog .modal-content.modal-normal .hide-for-modal-normal {
     display: none !important; }
   .modal-dialog .modal-content.modal-normal .show-for-no-modal-normal {
@@ -13999,6 +14055,14 @@ body.modal-open .modal {
     display: initial !important; }
   .modal-dialog .modal-content.no-modal-normal > .show-for-modal-normal {
     display: none !important; }
+  .modal-dialog .modal-content.modal-normal-always-max-height.modal-normal > .show-for-modal-normal {
+    display: flex !important; }
+  .modal-dialog .modal-content.modal-normal-always-max-height.modal-normal > .hide-for-modal-normal {
+    display: none !important; }
+  .modal-dialog .modal-content.modal-normal-always-max-height.no-modal-normal > .hide-for-modal-normal {
+    display: flex !important; }
+  .modal-dialog .modal-content.modal-normal-always-max-height.no-modal-normal > .show-for-modal-normal {
+    display: none !important; }
   .modal-dialog .modal-content.modal-extended .hide-for-modal-extended {
     display: none !important; }
   .modal-dialog .modal-content.modal-extended .show-for-no-modal-extended {
@@ -14014,6 +14078,14 @@ body.modal-open .modal {
   .modal-dialog .modal-content.no-modal-extended > .hide-for-modal-extended {
     display: initial !important; }
   .modal-dialog .modal-content.no-modal-extended > .show-for-modal-extended {
+    display: none !important; }
+  .modal-dialog .modal-content.modal-extended-always-max-height.modal-extended > .show-for-modal-extended {
+    display: flex !important; }
+  .modal-dialog .modal-content.modal-extended-always-max-height.modal-extended > .hide-for-modal-extended {
+    display: none !important; }
+  .modal-dialog .modal-content.modal-extended-always-max-height.no-modal-extended > .hide-for-modal-extended {
+    display: flex !important; }
+  .modal-dialog .modal-content.modal-extended-always-max-height.no-modal-extended > .show-for-modal-extended {
     display: none !important; }
   .modal-dialog .modal-content.modal-pinned .hide-for-modal-pinned {
     display: none !important; }
@@ -14439,14 +14511,30 @@ The default bootstrap structure used for elements in a form is
   margin-bottom: 0;
   padding-top: 0.3125rem;
   padding-bottom: 0.625rem; }
+  .form-group.small-bottom-padding {
+    padding-bottom: 0.3125rem; }
+  .form-group hr {
+    margin-top: 0;
+    margin-bottom: 0.3125rem;
+    border-color: #afb4ba; }
+    .form-group hr.above-label {
+      margin-bottom: 0.9375rem; }
 
 .form-group.form-group-sm {
   padding-top: 0.25rem;
   padding-bottom: 0.5rem; }
+  .form-group.form-group-sm.small-bottom-padding {
+    padding-bottom: 0.25rem; }
+  .form-group.form-group-sm hr.above-label {
+    margin-bottom: 0.75rem; }
 
 .form-group.form-group-xs {
   padding-top: 0.125rem;
   padding-bottom: 0.25rem; }
+  .form-group.form-group-xs.small-bottom-padding {
+    padding-bottom: 0.125rem; }
+  .form-group.form-group-xs hr.above-label {
+    margin-bottom: 0.375rem; }
 
 /************************************************************
 Style for formValidation (via fcoo-form-validation)
@@ -14589,6 +14677,8 @@ Only supports the html-structure
       z-index: -1;
       background: #fff;
       content: " "; }
+    .input-group .has-float-label > span:empty {
+      display: none; }
   .input-group .has-float-label > input[type="text"] + span {
     cursor: text; }
   .input-group .has-float-label .form-control-with-label::-webkit-input-placeholder, .input-group .has-float-label .form-control-with-label::-moz-placeholder, .input-group .has-float-label .form-control-with-label:-ms-input-placeholder, .input-group .has-float-label .form-control-with-label::placeholder {
@@ -14654,7 +14744,7 @@ Style for
 .input-group.input-group-border .has-fixed-label {
   position: absolute;
   left: 0;
-  top: calc(-1 * (1px + .5em));
+  top: calc(-1 * (1px + 1px + .5em));
   cursor: default;
   z-index: 4;
   line-height: 1;
@@ -15859,6 +15949,10 @@ to create fa-icon looking like the marker
     font-size: 10px; }
   .lbm-base.lbm-base.lbm-size-xs.lbm-scale-150 {
     font-size: 12px; }
+  .lbm-base.lbm-base.lbm-size-xs.lbm-scale-180 {
+    font-size: 14px; }
+  .lbm-base.lbm-base.lbm-size-xs.lbm-scale-200 {
+    font-size: 16px; }
 
 .lbm-base.lbm-base.lbm-size-sm {
   font-size: 14px; }
@@ -15880,6 +15974,10 @@ to create fa-icon looking like the marker
     font-size: 18px; }
   .lbm-base.lbm-base.lbm-size-sm.lbm-scale-150 {
     font-size: 21px; }
+  .lbm-base.lbm-base.lbm-size-sm.lbm-scale-180 {
+    font-size: 25px; }
+  .lbm-base.lbm-base.lbm-size-sm.lbm-scale-200 {
+    font-size: 28px; }
 
 .lbm-base.lbm-base.lbm-size-nl {
   font-size: 24px; }
@@ -15901,6 +15999,10 @@ to create fa-icon looking like the marker
     font-size: 31px; }
   .lbm-base.lbm-base.lbm-size-nl.lbm-scale-150 {
     font-size: 36px; }
+  .lbm-base.lbm-base.lbm-size-nl.lbm-scale-180 {
+    font-size: 43px; }
+  .lbm-base.lbm-base.lbm-size-nl.lbm-scale-200 {
+    font-size: 48px; }
 
 .lbm-base.lbm-base.lbm-size-lg {
   font-size: 32px; }
@@ -15922,6 +16024,10 @@ to create fa-icon looking like the marker
     font-size: 42px; }
   .lbm-base.lbm-base.lbm-size-lg.lbm-scale-150 {
     font-size: 48px; }
+  .lbm-base.lbm-base.lbm-size-lg.lbm-scale-180 {
+    font-size: 58px; }
+  .lbm-base.lbm-base.lbm-size-lg.lbm-scale-200 {
+    font-size: 64px; }
 
 .lbm-base.lbm-base.lbm-size-xl {
   font-size: 42px; }
@@ -15943,6 +16049,10 @@ to create fa-icon looking like the marker
     font-size: 55px; }
   .lbm-base.lbm-base.lbm-size-xl.lbm-scale-150 {
     font-size: 63px; }
+  .lbm-base.lbm-base.lbm-size-xl.lbm-scale-180 {
+    font-size: 76px; }
+  .lbm-base.lbm-base.lbm-size-xl.lbm-scale-200 {
+    font-size: 84px; }
 
 .lbm-base.lbm-scale-inner-40 .inner * {
   font-size: 0.4em; }
@@ -15970,6 +16080,12 @@ to create fa-icon looking like the marker
 
 .lbm-base.lbm-scale-inner-150 .inner * {
   font-size: 1.5em; }
+
+.lbm-base.lbm-scale-inner-180 .inner * {
+  font-size: 1.8em; }
+
+.lbm-base.lbm-scale-inner-200 .inner * {
+  font-size: 2em; }
 
 .leaflet-tooltip-icon-xs.leaflet-tooltip-bottom {
   margin-top: 7px; }
@@ -16618,6 +16734,28 @@ _leaflet-bootstrap-marker-icon.scss,
   .lbm-type-icon.lbm-scale-y-150 .lbm-content.lbm-content-border {
     top: -4.5em; }
 
+.lbm-type-icon.lbm-scale-y-180 .lbm-content {
+  line-height: 1.8; }
+  .lbm-type-icon.lbm-scale-y-180 .lbm-content.lbm-content-puls {
+    top: 0; }
+  .lbm-type-icon.lbm-scale-y-180 .lbm-content.lbm-content-shadow {
+    top: -1.8em; }
+  .lbm-type-icon.lbm-scale-y-180 .lbm-content.lbm-content-background {
+    top: -3.6em; }
+  .lbm-type-icon.lbm-scale-y-180 .lbm-content.lbm-content-border {
+    top: -5.4em; }
+
+.lbm-type-icon.lbm-scale-y-200 .lbm-content {
+  line-height: 2; }
+  .lbm-type-icon.lbm-scale-y-200 .lbm-content.lbm-content-puls {
+    top: 0; }
+  .lbm-type-icon.lbm-scale-y-200 .lbm-content.lbm-content-shadow {
+    top: -2em; }
+  .lbm-type-icon.lbm-scale-y-200 .lbm-content.lbm-content-background {
+    top: -4em; }
+  .lbm-type-icon.lbm-scale-y-200 .lbm-content.lbm-content-border {
+    top: -6em; }
+
 .lbm-type-icon.lbm-color-pink.lbm-shadow .lbm-content-shadow, .lbm-type-icon.lbm-color-pink.leaflet-drag-target .lbm-content-shadow, .lbm-type-icon.lbm-color-pink.lbm-hover:hover .lbm-content-shadow {
   -webkit-text-stroke-color: rgba(255, 192, 203, 0.28);
   -moz-text-stroke-color: rgba(255, 192, 203, 0.28); }
@@ -17091,8 +17229,6 @@ Adjust font-size and top for .inner to fit inside a fa-map-marker icon
 
 
 ************************************************/
-/* stylelint-disable order/properties-alphabetical-order */
-/* stylelint-enable */
 /************************************************************
 BOOTSTRAP-VARIABLES
 ************************************************************/
@@ -17155,6 +17291,10 @@ $font-size-xs  : .75rem     12px
 /************************************************************
 BUTTON AND MODAL
 Opacity for semi-transparent and transparent content
+************************************************************/
+/************************************************************
+SQUARE BUTTONS
+Dimentions for square buttons with only icons
 ************************************************************/
 /************************************************************
 LABEL
@@ -17235,6 +17375,9 @@ footer-variant
 MARGIN-BOTTOM FOR ELEMENTS IN MODAL
 All elements in modal-windows get same margin-bottom
 ************************************************************/
+/***********************************************
+leaflet-bootstrap-variables.scss
+************************************************/
 /***********************************************
 leaflet-bootstrap-fonts.scss,
 Font-family for four icons used in leaflet-bootstrap
@@ -17393,6 +17536,30 @@ leaflet-bootstrap-tooltip.scss,
   margin: 0; }
 
 /***********************************************
+leaflet-bootstrap-control.scss
+************************************************/
+.leaflet-container:not(.has-control-attribution-bs) .leaflet-control-container .leaflet-bottom .leaflet-control {
+  margin-bottom: 10px; }
+
+.leaflet-container.has-control-attribution-bs .leaflet-control-container .leaflet-bottom.leaflet-left .leaflet-control:nth-last-child(2) {
+  margin-bottom: 2px; }
+
+.leaflet-container.has-control-attribution-bs .leaflet-control-container .leaflet-bottom.leaflet-right .leaflet-control:last-child {
+  margin-bottom: 13px; }
+
+/***********************************************
+leaflet-bootstrap-control-attribution.scss
+************************************************/
+.leaflet-control-container .leaflet-control-attribution.leaflet-control-attribution-bs {
+  font-size: 11px;
+  line-height: 1;
+  height: 11px;
+  cursor: default;
+  background: rgba(255, 255, 255, 0.5); }
+  .mouse-hover .leaflet-control-container .leaflet-control-attribution.leaflet-control-attribution-bs:hover {
+    background: rgba(255, 255, 255, 0.75); }
+
+/***********************************************
 leaflet-bootstrap-control-button.scss
 ************************************************/
 .leaflet-control.leaflet-button-box.extended .hide-for-extended {
@@ -17415,10 +17582,25 @@ leaflet-bootstrap-control-scale.scss
 </div>
 
 */
+.leaflet-button-box-scale {
+  margin-bottom: 0 !important; }
+
+.leaflet-container:not(.has-control-attribution-bs) .leaflet-button-box-scale {
+  min-height: calc(2.25rem + 10px); }
+
+.leaflet-container:not(.has-control-attribution-bs) .leaflet-button-box-scale-sm {
+  min-height: calc(1.84375rem + 10px); }
+
+.leaflet-container.has-control-attribution-bs .leaflet-button-box-scale {
+  min-height: calc(2.25rem + 13px); }
+
+.leaflet-container.has-control-attribution-bs .leaflet-button-box-scale-sm {
+  min-height: calc(1.84375rem + 13px); }
+
 .leaflet-bootstrap-control-scale {
   overflow: hidden; }
   .leaflet-bootstrap-control-scale .modal-body {
-    padding: 4px !important; }
+    padding: 2px !important; }
 
 .leaflet-control-singlescale {
   position: relative;
@@ -17542,8 +17724,10 @@ leaflet-bootstrap-control-position.scss
 .leaflet-position-marker {
   background: url(images/leaflet-position-marker.svg) 50% 50% no-repeat;
   content: ''; }
-  .leaflet-zoom-anim .leaflet-position-marker {
-    display: none; }
+  .leaflet-position-marker.inside-other-map {
+    opacity: .5; }
+  .leaflet-zoom-anim .leaflet-position-marker, .hide-control-position-map-center .leaflet-position-marker {
+    display: none !important; }
 
 .leaflet-control-container .input-group {
   width: initial;

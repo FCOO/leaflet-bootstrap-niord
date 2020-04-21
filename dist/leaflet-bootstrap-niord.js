@@ -386,7 +386,6 @@
             });
 
             geoJSON.features.sort( function( f1,f2 ){ return f2.properties.sortValue - f1.properties.sortValue; });
-
             this.addData(geoJSON);
 
         },
@@ -426,8 +425,9 @@
 
     //window.Niord.options.leaflet.mapOptions = options for map-objects in modal-windows
     ns.options.leaflet.mapOptions = {
-        zoomControl       : false,
-        attributionControl: false,
+        zoomControl         : false,
+        attributionControl  : false,    //Use bsAttributionControl instead of default attribution-control
+        bsAttributionControl: true,
 
         closePopupOnClick   : true,	    //true	Set it to false if you don't want popups to close when user clicks the map.
         boxZoom             : false,    //true	Whether the map can be zoomed to a rectangular area specified by dragging the mouse while pressing the shift key.
@@ -482,7 +482,7 @@
     //Add default contextmenu-items to global object ns.messages
     if (ns.messages.asModal)
         ns.messages.addContextmenuItems([
-            {icon: 'fa-th-list', lineBefore: true, text: {da:'Vis alle...', en:'Show all...'}, onClick: $.proxy(ns.messages.asModal, ns.messages) },
+            {icon: 'fa-th-list', _lineBefore: true, text: {da:'Vis alle...', en:'Show all...'}, onClick: $.proxy(ns.messages.asModal, ns.messages) },
         ]);
 
     //Extend Niord.Message with function to sync different maps
@@ -538,7 +538,6 @@
 
         map.insideExtendedModal = options.largeVersion;
 
-        L.control.attribution({position: 'bottomright', prefix: ''}).addTo(map);
         L.tileLayer(
             ns.options.leaflet.tileUrl,
             {attribution: ns.options.leaflet.attribution || ''}
@@ -581,6 +580,7 @@
             L.control.bsButton({
                 position  : 'topleft',
                 text      : {da:'Vis...', en:'Show...'},
+                square    : false
             });
         map.addControl(controlButton);
 

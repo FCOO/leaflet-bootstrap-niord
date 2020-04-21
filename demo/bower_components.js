@@ -31852,7 +31852,7 @@ L.GeometryUtil = L.extend(L.GeometryUtil || {}, {
                 // recursive
                 for (i = 0; i < layer.length; i++) {
                     subResult = L.GeometryUtil.closest(map, layer[i], latlng, vertices);
-                    if (subResult.distance < mindist) {
+                    if (subResult && subResult.distance < mindist) {
                         mindist = subResult.distance;
                         result = subResult;
                     }
@@ -32169,7 +32169,7 @@ L.GeometryUtil = L.extend(L.GeometryUtil || {}, {
 			cumulativeDistanceToA = cumulativeDistanceToB;
 			cumulativeDistanceToB += pointA.distanceTo(pointB);
 		}
-
+		
 		if (pointA == undefined && pointB == undefined) { // Happens when line has no length
 			var pointA = pts[0], pointB = pts[1], i = 1;
 		}
@@ -32208,7 +32208,7 @@ L.GeometryUtil = L.extend(L.GeometryUtil || {}, {
             var l1 = latlngs[i],
                 l2 = latlngs[i+1];
             portion = lengths[i];
-            if (L.GeometryUtil.belongsSegment(point, l1, l2, 0.0001)) {
+            if (L.GeometryUtil.belongsSegment(point, l1, l2, 0.001)) {
                 portion += l1.distanceTo(point);
                 found = true;
                 break;
@@ -32870,6 +32870,7 @@ return L.GeometryUtil;
 
     return data;
   }
+  var isIE10 = typeof window !== 'undefined' && window.navigator && window.navigator.userAgent && window.navigator.userAgent.indexOf('MSIE') > -1;
 
   var ResourceStore =
   /*#__PURE__*/
@@ -32887,7 +32888,10 @@ return L.GeometryUtil;
       _classCallCheck(this, ResourceStore);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(ResourceStore).call(this));
-      EventEmitter.call(_assertThisInitialized(_this)); // <=IE10 fix (unable to call parent constructor)
+
+      if (isIE10) {
+        EventEmitter.call(_assertThisInitialized(_this)); // <=IE10 fix (unable to call parent constructor)
+      }
 
       _this.data = data || {};
       _this.options = options;
@@ -33062,7 +33066,10 @@ return L.GeometryUtil;
       _classCallCheck(this, Translator);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Translator).call(this));
-      EventEmitter.call(_assertThisInitialized(_this)); // <=IE10 fix (unable to call parent constructor)
+
+      if (isIE10) {
+        EventEmitter.call(_assertThisInitialized(_this)); // <=IE10 fix (unable to call parent constructor)
+      }
 
       copy(['resourceStore', 'languageUtils', 'pluralResolver', 'interpolator', 'backendConnector', 'i18nFormat', 'utils'], services, _assertThisInitialized(_this));
       _this.options = options;
@@ -33480,6 +33487,7 @@ return L.GeometryUtil;
         var found = fallbacks[code];
         if (!found) found = fallbacks[this.getScriptPartFromCode(code)];
         if (!found) found = fallbacks[this.formatLanguageCode(code)];
+        if (!found) found = fallbacks[this.getLanguagePartFromCode(code)];
         if (!found) found = fallbacks["default"];
         return found || [];
       }
@@ -33793,6 +33801,18 @@ return L.GeometryUtil;
     return PluralResolver;
   }();
 
+  function _arrayWithHoles(arr) {
+    if (Array.isArray(arr)) return arr;
+  }
+
+  function _nonIterableRest() {
+    throw new TypeError("Invalid attempt to destructure non-iterable instance");
+  }
+
+  function _toArray(arr) {
+    return _arrayWithHoles(arr) || _iterableToArray(arr) || _nonIterableRest();
+  }
+
   var Interpolator =
   /*#__PURE__*/
   function () {
@@ -33831,7 +33851,9 @@ return L.GeometryUtil;
         this.unescapeSuffix = this.unescapePrefix ? '' : iOpts.unescapeSuffix || '';
         this.nestingPrefix = iOpts.nestingPrefix ? regexEscape(iOpts.nestingPrefix) : iOpts.nestingPrefixEscaped || regexEscape('$t(');
         this.nestingSuffix = iOpts.nestingSuffix ? regexEscape(iOpts.nestingSuffix) : iOpts.nestingSuffixEscaped || regexEscape(')');
-        this.maxReplaces = iOpts.maxReplaces ? iOpts.maxReplaces : 1000; // the regexp
+        this.nestingOptionsSeparator = iOpts.nestingOptionsSeparator ? iOpts.nestingOptionsSeparator : iOpts.nestingOptionsSeparator || ',';
+        this.maxReplaces = iOpts.maxReplaces ? iOpts.maxReplaces : 1000;
+        this.alwaysFormat = iOpts.alwaysFormat !== undefined ? iOpts.alwaysFormat : false; // the regexp
 
         this.resetRegExp();
       }
@@ -33867,13 +33889,14 @@ return L.GeometryUtil;
 
         var handleFormat = function handleFormat(key) {
           if (key.indexOf(_this.formatSeparator) < 0) {
-            return getPathWithDefaults(data, defaultData, key);
+            var path = getPathWithDefaults(data, defaultData, key);
+            return _this.alwaysFormat ? _this.format(path, undefined, lng) : path;
           }
 
           var p = key.split(_this.formatSeparator);
           var k = p.shift().trim();
           var f = p.join(_this.formatSeparator).trim();
-          return _this.format(getPathWithDefaults(data, defaultData, k), f, lng);
+          return _this.format(getPathWithDefaults(data, defaultData, k), f, lng, options);
         };
 
         this.resetRegExp();
@@ -33939,6 +33962,8 @@ return L.GeometryUtil;
     }, {
       key: "nest",
       value: function nest(str, fc) {
+        var _this2 = this;
+
         var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
         var match;
         var value;
@@ -33951,10 +33976,11 @@ return L.GeometryUtil;
         // if value is something like "myKey": "lorem $(anotherKey, { "count": {{aValueInOptions}} })"
 
         function handleHasOptions(key, inheritedOptions) {
-          if (key.indexOf(',') < 0) return key;
-          var p = key.split(',');
-          key = p.shift();
-          var optionsString = p.join(',');
+          var sep = this.nestingOptionsSeparator;
+          if (key.indexOf(sep) < 0) return key;
+          var c = key.split(new RegExp("".concat(sep, "[ ]*{")));
+          var optionsString = "{".concat(c[1]);
+          key = c[0];
           optionsString = this.interpolate(optionsString, clonedOptions);
           optionsString = optionsString.replace(/'/g, '"');
 
@@ -33962,7 +33988,8 @@ return L.GeometryUtil;
             clonedOptions = JSON.parse(optionsString);
             if (inheritedOptions) clonedOptions = _objectSpread({}, inheritedOptions, clonedOptions);
           } catch (e) {
-            this.logger.error("failed parsing options string in nesting for key ".concat(key), e);
+            this.logger.warn("failed parsing options string in nesting for key ".concat(key), e);
+            return "".concat(key).concat(sep).concat(optionsString);
           } // assert we do not get a endless loop on interpolating defaultValue again and again
 
 
@@ -33972,6 +33999,28 @@ return L.GeometryUtil;
 
 
         while (match = this.nestingRegexp.exec(str)) {
+          var formatters = [];
+          /**
+           * If there is more than one parameter (contains the format separator). E.g.:
+           *   - t(a, b)
+           *   - t(a, b, c)
+           *
+           * And those parameters are not dynamic values (parameters do not include curly braces). E.g.:
+           *   - Not t(a, { "key": "{{variable}}" })
+           *   - Not t(a, b, {"keyA": "valueA", "keyB": "valueB"})
+           */
+
+          if (match[0].includes(this.formatSeparator) && !/{.*}/.test(match[1])) {
+            var _match$1$split$map = match[1].split(this.formatSeparator).map(function (elem) {
+              return elem.trim();
+            });
+
+            var _match$1$split$map2 = _toArray(_match$1$split$map);
+
+            match[1] = _match$1$split$map2[0];
+            formatters = _match$1$split$map2.slice(1);
+          }
+
           value = fc(handleHasOptions.call(this, match[1].trim(), clonedOptions), clonedOptions); // is only the nesting key (key1 = '$(key2)') return the value without stringify
 
           if (value && match[0] === str && typeof value !== 'string') return value; // no string to include or empty
@@ -33981,9 +34030,12 @@ return L.GeometryUtil;
           if (!value) {
             this.logger.warn("missed to resolve ".concat(match[1], " for nesting ").concat(str));
             value = '';
-          } // Nested keys should not be escaped by default #854
-          // value = this.escapeValue ? regexSafe(utils.escape(value)) : regexSafe(value);
+          }
 
+          value = formatters.reduce(function (v, f) {
+            return _this2.format(v, f, options.lng, options);
+          }, value.trim()); // Nested keys should not be escaped by default #854
+          // value = this.escapeValue ? regexSafe(utils.escape(value)) : regexSafe(value);
 
           str = str.replace(match[0], value);
           this.regexp.lastIndex = 0;
@@ -33995,10 +34047,6 @@ return L.GeometryUtil;
 
     return Interpolator;
   }();
-
-  function _arrayWithHoles(arr) {
-    if (Array.isArray(arr)) return arr;
-  }
 
   function _iterableToArrayLimit(arr, i) {
     var _arr = [];
@@ -34024,10 +34072,6 @@ return L.GeometryUtil;
     }
 
     return _arr;
-  }
-
-  function _nonIterableRest() {
-    throw new TypeError("Invalid attempt to destructure non-iterable instance");
   }
 
   function _slicedToArray(arr, i) {
@@ -34056,7 +34100,10 @@ return L.GeometryUtil;
       _classCallCheck(this, Connector);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Connector).call(this));
-      EventEmitter.call(_assertThisInitialized(_this)); // <=IE10 fix (unable to call parent constructor)
+
+      if (isIE10) {
+        EventEmitter.call(_assertThisInitialized(_this)); // <=IE10 fix (unable to call parent constructor)
+      }
 
       _this.backend = backend;
       _this.store = store;
@@ -34180,7 +34227,7 @@ return L.GeometryUtil;
         var _this3 = this;
 
         var tried = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-        var wait = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 250;
+        var wait = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 350;
         var callback = arguments.length > 5 ? arguments[5] : undefined;
         if (!lng.length) return callback(null, {}); // noting to load
 
@@ -34250,7 +34297,7 @@ return L.GeometryUtil;
             lng = _name$split4[0],
             ns = _name$split4[1];
 
-        this.read(lng, ns, 'read', null, null, function (err, data) {
+        this.read(lng, ns, 'read', undefined, undefined, function (err, data) {
           if (err) _this5.logger.warn("".concat(prefix, "loading namespace ").concat(ns, " for language ").concat(lng, " failed"), err);
           if (!err && data) _this5.logger.log("".concat(prefix, "loaded namespace ").concat(ns, " for language ").concat(lng), data);
 
@@ -34356,7 +34403,7 @@ return L.GeometryUtil;
       },
       interpolation: {
         escapeValue: true,
-        format: function format(value, _format, lng) {
+        format: function format(value, _format, lng, options) {
           return value;
         },
         prefix: '{{',
@@ -34368,6 +34415,7 @@ return L.GeometryUtil;
         unescapePrefix: '-',
         nestingPrefix: '$t(',
         nestingSuffix: ')',
+        nestingOptionsSeparator: ',',
         // nestingPrefixEscaped: '$t(',
         // nestingSuffixEscaped: ')',
         // defaultVariables: undefined // object that can have values to interpolate on - extends passed in interpolation data
@@ -34407,7 +34455,10 @@ return L.GeometryUtil;
       _classCallCheck(this, I18n);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(I18n).call(this));
-      EventEmitter.call(_assertThisInitialized(_this)); // <=IE10 fix (unable to call parent constructor)
+
+      if (isIE10) {
+        EventEmitter.call(_assertThisInitialized(_this)); // <=IE10 fix (unable to call parent constructor)
+      }
 
       _this.options = transformOptions(options);
       _this.services = {};
@@ -34510,6 +34561,10 @@ return L.GeometryUtil;
           this.modules.external.forEach(function (m) {
             if (m.init) m.init(_this2);
           });
+        }
+
+        if (!this.modules.languageDetector && !this.options.lng) {
+          this.logger.warn('init: no languageDetector is used and no lng is defined');
         } // append api
 
 
@@ -34610,6 +34665,9 @@ return L.GeometryUtil;
     }, {
       key: "use",
       value: function use(module) {
+        if (!module) throw new Error('You are passing an undefined module! Please check the object you are passing to i18next.use()');
+        if (!module.type) throw new Error('You are passing a wrong module! Please check the object you are passing to i18next.use()');
+
         if (module.type === 'backend') {
           this.modules.backend = module;
         }
@@ -34860,6 +34918,10 @@ return L.GeometryUtil;
         membersToCopy.forEach(function (m) {
           clone[m] = _this8[m];
         });
+        clone.services = _objectSpread({}, this.services);
+        clone.services.utils = {
+          hasLoadedNamespace: clone.hasLoadedNamespace.bind(clone)
+        };
         clone.translator = new Translator(clone.services, clone.options);
         clone.translator.on('*', function (event) {
           for (var _len4 = arguments.length, args = new Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
@@ -34871,6 +34933,9 @@ return L.GeometryUtil;
         clone.init(mergedOptions, callback);
         clone.translator.options = clone.options; // sync options
 
+        clone.translator.backendConnector.services.utils = {
+          hasLoadedNamespace: clone.hasLoadedNamespace.bind(clone)
+        };
         return clone;
       }
     }]);
@@ -34887,19 +34952,19 @@ return L.GeometryUtil;
 ;
 /* @preserve
  * The MIT License (MIT)
- *
+ * 
  * Copyright (c) 2013-2018 Petka Antonov
- *
+ * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * 
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -34907,7 +34972,7 @@ return L.GeometryUtil;
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- *
+ * 
  */
 /**
  * bluebird build version 3.7.2
@@ -38499,28 +38564,28 @@ _dereq_('./using.js')(Promise, apiRejection, tryConvertToPromise, createContext,
 _dereq_('./any.js')(Promise);
 _dereq_('./each.js')(Promise, INTERNAL);
 _dereq_('./filter.js')(Promise, INTERNAL);
-
-    util.toFastProperties(Promise);
-    util.toFastProperties(Promise.prototype);
-    function fillTypes(value) {
-        var p = new Promise(INTERNAL);
-        p._fulfillmentHandler0 = value;
-        p._rejectionHandler0 = value;
-        p._promise0 = value;
-        p._receiver0 = value;
-    }
-    // Complete slack tracking, opt out of field-type tracking and
-    // stabilize map
-    fillTypes({a: 1});
-    fillTypes({b: 2});
-    fillTypes({c: 3});
-    fillTypes(1);
-    fillTypes(function(){});
-    fillTypes(undefined);
-    fillTypes(false);
-    fillTypes(new Promise(INTERNAL));
-    debug.setBounds(Async.firstLineError, util.lastLineError);
-    return Promise;
+                                                         
+    util.toFastProperties(Promise);                                          
+    util.toFastProperties(Promise.prototype);                                
+    function fillTypes(value) {                                              
+        var p = new Promise(INTERNAL);                                       
+        p._fulfillmentHandler0 = value;                                      
+        p._rejectionHandler0 = value;                                        
+        p._promise0 = value;                                                 
+        p._receiver0 = value;                                                
+    }                                                                        
+    // Complete slack tracking, opt out of field-type tracking and           
+    // stabilize map                                                         
+    fillTypes({a: 1});                                                       
+    fillTypes({b: 2});                                                       
+    fillTypes({c: 3});                                                       
+    fillTypes(1);                                                            
+    fillTypes(function(){});                                                 
+    fillTypes(undefined);                                                    
+    fillTypes(false);                                                        
+    fillTypes(new Promise(INTERNAL));                                        
+    debug.setBounds(Async.firstLineError, util.lastLineError);               
+    return Promise;                                                          
 
 };
 
@@ -41145,37 +41210,47 @@ module.exports = ret;
 (function ($, window, Promise/*, document, undefined*/) {
     "use strict";
 
-    //Convert a reason to error-object
-    Promise.convertReasonToError = function( reason ){
-        var result = new Error(),
-            response = reason ? reason.response || {} : {};
-
-        result.name    = 'Error';
-        result.message = reason.message || '';
-        result.url     = response.url || '';
-        result.status  = response.status || '';
-        return result;
-    };
-
     //Create a default error-handle. Can be overwritten
-    Promise.defaultErrorHandler = Promise.defaultErrorHandler || function( /* reason, url */ ){};
+    Promise.defaultErrorHandler = Promise.defaultErrorHandler || function( /* error: {name, status, message, text, statusText}  */ ){};
+
+    function createErrorObject( reason, url ){
+        var response = reason.response,
+            text = response ? response.statusText :
+                    reason.message ? reason.message :
+                    reason;
+        return {
+            name      : 'Error',
+            status    : response ? response.status : null,
+            url       : url,
+            message   : text,
+            text      : text,
+            statusText: text
+        };
+    }
 
     //Set event handler for unhandled rejections
-    window.onunhandledrejection = function(e){
+    window.onunhandledrejection = function(e, promise){
         if (e && e.preventDefault)
             e.preventDefault();
 
-        if (e && e.detail){
-            var reason = e.detail.reason || {},
-                promise = e.detail.promise,
-                promiseOptions = promise.promiseOptions || {},
-                response = reason.response || {},
-                url = response.url || promiseOptions.url || '';
+        //Unknown why, but in some browwsers onunhandledrejection is called twice - one time with e.detail
+        if (e && e.detail)
+            return false;
 
-            //Call default error handler
-            Promise.defaultErrorHandler( reason, url );
-        }
+        var url = promise && promise.promiseOptions ? promise.promiseOptions.url : null;
+
+        Promise.defaultErrorHandler( createErrorObject( e, url ) );
     };
+
+    function callDefaultErrorHandle(reason, url){
+        return Promise.defaultErrorHandler( createErrorObject( reason, url ) );
+    }
+
+    //Promise.defaultPrefetch = function(url, options): To be called before ALL fetch
+    Promise.defaultPrefetch = null;
+
+    //Promise.defaultFinally = function(): To be called as finally for ALL Promise.get
+    Promise.defaultFinally = null;
 
     /**************************************************************
     Promise.fetch( url, options )
@@ -41186,7 +41261,7 @@ module.exports = ret;
         options = $.extend( {}, {
             retries   : 3,
             retryDelay: 1000,
-            noCache   : true,
+            noCache   : false,
             //            cache     : 'reload',  //TODO: Check if it works
 /*REMOVE FOR NOW. NEED TO FIND A WAY TO FORCE NO-CACHE
             headers   : {
@@ -41199,7 +41274,8 @@ module.exports = ret;
         if (options.noCache)
             url = url + (url.indexOf('?') > 0 ? '&' : '?') + 'dummy='+Math.random().toString(36).substr(2, 9);
 
-
+        if (Promise.defaultPrefetch)
+            Promise.defaultPrefetch(url, options);
 
         return new Promise(function(resolve, reject) {
             var wrappedFetch = function(n) {
@@ -41266,7 +41342,6 @@ module.exports = ret;
 
         if ( !xml || xml.getElementsByTagName( "parsererror" ).length ) {
             var error = new Error("Invalid XML");
-            //error.response = response;
             throw error;
         }
         return xml;
@@ -41276,11 +41351,10 @@ module.exports = ret;
     Promise.get = function(url, options, resolve, reject, fin) {
         options = $.extend({}, {
             //Default options
-            url: url,
+            url                   : url,
             useDefaultErrorHandler: true,
             retries               : 0
         }, options || {} );
-
 
         resolve = resolve || options.resolve || options.done;
         reject  = reject  || options.reject  || options.fail;
@@ -41320,28 +41394,38 @@ module.exports = ret;
             result = result.then( resolve );
 
         //Adding error/reject promise
+        var defaultReject = function(reason){
+                return callDefaultErrorHandle(reason, options.url);
+            };
+
         if (reject){
             //If options.useDefaultErrorHandler => also needs to call => Promise.defaultErrorHandler
             if (options.useDefaultErrorHandler)
-                result = result.catch( function( /*reason, url */ ){
-                    reject.apply( null, arguments );
-                    return Promise.defaultErrorHandler.apply( null, arguments );
+                result = result.catch( function( reason ){
+                    reject( createErrorObject( reason, options.url ) );
+                    return defaultReject.call( null, reason );
                 });
             else
                 //Just use reject as catch
-                result = result.catch( reject );
-
+                result = result.catch( function( reason ){
+                    return reject( createErrorObject( reason, options.url ) );
+                });
         }
-        else {
+        else
             if (!options.useDefaultErrorHandler)
                 //Prevent the use of Promise.defaultErrorHandler
                 result = result.catch( function(){} );
 
-        }
-
         //Adding finally (if any)
-        if (fin)
-            result = result.finally( fin );
+        if (fin || Promise.defaultFinally){
+            var finFunc =   fin && Promise.defaultFinally ?
+                            function(){
+                                fin.apply(null, arguments);
+                                Promise.defaultFinally.apply(null, arguments);
+                            } : fin || Promise.defaultFinally;
+
+            result = result.finally( finFunc );
+        }
 
         result.promiseOptions = options;
         return result;
@@ -41376,12 +41460,6 @@ module.exports = ret;
                             $.extend( {}, options , { format: 'xml' }),
                             resolve, reject, fin );
     };
-
-
-    //Initialize/ready
-    $(function() {
-
-    });
 
 }(jQuery, this, Promise, document));
 
@@ -41676,11 +41754,11 @@ module.exports = ret;
 	var minor = parseInt(splitVersion[1]);
 
 	var JQ_LT_17 = (major < 1) || (major == 1 && minor < 7);
-
+	
 	function eventsData($el) {
 		return JQ_LT_17 ? $el.data('events') : $._data($el[0]).events;
 	}
-
+	
 	function moveHandlerToTop($el, eventName, isDelegated) {
 		var data = eventsData($el);
 		var events = data[eventName];
@@ -41698,7 +41776,7 @@ module.exports = ret;
 			events.unshift(events.pop());
 		}
 	}
-
+	
 	function moveEventHandlers($elems, eventsString, isDelegate) {
 		var events = eventsString.split(/\s+/);
 		$elems.each(function() {
@@ -41708,7 +41786,7 @@ module.exports = ret;
 			}
 		});
 	}
-
+	
 	function makeMethod(methodName) {
 		$.fn[methodName + 'First'] = function() {
 			var args = $.makeArray(arguments);
@@ -41733,7 +41811,7 @@ module.exports = ret;
 	$.fn.delegateFirst = function() {
 		var args = $.makeArray(arguments);
 		var eventsString = args[1];
-
+		
 		if (eventsString) {
 			args.splice(0, 2);
 			$.fn.delegate.apply(this, arguments);
@@ -41753,7 +41831,7 @@ module.exports = ret;
 
 		return this;
 	};
-
+	
 	// on (jquery >= 1.7)
 	if (!JQ_LT_17) {
 		$.fn.onFirst = function(types, selector) {
@@ -41851,9 +41929,9 @@ module.exports = ret;
 }(jQuery, this, document));
 ;
 /*!
- * Bootstrap-select v1.13.11 (https://developer.snapappointments.com/bootstrap-select)
+ * Bootstrap-select v1.13.15 (https://developer.snapappointments.com/bootstrap-select)
  *
- * Copyright 2012-2019 SnapAppointments, LLC
+ * Copyright 2012-2020 SnapAppointments, LLC
  * Licensed under MIT (https://github.com/snapappointments/bootstrap-select/blob/master/LICENSE)
  */
 
@@ -42207,7 +42285,7 @@ module.exports = ret;
       opt = options[i];
 
       if (!(opt.disabled || opt.parentNode.tagName === 'OPTGROUP' && opt.parentNode.disabled)) {
-        value.push(opt.value || opt.text);
+        value.push(opt.value);
       }
     }
 
@@ -42539,6 +42617,8 @@ module.exports = ret;
   }
 
   elementTemplates.a.setAttribute('role', 'option');
+  if (version.major === '4') elementTemplates.a.className = 'dropdown-item';
+
   elementTemplates.subtext.className = 'text-muted';
 
   elementTemplates.text = elementTemplates.span.cloneNode(false);
@@ -42578,8 +42658,7 @@ module.exports = ret;
         }
       }
 
-      if (typeof classes !== 'undefined' && classes !== '') a.className = classes;
-      if (version.major === '4') a.classList.add('dropdown-item');
+      if (typeof classes !== 'undefined' && classes !== '') a.classList.add.apply(a.classList, classes.split(' '));
       if (inline) a.setAttribute('style', inline);
 
       return a;
@@ -42601,7 +42680,7 @@ module.exports = ret;
           // need to use <i> for icons in the button to prevent a breaking change
           // note: switch to span in next major release
           iconElement = (useFragment === true ? elementTemplates.i : elementTemplates.span).cloneNode(false);
-          iconElement.className = options.iconBase + ' ' + options.icon;
+          iconElement.className = this.options.iconBase + ' ' + options.icon;
 
           elementTemplates.fragment.appendChild(iconElement);
           elementTemplates.fragment.appendChild(whitespace);
@@ -42630,13 +42709,13 @@ module.exports = ret;
           subtextElement,
           iconElement;
 
-      textElement.innerHTML = options.label;
+      textElement.innerHTML = options.display;
 
       if (options.icon) {
         var whitespace = elementTemplates.whitespace.cloneNode(false);
 
         iconElement = elementTemplates.span.cloneNode(false);
-        iconElement.className = options.iconBase + ' ' + options.icon;
+        iconElement.className = this.options.iconBase + ' ' + options.icon;
 
         elementTemplates.fragment.appendChild(iconElement);
         elementTemplates.fragment.appendChild(whitespace);
@@ -42673,6 +42752,7 @@ module.exports = ret;
       search: {},
       current: {}, // current changes if a search is in progress
       view: {},
+      isSearching: false,
       keydown: {
         keyHistory: '',
         resetKeyHistory: {
@@ -42684,6 +42764,9 @@ module.exports = ret;
         }
       }
     };
+
+    this.sizeInfo = {};
+
     // If we have no title yet, try to pull it from the html title attribute (jQuery doesnt' pick it up as it's not a
     // data-attribute)
     if (this.options.title === null) {
@@ -42711,7 +42794,7 @@ module.exports = ret;
     this.init();
   };
 
-  Selectpicker.VERSION = '1.13.11';
+  Selectpicker.VERSION = '1.13.15';
 
   // part of this is duplicated in i18n/defaults-en_US.js. Make sure to update both.
   Selectpicker.DEFAULTS = {
@@ -42788,6 +42871,7 @@ module.exports = ret;
       }
 
       this.$newElement = this.createDropdown();
+      this.buildData();
       this.$element
         .after(this.$newElement)
         .prependTo(this.$newElement);
@@ -42876,7 +42960,7 @@ module.exports = ret;
       }
 
       setTimeout(function () {
-        that.createLi();
+        that.buildList();
         that.$element.trigger('loaded' + EVENT_KEY);
       });
     },
@@ -42911,7 +42995,7 @@ module.exports = ret;
       if (this.options.liveSearch) {
         searchbox =
           '<div class="bs-searchbox">' +
-            '<input type="text" class="form-control" autocomplete="off"' +
+            '<input type="search" class="form-control" autocomplete="off"' +
               (
                 this.options.liveSearchPlaceholder === null ? ''
                 :
@@ -43019,6 +43103,7 @@ module.exports = ret;
           selected,
           prevActive;
 
+      this.selectpicker.isSearching = isSearching;
       this.selectpicker.current = isSearching ? this.selectpicker.search : this.selectpicker.main;
 
       this.setPositionData();
@@ -43307,22 +43392,13 @@ module.exports = ret;
       return updateIndex;
     },
 
-    createLi: function () {
-      var that = this,
-          iconBase = this.options.iconBase,
-          optionSelector = ':not([hidden]):not([data-hidden="true"])',
-          mainElements = [],
+    buildData: function () {
+      var optionSelector = ':not([hidden]):not([data-hidden="true"])',
           mainData = [],
-          widestOptionLength = 0,
           optID = 0,
           startIndex = this.setPlaceholder() ? 1 : 0; // append the titleOption if necessary and skip the first option in the loop
 
       if (this.options.hideDisabled) optionSelector += ':not(:disabled)';
-
-      if ((that.options.showTick || that.multiple) && !elementTemplates.checkMark.parentNode) {
-        elementTemplates.checkMark.className = iconBase + ' ' + that.options.tickIcon + ' check-mark';
-        elementTemplates.a.appendChild(elementTemplates.checkMark);
-      }
 
       var selectOptions = this.$element[0].querySelectorAll('select > *' + optionSelector);
 
@@ -43340,14 +43416,6 @@ module.exports = ret;
 
         config = config || {};
         config.type = 'divider';
-
-        mainElements.push(
-          generateOption.li(
-            false,
-            classNames.DIVIDER,
-            (config.optID ? config.optID + 'div' : undefined)
-          )
-        );
 
         mainData.push(config);
       }
@@ -43369,30 +43437,14 @@ module.exports = ret;
 
           if (config.optID) optionClass = 'opt ' + optionClass;
 
+          config.optionClass = optionClass.trim();
+          config.inlineStyle = inlineStyle;
           config.text = option.textContent;
 
           config.content = option.getAttribute('data-content');
           config.tokens = option.getAttribute('data-tokens');
           config.subtext = option.getAttribute('data-subtext');
           config.icon = option.getAttribute('data-icon');
-          config.iconBase = iconBase;
-
-          var textElement = generateOption.text(config);
-          var liElement = generateOption.li(
-            generateOption.a(
-              textElement,
-              optionClass,
-              inlineStyle
-            ),
-            '',
-            config.optID
-          );
-
-          if (liElement.firstChild) {
-            liElement.firstChild.id = that.selectId + '-' + liIndex;
-          }
-
-          mainElements.push(liElement);
 
           option.liIndex = liIndex;
 
@@ -43400,26 +43452,10 @@ module.exports = ret;
           config.type = 'option';
           config.index = liIndex;
           config.option = option;
-          config.disabled = config.disabled || option.disabled;
+          config.selected = !!option.selected;
+          config.disabled = config.disabled || !!option.disabled;
 
           mainData.push(config);
-
-          var combinedLength = 0;
-
-          // count the number of characters in the option - not perfect, but should work in most cases
-          if (config.display) combinedLength += config.display.length;
-          if (config.subtext) combinedLength += config.subtext.length;
-          // if there is an icon, ensure this option's width is checked
-          if (config.icon) combinedLength += 1;
-
-          if (combinedLength > widestOptionLength) {
-            widestOptionLength = combinedLength;
-
-            // guess which option is the widest
-            // use this when calculating menu width
-            // not perfect, but it's fast, and the width will be updating accordingly when scrolling
-            that.selectpicker.view.widestOption = mainElements[mainElements.length - 1];
-          }
         }
       }
 
@@ -43432,12 +43468,12 @@ module.exports = ret;
         if (!options.length) return;
 
         var config = {
-              label: htmlEscape(optgroup.label),
+              display: htmlEscape(optgroup.label),
               subtext: optgroup.getAttribute('data-subtext'),
               icon: optgroup.getAttribute('data-icon'),
-              iconBase: iconBase
+              type: 'optgroup-label',
+              optgroupClass: ' ' + (optgroup.className || '')
             },
-            optgroupClass = ' ' + (optgroup.className || ''),
             headerIndex,
             lastIndex;
 
@@ -43447,18 +43483,9 @@ module.exports = ret;
           addDivider({ optID: optID });
         }
 
-        var labelElement = generateOption.label(config);
+        config.optID = optID;
 
-        mainElements.push(
-          generateOption.li(labelElement, 'dropdown-header' + optgroupClass, optID)
-        );
-
-        mainData.push({
-          display: config.label,
-          subtext: config.subtext,
-          type: 'optgroup-label',
-          optID: optID
-        });
+        mainData.push(config);
 
         for (var j = 0, len = options.length; j < len; j++) {
           var option = options[j];
@@ -43471,8 +43498,8 @@ module.exports = ret;
           addOption(option, {
             headerIndex: headerIndex,
             lastIndex: lastIndex,
-            optID: optID,
-            optgroupClass: optgroupClass,
+            optID: config.optID,
+            optgroupClass: config.optgroupClass,
             disabled: optgroup.disabled
           });
         }
@@ -43492,10 +43519,86 @@ module.exports = ret;
         }
       }
 
-      this.selectpicker.main.elements = mainElements;
-      this.selectpicker.main.data = mainData;
+      this.selectpicker.main.data = this.selectpicker.current.data = mainData;
+    },
 
-      this.selectpicker.current = this.selectpicker.main;
+    buildList: function () {
+      var that = this,
+          selectData = this.selectpicker.main.data,
+          mainElements = [],
+          widestOptionLength = 0;
+
+      if ((that.options.showTick || that.multiple) && !elementTemplates.checkMark.parentNode) {
+        elementTemplates.checkMark.className = this.options.iconBase + ' ' + that.options.tickIcon + ' check-mark';
+        elementTemplates.a.appendChild(elementTemplates.checkMark);
+      }
+
+      function buildElement (item) {
+        var liElement,
+            combinedLength = 0;
+
+        switch (item.type) {
+          case 'divider':
+            liElement = generateOption.li(
+              false,
+              classNames.DIVIDER,
+              (item.optID ? item.optID + 'div' : undefined)
+            );
+
+            break;
+
+          case 'option':
+            liElement = generateOption.li(
+              generateOption.a(
+                generateOption.text.call(that, item),
+                item.optionClass,
+                item.inlineStyle
+              ),
+              '',
+              item.optID
+            );
+
+            if (liElement.firstChild) {
+              liElement.firstChild.id = that.selectId + '-' + item.index;
+            }
+
+            break;
+
+          case 'optgroup-label':
+            liElement = generateOption.li(
+              generateOption.label.call(that, item),
+              'dropdown-header' + item.optgroupClass,
+              item.optID
+            );
+
+            break;
+        }
+
+        mainElements.push(liElement);
+
+        // count the number of characters in the option - not perfect, but should work in most cases
+        if (item.display) combinedLength += item.display.length;
+        if (item.subtext) combinedLength += item.subtext.length;
+        // if there is an icon, ensure this option's width is checked
+        if (item.icon) combinedLength += 1;
+
+        if (combinedLength > widestOptionLength) {
+          widestOptionLength = combinedLength;
+
+          // guess which option is the widest
+          // use this when calculating menu width
+          // not perfect, but it's fast, and the width will be updating accordingly when scrolling
+          that.selectpicker.view.widestOption = mainElements[mainElements.length - 1];
+        }
+      }
+
+      for (var len = selectData.length, i = 0; i < len; i++) {
+        var item = selectData[i];
+
+        buildElement(item);
+      }
+
+      this.selectpicker.main.elements = this.selectpicker.current.elements = mainElements;
     },
 
     findLis: function () {
@@ -43503,11 +43606,10 @@ module.exports = ret;
     },
 
     render: function () {
-      // ensure titleOption is appended and selected (if necessary) before getting selectedOptions
-      this.setPlaceholder();
-
       var that = this,
           element = this.$element[0],
+          // ensure titleOption is appended and selected (if necessary) before getting selectedOptions
+          placeholderSelected = this.setPlaceholder() && element.selectedIndex === 0,
           selectedOptions = getSelectedOptions(element, this.options.hideDisabled),
           selectedCount = selectedOptions.length,
           button = this.$button[0],
@@ -43523,7 +43625,7 @@ module.exports = ret;
       this.tabIndex();
 
       if (this.options.selectedTextFormat === 'static') {
-        titleFragment = generateOption.text({ text: this.options.title }, true);
+        titleFragment = generateOption.text.call(this, { text: this.options.title }, true);
       } else {
         showCount = this.multiple && this.options.selectedTextFormat.indexOf('count') !== -1 && selectedCount > 1;
 
@@ -43535,43 +43637,42 @@ module.exports = ret;
 
         // only loop through all selected options if the count won't be shown
         if (showCount === false) {
-          for (var selectedIndex = 0; selectedIndex < selectedCount; selectedIndex++) {
-            if (selectedIndex < 50) {
-              var option = selectedOptions[selectedIndex],
-                  titleOptions = {},
-                  thisData = {
-                    content: option.getAttribute('data-content'),
-                    subtext: option.getAttribute('data-subtext'),
-                    icon: option.getAttribute('data-icon')
-                  };
+          if (!placeholderSelected) {
+            for (var selectedIndex = 0; selectedIndex < selectedCount; selectedIndex++) {
+              if (selectedIndex < 50) {
+                var option = selectedOptions[selectedIndex],
+                    thisData = this.selectpicker.main.data[option.liIndex],
+                    titleOptions = {};
 
-              if (this.multiple && selectedIndex > 0) {
-                titleFragment.appendChild(multipleSeparator.cloneNode(false));
-              }
-
-              if (option.title) {
-                titleOptions.text = option.title;
-              } else if (thisData.content && that.options.showContent) {
-                titleOptions.content = thisData.content.toString();
-                hasContent = true;
-              } else {
-                if (that.options.showIcon) {
-                  titleOptions.icon = thisData.icon;
-                  titleOptions.iconBase = this.options.iconBase;
+                if (this.multiple && selectedIndex > 0) {
+                  titleFragment.appendChild(multipleSeparator.cloneNode(false));
                 }
-                if (that.options.showSubtext && !that.multiple && thisData.subtext) titleOptions.subtext = ' ' + thisData.subtext;
-                titleOptions.text = option.textContent.trim();
+
+                if (option.title) {
+                  titleOptions.text = option.title;
+                } else if (thisData) {
+                  if (thisData.content && that.options.showContent) {
+                    titleOptions.content = thisData.content.toString();
+                    hasContent = true;
+                  } else {
+                    if (that.options.showIcon) {
+                      titleOptions.icon = thisData.icon;
+                    }
+                    if (that.options.showSubtext && !that.multiple && thisData.subtext) titleOptions.subtext = ' ' + thisData.subtext;
+                    titleOptions.text = option.textContent.trim();
+                  }
+                }
+
+                titleFragment.appendChild(generateOption.text.call(this, titleOptions, true));
+              } else {
+                break;
               }
-
-              titleFragment.appendChild(generateOption.text(titleOptions, true));
-            } else {
-              break;
             }
-          }
 
-          // add ellipsis
-          if (selectedCount > 49) {
-            titleFragment.appendChild(document.createTextNode('...'));
+            // add ellipsis
+            if (selectedCount > 49) {
+              titleFragment.appendChild(document.createTextNode('...'));
+            }
           }
         } else {
           var optionSelector = ':not([hidden]):not([data-hidden="true"]):not([data-divider="true"])';
@@ -43581,7 +43682,7 @@ module.exports = ret;
           var totalCount = this.$element[0].querySelectorAll('select > option' + optionSelector + ', optgroup' + optionSelector + ' option' + optionSelector).length,
               tr8nText = (typeof this.options.countSelectedText === 'function') ? this.options.countSelectedText(selectedCount, totalCount) : this.options.countSelectedText;
 
-          titleFragment = generateOption.text({
+          titleFragment = generateOption.text.call(this, {
             text: tr8nText.replace('{0}', selectedCount.toString()).replace('{1}', totalCount.toString())
           }, true);
         }
@@ -43594,7 +43695,7 @@ module.exports = ret;
 
       // If the select doesn't have a title, then use the default, or if nothing is set at all, use noneSelectedText
       if (!titleFragment.childNodes.length) {
-        titleFragment = generateOption.text({
+        titleFragment = generateOption.text.call(this, {
           text: typeof this.options.title !== 'undefined' ? this.options.title : this.options.noneSelectedText
         }, true);
       }
@@ -43667,9 +43768,7 @@ module.exports = ret;
     },
 
     liHeight: function (refresh) {
-      if (!refresh && (this.options.size === false || this.sizeInfo)) return;
-
-      if (!this.sizeInfo) this.sizeInfo = {};
+      if (!refresh && (this.options.size === false || Object.keys(this.sizeInfo).length)) return;
 
       var newElement = document.createElement('div'),
           menu = document.createElement('div'),
@@ -43691,6 +43790,7 @@ module.exports = ret;
       text.className = 'text';
       a.className = 'dropdown-item ' + (firstOption ? firstOption.className : '');
       newElement.className = this.$menu[0].parentNode.className + ' ' + classNames.SHOW;
+      newElement.style.width = 0; // ensure button width doesn't affect natural width of menu when calculating
       if (this.options.width === 'auto') menu.style.minWidth = 0;
       menu.className = classNames.MENU + ' ' + classNames.SHOW;
       menuInner.className = 'inner ' + classNames.SHOW;
@@ -43824,7 +43924,8 @@ module.exports = ret;
           _minHeight,
           maxHeight,
           menuInnerMinHeight,
-          estimate;
+          estimate,
+          isDropup;
 
       if (this.options.dropupAuto) {
         // Get the estimated height of the menu without scrollbars.
@@ -43832,7 +43933,16 @@ module.exports = ret;
         // below the button without setting dropup, but we can't know
         // the exact height of the menu until createView is called later
         estimate = liHeight * this.selectpicker.current.elements.length + menuPadding.vert;
-        this.$newElement.toggleClass(classNames.DROPUP, this.sizeInfo.selectOffsetTop - this.sizeInfo.selectOffsetBot > this.sizeInfo.menuExtras.vert && estimate + this.sizeInfo.menuExtras.vert + 50 > this.sizeInfo.selectOffsetBot);
+
+        isDropup = this.sizeInfo.selectOffsetTop - this.sizeInfo.selectOffsetBot > this.sizeInfo.menuExtras.vert && estimate + this.sizeInfo.menuExtras.vert + 50 > this.sizeInfo.selectOffsetBot;
+
+        // ensure dropup doesn't change while searching (so menu doesn't bounce back and forth)
+        if (this.selectpicker.isSearching === true) {
+          isDropup = this.selectpicker.dropup;
+        }
+
+        this.$newElement.toggleClass(classNames.DROPUP, isDropup);
+        this.selectpicker.dropup = isDropup;
       }
 
       if (this.options.size === 'auto') {
@@ -43889,32 +43999,33 @@ module.exports = ret;
       this.liHeight(refresh);
 
       if (this.options.header) this.$menu.css('padding-top', 0);
-      if (this.options.size === false) return;
 
-      var that = this,
-          $window = $(window);
+      if (this.options.size !== false) {
+        var that = this,
+            $window = $(window);
 
-      this.setMenuSize();
+        this.setMenuSize();
 
-      if (this.options.liveSearch) {
-        this.$searchbox
-          .off('input.setMenuSize propertychange.setMenuSize')
-          .on('input.setMenuSize propertychange.setMenuSize', function () {
-            return that.setMenuSize();
-          });
+        if (this.options.liveSearch) {
+          this.$searchbox
+            .off('input.setMenuSize propertychange.setMenuSize')
+            .on('input.setMenuSize propertychange.setMenuSize', function () {
+              return that.setMenuSize();
+            });
+        }
+
+        if (this.options.size === 'auto') {
+          $window
+            .off('resize' + EVENT_KEY + '.' + this.selectId + '.setMenuSize' + ' scroll' + EVENT_KEY + '.' + this.selectId + '.setMenuSize')
+            .on('resize' + EVENT_KEY + '.' + this.selectId + '.setMenuSize' + ' scroll' + EVENT_KEY + '.' + this.selectId + '.setMenuSize', function () {
+              return that.setMenuSize();
+            });
+        } else if (this.options.size && this.options.size != 'auto' && this.selectpicker.current.elements.length > this.options.size) {
+          $window.off('resize' + EVENT_KEY + '.' + this.selectId + '.setMenuSize' + ' scroll' + EVENT_KEY + '.' + this.selectId + '.setMenuSize');
+        }
       }
 
-      if (this.options.size === 'auto') {
-        $window
-          .off('resize' + EVENT_KEY + '.' + this.selectId + '.setMenuSize' + ' scroll' + EVENT_KEY + '.' + this.selectId + '.setMenuSize')
-          .on('resize' + EVENT_KEY + '.' + this.selectId + '.setMenuSize' + ' scroll' + EVENT_KEY + '.' + this.selectId + '.setMenuSize', function () {
-            return that.setMenuSize();
-          });
-      } else if (this.options.size && this.options.size != 'auto' && this.selectpicker.current.elements.length > this.options.size) {
-        $window.off('resize' + EVENT_KEY + '.' + this.selectId + '.setMenuSize' + ' scroll' + EVENT_KEY + '.' + this.selectId + '.setMenuSize');
-      }
-
-      that.createView(false, true, refresh);
+      this.createView(false, true, refresh);
     },
 
     setWidth: function () {
@@ -44144,8 +44255,6 @@ module.exports = ret;
     },
 
     checkDisabled: function () {
-      var that = this;
-
       if (this.isDisabled()) {
         this.$newElement[0].classList.add(classNames.DISABLED);
         this.$button.addClass(classNames.DISABLED).attr('tabindex', -1).attr('aria-disabled', true);
@@ -44159,10 +44268,6 @@ module.exports = ret;
           this.$button.removeAttr('tabindex');
         }
       }
-
-      this.$button.on('click', function () {
-        return !that.isDisabled();
-      });
     },
 
     tabIndex: function () {
@@ -44452,8 +44557,6 @@ module.exports = ret;
 
           if (normalizeSearch) q = normalizeToBase(q);
 
-          that._$lisSelected = that.$menuInner.find('.selected');
-
           for (var i = 0; i < that.selectpicker.main.data.length; i++) {
             var li = that.selectpicker.main.data[i];
 
@@ -44556,14 +44659,14 @@ module.exports = ret;
 
       element.classList.add('bs-select-hidden');
 
-      for (var i = 0, len = this.selectpicker.current.elements.length; i < len; i++) {
-        var liData = this.selectpicker.current.data[i],
+      for (var i = 0, data = this.selectpicker.current.data, len = data.length; i < len; i++) {
+        var liData = data[i],
             option = liData.option;
 
         if (option && !liData.disabled && liData.type !== 'divider') {
           if (liData.selected) previousSelected++;
           option.selected = status;
-          if (status) currentSelected++;
+          if (status === true) currentSelected++;
         }
       }
 
@@ -44612,6 +44715,9 @@ module.exports = ret;
           scrollTop = that.$menuInner[0].scrollTop,
           isVirtual = that.isVirtual(),
           position0 = isVirtual === true ? that.selectpicker.view.position0 : 0;
+
+      // do nothing if a function key is pressed
+      if (e.which >= 112 && e.which <= 123) return;
 
       isActive = that.$newElement.hasClass(classNames.SHOW);
 
@@ -44823,7 +44929,8 @@ module.exports = ret;
       this.checkDisabled();
       this.setStyle();
       this.render();
-      this.createLi();
+      this.buildData();
+      this.buildList();
       this.setWidth();
 
       this.setSize(true);
@@ -44931,7 +45038,7 @@ module.exports = ret;
           var dataAttributes = $this.data();
 
           for (var dataAttr in dataAttributes) {
-            if (dataAttributes.hasOwnProperty(dataAttr) && $.inArray(dataAttr, DISALLOWED_ATTRIBUTES) !== -1) {
+            if (Object.prototype.hasOwnProperty.call(dataAttributes, dataAttr) && $.inArray(dataAttr, DISALLOWED_ATTRIBUTES) !== -1) {
               delete dataAttributes[dataAttr];
             }
           }
@@ -44941,7 +45048,7 @@ module.exports = ret;
           $this.data('selectpicker', (data = new Selectpicker(this, config)));
         } else if (options) {
           for (var i in options) {
-            if (options.hasOwnProperty(i)) {
+            if (Object.prototype.hasOwnProperty.call(options, i)) {
               data.options[i] = options[i];
             }
           }
@@ -44976,8 +45083,13 @@ module.exports = ret;
     return this;
   };
 
+  // wait until whole page has loaded to set function in case Bootstrap isn't available yet
+  var bootstrapKeydown = function () {};
+
   $(document)
     .off('keydown.bs.dropdown.data-api')
+    .on('keydown.bs.dropdown.data-api', ':not(.bootstrap-select) > [data-toggle="dropdown"]', bootstrapKeydown)
+    .on('keydown.bs.dropdown.data-api', ':not(.bootstrap-select) > .dropdown-menu', bootstrapKeydown)
     .on('keydown' + EVENT_KEY, '.bootstrap-select [data-toggle="dropdown"], .bootstrap-select [role="listbox"], .bootstrap-select .bs-searchbox input', Selectpicker.prototype.keydown)
     .on('focusin.modal', '.bootstrap-select [data-toggle="dropdown"], .bootstrap-select [role="listbox"], .bootstrap-select .bs-searchbox input', function (e) {
       e.stopPropagation();
@@ -44986,6 +45098,9 @@ module.exports = ret;
   // SELECTPICKER DATA-API
   // =====================
   $(window).on('load' + EVENT_KEY + '.data-api', function () {
+    // get Bootstrap's keydown event handler for either Bootstrap 4 or Bootstrap 3
+    bootstrapKeydown = $.fn.dropdown.Constructor._dataApiKeydownHandler || $.fn.dropdown.Constructor.prototype.keydown;
+
     $('.selectpicker').each(function () {
       var $selectpicker = $(this);
       Plugin.call($selectpicker, $selectpicker.data());
@@ -47891,8 +48006,8 @@ if (typeof define === 'function' && define.amd) {
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory,
-            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory, 
+            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function(Inputmask) {
@@ -47986,8 +48101,8 @@ if (typeof define === 'function' && define.amd) {
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(3), __webpack_require__(5) ],
-            __WEBPACK_AMD_DEFINE_FACTORY__ = factory, __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(3), __webpack_require__(5) ], 
+            __WEBPACK_AMD_DEFINE_FACTORY__ = factory, __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function($, window, undefined) {
@@ -49500,7 +49615,7 @@ if (typeof define === 'function' && define.amd) {
             function seekPrevious(pos, newBlock) {
                 var position = pos, tests;
                 if (position <= 0) return 0;
-                while (--position > 0 && (newBlock === true && getTest(position).match.newBlockMarker !== true || newBlock !== true && !isMask(position) && (tests = getTests(position),
+                while (--position > 0 && (newBlock === true && getTest(position).match.newBlockMarker !== true || newBlock !== true && !isMask(position) && (tests = getTests(position), 
                 tests.length < 2 || tests.length === 2 && tests[1].match.def === ""))) {}
                 return position;
             }
@@ -50737,8 +50852,8 @@ if (typeof define === 'function' && define.amd) {
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(4) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory,
-            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(4) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory, 
+            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function($) {
@@ -50767,8 +50882,8 @@ if (typeof define === 'function' && define.amd) {
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory,
-            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory, 
+            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function(Inputmask) {
@@ -51019,8 +51134,8 @@ if (typeof define === 'function' && define.amd) {
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory,
-            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory, 
+            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function(Inputmask) {
@@ -51570,8 +51685,8 @@ if (typeof define === 'function' && define.amd) {
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(4), __webpack_require__(2) ],
-            __WEBPACK_AMD_DEFINE_FACTORY__ = factory, __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(4), __webpack_require__(2) ], 
+            __WEBPACK_AMD_DEFINE_FACTORY__ = factory, __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function($, Inputmask) {
@@ -51721,9 +51836,9 @@ if (typeof define === 'function' && define.amd) {
 (function ( $ ) {
 	var attachEvent = document.attachEvent,
 		stylesCreated = false;
-
+	
 	var jQuery_resize = $.fn.resize;
-
+	
 	$.fn.resize = function(callback) {
 		return this.each(function() {
 			if(this == window)
@@ -51738,14 +51853,14 @@ if (typeof define === 'function' && define.amd) {
 			removeResizeListener(this, callback);
 		});
 	}
-
+	
 	if (!attachEvent) {
 		var requestFrame = (function(){
 			var raf = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame ||
 								function(fn){ return window.setTimeout(fn, 20); };
 			return function(fn){ return raf(fn); };
 		})();
-
+		
 		var cancelFrame = (function(){
 			var cancel = window.cancelAnimationFrame || window.mozCancelAnimationFrame || window.webkitCancelAnimationFrame ||
 								   window.clearTimeout;
@@ -51769,7 +51884,7 @@ if (typeof define === 'function' && define.amd) {
 			return element.offsetWidth != element.__resizeLast__.width ||
 						 element.offsetHeight != element.__resizeLast__.height;
 		}
-
+		
 		function scrollListener(e){
 			var element = this;
 			resetTriggers(this);
@@ -51784,7 +51899,7 @@ if (typeof define === 'function' && define.amd) {
 				}
 			});
 		};
-
+		
 		/* Detect CSS Animations support to detect element display/re-attach */
 		var animation = false,
 			animationstring = 'animation',
@@ -51795,8 +51910,8 @@ if (typeof define === 'function' && define.amd) {
 			pfx  = '';
 		{
 			var elm = document.createElement('fakeelement');
-			if( elm.style.animationName !== undefined ) { animation = true; }
-
+			if( elm.style.animationName !== undefined ) { animation = true; }    
+			
 			if( animation === false ) {
 				for( var i = 0; i < domPrefixes.length; i++ ) {
 					if( elm.style[ domPrefixes[i] + 'AnimationName' ] !== undefined ) {
@@ -51810,12 +51925,12 @@ if (typeof define === 'function' && define.amd) {
 				}
 			}
 		}
-
+		
 		var animationName = 'resizeanim';
 		var animationKeyframes = '@' + keyframeprefix + 'keyframes ' + animationName + ' { from { opacity: 0; } to { opacity: 0; } } ';
 		var animationStyle = keyframeprefix + 'animation: 1ms ' + animationName + '; ';
 	}
-
+	
 	function createStyles() {
 		if (!stylesCreated) {
 			//opacity:0 works around a chrome bug https://code.google.com/p/chromium/issues/detail?id=286360
@@ -51824,7 +51939,7 @@ if (typeof define === 'function' && define.amd) {
 					'.resize-triggers, .resize-triggers > div, .contract-trigger:before { content: \" \"; display: block; position: absolute; top: 0; left: 0; height: 100%; width: 100%; overflow: hidden; } .resize-triggers > div { background: #eee; overflow: auto; } .contract-trigger:before { width: 200%; height: 200%; }',
 				head = document.head || document.getElementsByTagName('head')[0],
 				style = document.createElement('style');
-
+			
 			style.type = 'text/css';
 			if (style.styleSheet) {
 				style.styleSheet.cssText = css;
@@ -51836,7 +51951,7 @@ if (typeof define === 'function' && define.amd) {
 			stylesCreated = true;
 		}
 	}
-
+	
 	window.addResizeListener = function(element, fn){
 		if (attachEvent) element.attachEvent('onresize', fn);
 		else {
@@ -51851,7 +51966,7 @@ if (typeof define === 'function' && define.amd) {
 				element.appendChild(element.__resizeTriggers__);
 				resetTriggers(element);
 				element.addEventListener('scroll', scrollListener, true);
-
+				
 				/* Listen for a css animation to detect element display/re-attach */
 				animationstartevent && element.__resizeTriggers__.addEventListener(animationstartevent, function(e) {
 					if(e.animationName == animationName)
@@ -51861,7 +51976,7 @@ if (typeof define === 'function' && define.amd) {
 			element.__resizeListeners__.push(fn);
 		}
 	};
-
+	
 	window.removeResizeListener = function(element, fn){
 		if (attachEvent) element.detachEvent('onresize', fn);
 		else {
@@ -52232,7 +52347,7 @@ if (typeof define === 'function' && define.amd) {
 
 ;
 /****************************************************************************
-	modernizr-javascript.js,
+	modernizr-javascript.js, 
 
 	(c) 2016, FCOO
 
@@ -52243,20 +52358,20 @@ if (typeof define === 'function' && define.amd) {
 
 (function ($, window, document, undefined) {
 	"use strict";
-
+	
 	var ns = window;
 
     //Extend the jQuery prototype
     $.fn.extend({
-        modernizrOn : function( test ){
-            return this.modernizrToggle( test, true );
+        modernizrOn : function( test ){ 
+            return this.modernizrToggle( test, true ); 
         },
 
-        modernizrOff: function( test ){
-            return this.modernizrToggle( test, false );
+        modernizrOff: function( test ){ 
+            return this.modernizrToggle( test, false ); 
         },
-
-        modernizrToggle: function( test, on ){
+        
+        modernizrToggle: function( test, on ){ 
 		if ( on === undefined )
             return this.modernizrToggle( test, !this.hasClass( test ) );
 
@@ -52728,7 +52843,7 @@ if (typeof define === 'function' && define.amd) {
         handle      : "down",   // Choose handle type, could be "horizontal", "vertical", "down", "up", "left", "right", "round", "range", or "fixed"
         readOnly    : false,    // Locks slider and makes it inactive.
         disable     : false,    // Locks slider and makes it disable ("dissy")
-        handleFixed: false,     // Special version where the slider is fixed and the grid are moved left or right to select value. handle is set to "single"
+        handleFixed : false,    // Special version where the slider is fixed and the grid are moved left or right to select value. handle is set to "single"
                                 // A value for options.width OR options.valueDistances must be provided
         mousewheel  : true,     // Adds mousewheel-event to the parent-element of the slider. Works best if the parent-element only contains the slider and has a fixed height and width
         resizable   : false,    //If true the container of the slider can be resized and the grid will automatic redraw to adjust number of ticks and labels to the new width
@@ -52803,12 +52918,12 @@ if (typeof define === 'function' && define.amd) {
 
         //Adjust labels and markers
         prettify        : null,  // Set up your prettify function. Can be anything. For example, you can set up unix time as slider values and than transform them to cool looking dates.
-        prettifyLabel  : null,  // As  prettify  but for the labels in the grid.
+        prettifyLabel  : null,   // As  prettify  but for the labels in the grid.
         prefix          : "",    // Set prefix for values. Will be set up right before the number: $100
         postfix         : "",    // Set postfix for values. Will be set up right after the number: 100k
-        decorateBoth   : true,  // Used for options.double:true and only if prefix or postfix was set up. Determine how to decorate close values. For example: $10k - $100k or $10 - 100k
-        decorateLabel  : false, // The labels in the grid also gets  prefix  and/or  postfix
-        valuesSeparator: " - ", // Text between min and max value when labels are combined. valuesSeparator:" to " => "12 to 24"
+        decorateBoth   : true,   // Used for options.double:true and only if prefix or postfix was set up. Determine how to decorate close values. For example: $10k - $100k or $10 - 100k
+        decorateLabel  : false,  // The labels in the grid also gets  prefix  and/or  postfix
+        valuesSeparator: " - ",  // Text between min and max value when labels are combined. valuesSeparator:" to " => "12 to 24"
 
         //Callback
         onCreate : null, // Called when the slider is created the first time.
@@ -52823,34 +52938,43 @@ if (typeof define === 'function' && define.amd) {
         //Buttons
         buttons      : {value:{}, from:{}, to:{} },
         /*
-        JSON-record with id or buttons for first, previous, (now,) next, and last value
+        JSON-record with id or buttons for first, previousPage, previousShift, previous, (now,) next, nextShift, nextPage and last value
             options.buttons = {
                 value: {buttonList},
                 from : {buttonList},
                 to   : {buttonList}
             }
             {buttonList} = {
-                firstBtn   : element or string,
-                previousBtn: element or string,
-                nowBtn     : element or string,
-                nextBtn    : element or string,
-                lastBtn    : element or string
+                firstBtn        : element or string,
+                previousPageBtn : element or string,
+                previousShiftBtn: element or string,
+                previousBtn     : element or string,
+                nowBtn          : element or string,
+                nextBtn         : element or string,
+                nextShiftBtn    : element or string,
+                nextPageBtn     : element or string,
+                lastBtn         : element or string
             }
         */
+
 
         /****************************************
         Internal options
         ****************************************/
-        minDistanceRem: 4/16, //Minimum distance between ticks and between labels
-
-        //Internal options for clicking on buttons
+        //The standard button-ids are firstBtn, previousBtn, nowBtn, nextBtn, lastBtn with the following steps
         buttonOptions: {
-            'firstBtn'   : { sign: -1, delta: 99 },
-            'previousBtn': { sign: -1, delta:  1 },
-            'nowBtn'     : { sign: +1, delta:  0 },
-            'nextBtn'    : { sign: +1, delta:  1 },
-            'lastBtn'    : { sign: +1, delta: 99 }
-        }
+            'firstBtn'        : { sign: -1, delta: 99 },
+            'previousPageBtn' : { sign: -1, delta:  3 },
+            'previousShiftBtn': { sign: -1, delta:  2 },
+            'previousBtn'     : { sign: -1, delta:  1 },
+            'nowBtn'          : { sign: +1, delta:  0 },
+            'nextBtn'         : { sign: +1, delta:  1 },
+            'nextShiftBtn'    : { sign: +1, delta:  2 },
+            'nextPageBtn'     : { sign: +1, delta:  3 },
+            'lastBtn'         : { sign: +1, delta: 99 }
+        },
+
+        minDistanceRem: 4/16 //Minimum distance between ticks and between labels
 
     };
 
@@ -52964,7 +53088,7 @@ if (typeof define === 'function' && define.amd) {
         Set and adjust options that can't be changed by this.update(options)
         *******************************************************************/
         // get config from options
-        this.options = $.extend( {}, defaultOptions, options );
+        this.options = $.extend(true, {}, defaultOptions, options );
 
         if (this.options.handleFixed){
             this.options.double = false;
@@ -53477,7 +53601,9 @@ if (typeof define === 'function' && define.amd) {
                 this.cache.$container.addClass("has-pin");
 
             //Append buttons
-            function getButton( id ){ return $.type( id ) === 'string' ? $('#' +  id ) : id; }
+            function getButton( id ){
+                return $.type( id ) === 'string' ? $('#' +  id ) : id;
+            }
             this.options.buttons.value = this.options.buttons.value || {};
             this.options.buttons.from = this.options.buttons.from || {};
             this.options.buttons.to   = this.options.buttons.to   || {};
@@ -53601,7 +53727,7 @@ if (typeof define === 'function' && define.amd) {
                     this.mousewheel
                 );
 
-            //Add keyboard events to theline
+            //Add keyboard events to the line
             addEvents( this.cache.$line, "keydown", this.key );
 
             //Bind click on buttons
@@ -53613,7 +53739,7 @@ if (typeof define === 'function' && define.amd) {
                     addEvents( $btn, 'mouseleave', _this.endRepeatingClick,                  true    );
                     addEvents( $btn, 'click',      _this.moveByButtonOrKeyboardOrMouseWheel, options );
 
-                    if ( $btn && $btn.autoclickWhilePressed && (options.delta == 1) && (!$btn.data('auto-click-when-pressed-added')) ){
+                    if ( $btn && $btn.autoclickWhilePressed && options.delta && (options.delta != 99) && (!$btn.data('auto-click-when-pressed-added')) ){
                         $btn.data('auto-click-when-pressed-added', true);
                         $btn.autoclickWhilePressed();
                     }
@@ -53951,7 +54077,6 @@ if (typeof define === 'function' && define.amd) {
 
             this.currentHandleBlur();
 
-
             //First check if the tap was on a handle or the marker of a handler
             if (!this.options.isFixed)
                 $.each( this.handles, function( id, handle ){
@@ -54114,8 +54239,6 @@ if (typeof define === 'function' && define.amd) {
         },
 
 
-
-
         /*******************************************************************
         updateHandlesAndLines
         *******************************************************************/
@@ -54158,6 +54281,7 @@ if (typeof define === 'function' && define.amd) {
                 var containerLeft =
                         -1.0 * this.dimentions.containerWidthRem * this.handles.fixed.value.percent/100 +
                          0.5 * this.dimentions.outerContainerWidthRem;
+
                 this.cache.$container.css('left', toFixed(containerLeft) + 'rem');
             }
 
@@ -55379,1329 +55503,1354 @@ return index;
 }(jQuery, this.i18next, this, document));
 ;
 /*!
- * perfect-scrollbar v1.4.0
- * (c) 2018 Hyunje Jun
- * @license MIT
+ * perfect-scrollbar v1.5.0
+ * Copyright 2020 Hyunje Jun, MDBootstrap and Contributors
+ * Licensed under MIT
  */
+
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-	typeof define === 'function' && define.amd ? define(factory) :
-	(global.PerfectScrollbar = factory());
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
+  (global = global || self, global.PerfectScrollbar = factory());
 }(this, (function () { 'use strict';
 
-function get(element) {
-  return getComputedStyle(element);
-}
+  function get(element) {
+    return getComputedStyle(element);
+  }
 
-function set(element, obj) {
-  for (var key in obj) {
-    var val = obj[key];
-    if (typeof val === 'number') {
-      val = val + "px";
+  function set(element, obj) {
+    for (var key in obj) {
+      var val = obj[key];
+      if (typeof val === 'number') {
+        val = val + "px";
+      }
+      element.style[key] = val;
     }
-    element.style[key] = val;
-  }
-  return element;
-}
-
-function div(className) {
-  var div = document.createElement('div');
-  div.className = className;
-  return div;
-}
-
-var elMatches =
-  typeof Element !== 'undefined' &&
-  (Element.prototype.matches ||
-    Element.prototype.webkitMatchesSelector ||
-    Element.prototype.mozMatchesSelector ||
-    Element.prototype.msMatchesSelector);
-
-function matches(element, query) {
-  if (!elMatches) {
-    throw new Error('No element matching method supported');
+    return element;
   }
 
-  return elMatches.call(element, query);
-}
+  function div(className) {
+    var div = document.createElement('div');
+    div.className = className;
+    return div;
+  }
 
-function remove(element) {
-  if (element.remove) {
-    element.remove();
-  } else {
-    if (element.parentNode) {
-      element.parentNode.removeChild(element);
+  var elMatches =
+    typeof Element !== 'undefined' &&
+    (Element.prototype.matches ||
+      Element.prototype.webkitMatchesSelector ||
+      Element.prototype.mozMatchesSelector ||
+      Element.prototype.msMatchesSelector);
+
+  function matches(element, query) {
+    if (!elMatches) {
+      throw new Error('No element matching method supported');
+    }
+
+    return elMatches.call(element, query);
+  }
+
+  function remove(element) {
+    if (element.remove) {
+      element.remove();
+    } else {
+      if (element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
     }
   }
-}
 
-function queryChildren(element, selector) {
-  return Array.prototype.filter.call(element.children, function (child) { return matches(child, selector); }
-  );
-}
-
-var cls = {
-  main: 'ps',
-  element: {
-    thumb: function (x) { return ("ps__thumb-" + x); },
-    rail: function (x) { return ("ps__rail-" + x); },
-    consuming: 'ps__child--consume',
-  },
-  state: {
-    focus: 'ps--focus',
-    clicking: 'ps--clicking',
-    active: function (x) { return ("ps--active-" + x); },
-    scrolling: function (x) { return ("ps--scrolling-" + x); },
-  },
-};
-
-/*
- * Helper methods
- */
-var scrollingClassTimeout = { x: null, y: null };
-
-function addScrollingClass(i, x) {
-  var classList = i.element.classList;
-  var className = cls.state.scrolling(x);
-
-  if (classList.contains(className)) {
-    clearTimeout(scrollingClassTimeout[x]);
-  } else {
-    classList.add(className);
+  function queryChildren(element, selector) {
+    return Array.prototype.filter.call(element.children, function (child) { return matches(child, selector); }
+    );
   }
-}
 
-function removeScrollingClass(i, x) {
-  scrollingClassTimeout[x] = setTimeout(
-    function () { return i.isAlive && i.element.classList.remove(cls.state.scrolling(x)); },
-    i.settings.scrollingThreshold
-  );
-}
-
-function setScrollingClassInstantly(i, x) {
-  addScrollingClass(i, x);
-  removeScrollingClass(i, x);
-}
-
-var EventElement = function EventElement(element) {
-  this.element = element;
-  this.handlers = {};
-};
-
-var prototypeAccessors = { isEmpty: { configurable: true } };
-
-EventElement.prototype.bind = function bind (eventName, handler) {
-  if (typeof this.handlers[eventName] === 'undefined') {
-    this.handlers[eventName] = [];
-  }
-  this.handlers[eventName].push(handler);
-  this.element.addEventListener(eventName, handler, false);
-};
-
-EventElement.prototype.unbind = function unbind (eventName, target) {
-    var this$1 = this;
-
-  this.handlers[eventName] = this.handlers[eventName].filter(function (handler) {
-    if (target && handler !== target) {
-      return true;
-    }
-    this$1.element.removeEventListener(eventName, handler, false);
-    return false;
-  });
-};
-
-EventElement.prototype.unbindAll = function unbindAll () {
-    var this$1 = this;
-
-  for (var name in this$1.handlers) {
-    this$1.unbind(name);
-  }
-};
-
-prototypeAccessors.isEmpty.get = function () {
-    var this$1 = this;
-
-  return Object.keys(this.handlers).every(
-    function (key) { return this$1.handlers[key].length === 0; }
-  );
-};
-
-Object.defineProperties( EventElement.prototype, prototypeAccessors );
-
-var EventManager = function EventManager() {
-  this.eventElements = [];
-};
-
-EventManager.prototype.eventElement = function eventElement (element) {
-  var ee = this.eventElements.filter(function (ee) { return ee.element === element; })[0];
-  if (!ee) {
-    ee = new EventElement(element);
-    this.eventElements.push(ee);
-  }
-  return ee;
-};
-
-EventManager.prototype.bind = function bind (element, eventName, handler) {
-  this.eventElement(element).bind(eventName, handler);
-};
-
-EventManager.prototype.unbind = function unbind (element, eventName, handler) {
-  var ee = this.eventElement(element);
-  ee.unbind(eventName, handler);
-
-  if (ee.isEmpty) {
-    // remove
-    this.eventElements.splice(this.eventElements.indexOf(ee), 1);
-  }
-};
-
-EventManager.prototype.unbindAll = function unbindAll () {
-  this.eventElements.forEach(function (e) { return e.unbindAll(); });
-  this.eventElements = [];
-};
-
-EventManager.prototype.once = function once (element, eventName, handler) {
-  var ee = this.eventElement(element);
-  var onceHandler = function (evt) {
-    ee.unbind(eventName, onceHandler);
-    handler(evt);
+  var cls = {
+    main: 'ps',
+    rtl: 'ps__rtl',
+    element: {
+      thumb: function (x) { return ("ps__thumb-" + x); },
+      rail: function (x) { return ("ps__rail-" + x); },
+      consuming: 'ps__child--consume',
+    },
+    state: {
+      focus: 'ps--focus',
+      clicking: 'ps--clicking',
+      active: function (x) { return ("ps--active-" + x); },
+      scrolling: function (x) { return ("ps--scrolling-" + x); },
+    },
   };
-  ee.bind(eventName, onceHandler);
-};
 
-function createEvent(name) {
-  if (typeof window.CustomEvent === 'function') {
-    return new CustomEvent(name);
-  } else {
-    var evt = document.createEvent('CustomEvent');
-    evt.initCustomEvent(name, false, false, undefined);
-    return evt;
-  }
-}
+  /*
+   * Helper methods
+   */
+  var scrollingClassTimeout = { x: null, y: null };
 
-var processScrollDiff = function(
-  i,
-  axis,
-  diff,
-  useScrollingClass,
-  forceFireReachEvent
-) {
-  if ( useScrollingClass === void 0 ) useScrollingClass = true;
-  if ( forceFireReachEvent === void 0 ) forceFireReachEvent = false;
+  function addScrollingClass(i, x) {
+    var classList = i.element.classList;
+    var className = cls.state.scrolling(x);
 
-  var fields;
-  if (axis === 'top') {
-    fields = [
-      'contentHeight',
-      'containerHeight',
-      'scrollTop',
-      'y',
-      'up',
-      'down' ];
-  } else if (axis === 'left') {
-    fields = [
-      'contentWidth',
-      'containerWidth',
-      'scrollLeft',
-      'x',
-      'left',
-      'right' ];
-  } else {
-    throw new Error('A proper axis should be provided');
-  }
-
-  processScrollDiff$1(i, diff, fields, useScrollingClass, forceFireReachEvent);
-};
-
-function processScrollDiff$1(
-  i,
-  diff,
-  ref,
-  useScrollingClass,
-  forceFireReachEvent
-) {
-  var contentHeight = ref[0];
-  var containerHeight = ref[1];
-  var scrollTop = ref[2];
-  var y = ref[3];
-  var up = ref[4];
-  var down = ref[5];
-  if ( useScrollingClass === void 0 ) useScrollingClass = true;
-  if ( forceFireReachEvent === void 0 ) forceFireReachEvent = false;
-
-  var element = i.element;
-
-  // reset reach
-  i.reach[y] = null;
-
-  // 1 for subpixel rounding
-  if (element[scrollTop] < 1) {
-    i.reach[y] = 'start';
-  }
-
-  // 1 for subpixel rounding
-  if (element[scrollTop] > i[contentHeight] - i[containerHeight] - 1) {
-    i.reach[y] = 'end';
-  }
-
-  if (diff) {
-    element.dispatchEvent(createEvent(("ps-scroll-" + y)));
-
-    if (diff < 0) {
-      element.dispatchEvent(createEvent(("ps-scroll-" + up)));
-    } else if (diff > 0) {
-      element.dispatchEvent(createEvent(("ps-scroll-" + down)));
-    }
-
-    if (useScrollingClass) {
-      setScrollingClassInstantly(i, y);
-    }
-  }
-
-  if (i.reach[y] && (diff || forceFireReachEvent)) {
-    element.dispatchEvent(createEvent(("ps-" + y + "-reach-" + (i.reach[y]))));
-  }
-}
-
-function toInt(x) {
-  return parseInt(x, 10) || 0;
-}
-
-function isEditable(el) {
-  return (
-    matches(el, 'input,[contenteditable]') ||
-    matches(el, 'select,[contenteditable]') ||
-    matches(el, 'textarea,[contenteditable]') ||
-    matches(el, 'button,[contenteditable]')
-  );
-}
-
-function outerWidth(element) {
-  var styles = get(element);
-  return (
-    toInt(styles.width) +
-    toInt(styles.paddingLeft) +
-    toInt(styles.paddingRight) +
-    toInt(styles.borderLeftWidth) +
-    toInt(styles.borderRightWidth)
-  );
-}
-
-var env = {
-  isWebKit:
-    typeof document !== 'undefined' &&
-    'WebkitAppearance' in document.documentElement.style,
-  supportsTouch:
-    typeof window !== 'undefined' &&
-    ('ontouchstart' in window ||
-      (window.DocumentTouch && document instanceof window.DocumentTouch)),
-  supportsIePointer:
-    typeof navigator !== 'undefined' && navigator.msMaxTouchPoints,
-  isChrome:
-    typeof navigator !== 'undefined' &&
-    /Chrome/i.test(navigator && navigator.userAgent),
-};
-
-var updateGeometry = function(i) {
-  var element = i.element;
-  var roundedScrollTop = Math.floor(element.scrollTop);
-
-  i.containerWidth = element.clientWidth;
-  i.containerHeight = element.clientHeight;
-  i.contentWidth = element.scrollWidth;
-  i.contentHeight = element.scrollHeight;
-
-  if (!element.contains(i.scrollbarXRail)) {
-    // clean up and append
-    queryChildren(element, cls.element.rail('x')).forEach(function (el) { return remove(el); }
-    );
-    element.appendChild(i.scrollbarXRail);
-  }
-  if (!element.contains(i.scrollbarYRail)) {
-    // clean up and append
-    queryChildren(element, cls.element.rail('y')).forEach(function (el) { return remove(el); }
-    );
-    element.appendChild(i.scrollbarYRail);
-  }
-
-  if (
-    !i.settings.suppressScrollX &&
-    i.containerWidth + i.settings.scrollXMarginOffset < i.contentWidth
-  ) {
-    i.scrollbarXActive = true;
-    i.railXWidth = i.containerWidth - i.railXMarginWidth;
-    i.railXRatio = i.containerWidth / i.railXWidth;
-    i.scrollbarXWidth = getThumbSize(
-      i,
-      toInt(i.railXWidth * i.containerWidth / i.contentWidth)
-    );
-    i.scrollbarXLeft = toInt(
-      (i.negativeScrollAdjustment + element.scrollLeft) *
-        (i.railXWidth - i.scrollbarXWidth) /
-        (i.contentWidth - i.containerWidth)
-    );
-  } else {
-    i.scrollbarXActive = false;
-  }
-
-  if (
-    !i.settings.suppressScrollY &&
-    i.containerHeight + i.settings.scrollYMarginOffset < i.contentHeight
-  ) {
-    i.scrollbarYActive = true;
-    i.railYHeight = i.containerHeight - i.railYMarginHeight;
-    i.railYRatio = i.containerHeight / i.railYHeight;
-    i.scrollbarYHeight = getThumbSize(
-      i,
-      toInt(i.railYHeight * i.containerHeight / i.contentHeight)
-    );
-    i.scrollbarYTop = toInt(
-      roundedScrollTop *
-        (i.railYHeight - i.scrollbarYHeight) /
-        (i.contentHeight - i.containerHeight)
-    );
-  } else {
-    i.scrollbarYActive = false;
-  }
-
-  if (i.scrollbarXLeft >= i.railXWidth - i.scrollbarXWidth) {
-    i.scrollbarXLeft = i.railXWidth - i.scrollbarXWidth;
-  }
-  if (i.scrollbarYTop >= i.railYHeight - i.scrollbarYHeight) {
-    i.scrollbarYTop = i.railYHeight - i.scrollbarYHeight;
-  }
-
-  updateCss(element, i);
-
-  if (i.scrollbarXActive) {
-    element.classList.add(cls.state.active('x'));
-  } else {
-    element.classList.remove(cls.state.active('x'));
-    i.scrollbarXWidth = 0;
-    i.scrollbarXLeft = 0;
-    element.scrollLeft = 0;
-  }
-  if (i.scrollbarYActive) {
-    element.classList.add(cls.state.active('y'));
-  } else {
-    element.classList.remove(cls.state.active('y'));
-    i.scrollbarYHeight = 0;
-    i.scrollbarYTop = 0;
-    element.scrollTop = 0;
-  }
-};
-
-function getThumbSize(i, thumbSize) {
-  if (i.settings.minScrollbarLength) {
-    thumbSize = Math.max(thumbSize, i.settings.minScrollbarLength);
-  }
-  if (i.settings.maxScrollbarLength) {
-    thumbSize = Math.min(thumbSize, i.settings.maxScrollbarLength);
-  }
-  return thumbSize;
-}
-
-function updateCss(element, i) {
-  var xRailOffset = { width: i.railXWidth };
-  var roundedScrollTop = Math.floor(element.scrollTop);
-
-  if (i.isRtl) {
-    xRailOffset.left =
-      i.negativeScrollAdjustment +
-      element.scrollLeft +
-      i.containerWidth -
-      i.contentWidth;
-  } else {
-    xRailOffset.left = element.scrollLeft;
-  }
-  if (i.isScrollbarXUsingBottom) {
-    xRailOffset.bottom = i.scrollbarXBottom - roundedScrollTop;
-  } else {
-    xRailOffset.top = i.scrollbarXTop + roundedScrollTop;
-  }
-  set(i.scrollbarXRail, xRailOffset);
-
-  var yRailOffset = { top: roundedScrollTop, height: i.railYHeight };
-  if (i.isScrollbarYUsingRight) {
-    if (i.isRtl) {
-      yRailOffset.right =
-        i.contentWidth -
-        (i.negativeScrollAdjustment + element.scrollLeft) -
-        i.scrollbarYRight -
-        i.scrollbarYOuterWidth;
+    if (classList.contains(className)) {
+      clearTimeout(scrollingClassTimeout[x]);
     } else {
-      yRailOffset.right = i.scrollbarYRight - element.scrollLeft;
-    }
-  } else {
-    if (i.isRtl) {
-      yRailOffset.left =
-        i.negativeScrollAdjustment +
-        element.scrollLeft +
-        i.containerWidth * 2 -
-        i.contentWidth -
-        i.scrollbarYLeft -
-        i.scrollbarYOuterWidth;
-    } else {
-      yRailOffset.left = i.scrollbarYLeft + element.scrollLeft;
+      classList.add(className);
     }
   }
-  set(i.scrollbarYRail, yRailOffset);
 
-  set(i.scrollbarX, {
-    left: i.scrollbarXLeft,
-    width: i.scrollbarXWidth - i.railBorderXWidth,
-  });
-  set(i.scrollbarY, {
-    top: i.scrollbarYTop,
-    height: i.scrollbarYHeight - i.railBorderYWidth,
-  });
-}
-
-var clickRail = function(i) {
-  i.event.bind(i.scrollbarY, 'mousedown', function (e) { return e.stopPropagation(); });
-  i.event.bind(i.scrollbarYRail, 'mousedown', function (e) {
-    var positionTop =
-      e.pageY -
-      window.pageYOffset -
-      i.scrollbarYRail.getBoundingClientRect().top;
-    var direction = positionTop > i.scrollbarYTop ? 1 : -1;
-
-    i.element.scrollTop += direction * i.containerHeight;
-    updateGeometry(i);
-
-    e.stopPropagation();
-  });
-
-  i.event.bind(i.scrollbarX, 'mousedown', function (e) { return e.stopPropagation(); });
-  i.event.bind(i.scrollbarXRail, 'mousedown', function (e) {
-    var positionLeft =
-      e.pageX -
-      window.pageXOffset -
-      i.scrollbarXRail.getBoundingClientRect().left;
-    var direction = positionLeft > i.scrollbarXLeft ? 1 : -1;
-
-    i.element.scrollLeft += direction * i.containerWidth;
-    updateGeometry(i);
-
-    e.stopPropagation();
-  });
-};
-
-var dragThumb = function(i) {
-  bindMouseScrollHandler(i, [
-    'containerWidth',
-    'contentWidth',
-    'pageX',
-    'railXWidth',
-    'scrollbarX',
-    'scrollbarXWidth',
-    'scrollLeft',
-    'x',
-    'scrollbarXRail' ]);
-  bindMouseScrollHandler(i, [
-    'containerHeight',
-    'contentHeight',
-    'pageY',
-    'railYHeight',
-    'scrollbarY',
-    'scrollbarYHeight',
-    'scrollTop',
-    'y',
-    'scrollbarYRail' ]);
-};
-
-function bindMouseScrollHandler(
-  i,
-  ref
-) {
-  var containerHeight = ref[0];
-  var contentHeight = ref[1];
-  var pageY = ref[2];
-  var railYHeight = ref[3];
-  var scrollbarY = ref[4];
-  var scrollbarYHeight = ref[5];
-  var scrollTop = ref[6];
-  var y = ref[7];
-  var scrollbarYRail = ref[8];
-
-  var element = i.element;
-
-  var startingScrollTop = null;
-  var startingMousePageY = null;
-  var scrollBy = null;
-
-  function mouseMoveHandler(e) {
-    element[scrollTop] =
-      startingScrollTop + scrollBy * (e[pageY] - startingMousePageY);
-    addScrollingClass(i, y);
-    updateGeometry(i);
-
-    e.stopPropagation();
-    e.preventDefault();
+  function removeScrollingClass(i, x) {
+    scrollingClassTimeout[x] = setTimeout(
+      function () { return i.isAlive && i.element.classList.remove(cls.state.scrolling(x)); },
+      i.settings.scrollingThreshold
+    );
   }
 
-  function mouseUpHandler() {
-    removeScrollingClass(i, y);
-    i[scrollbarYRail].classList.remove(cls.state.clicking);
-    i.event.unbind(i.ownerDocument, 'mousemove', mouseMoveHandler);
+  function setScrollingClassInstantly(i, x) {
+    addScrollingClass(i, x);
+    removeScrollingClass(i, x);
   }
 
-  i.event.bind(i[scrollbarY], 'mousedown', function (e) {
-    startingScrollTop = element[scrollTop];
-    startingMousePageY = e[pageY];
-    scrollBy =
-      (i[contentHeight] - i[containerHeight]) /
-      (i[railYHeight] - i[scrollbarYHeight]);
+  var EventElement = function EventElement(element) {
+    this.element = element;
+    this.handlers = {};
+  };
 
-    i.event.bind(i.ownerDocument, 'mousemove', mouseMoveHandler);
-    i.event.once(i.ownerDocument, 'mouseup', mouseUpHandler);
+  var prototypeAccessors = { isEmpty: { configurable: true } };
 
-    i[scrollbarYRail].classList.add(cls.state.clicking);
-
-    e.stopPropagation();
-    e.preventDefault();
-  });
-}
-
-var keyboard = function(i) {
-  var element = i.element;
-
-  var elementHovered = function () { return matches(element, ':hover'); };
-  var scrollbarFocused = function () { return matches(i.scrollbarX, ':focus') || matches(i.scrollbarY, ':focus'); };
-
-  function shouldPreventDefault(deltaX, deltaY) {
-    var scrollTop = Math.floor(element.scrollTop);
-    if (deltaX === 0) {
-      if (!i.scrollbarYActive) {
-        return false;
-      }
-      if (
-        (scrollTop === 0 && deltaY > 0) ||
-        (scrollTop >= i.contentHeight - i.containerHeight && deltaY < 0)
-      ) {
-        return !i.settings.wheelPropagation;
-      }
+  EventElement.prototype.bind = function bind (eventName, handler) {
+    if (typeof this.handlers[eventName] === 'undefined') {
+      this.handlers[eventName] = [];
     }
+    this.handlers[eventName].push(handler);
+    this.element.addEventListener(eventName, handler, false);
+  };
 
-    var scrollLeft = element.scrollLeft;
-    if (deltaY === 0) {
-      if (!i.scrollbarXActive) {
-        return false;
-      }
-      if (
-        (scrollLeft === 0 && deltaX < 0) ||
-        (scrollLeft >= i.contentWidth - i.containerWidth && deltaX > 0)
-      ) {
-        return !i.settings.wheelPropagation;
-      }
-    }
-    return true;
-  }
+  EventElement.prototype.unbind = function unbind (eventName, target) {
+      var this$1 = this;
 
-  i.event.bind(i.ownerDocument, 'keydown', function (e) {
-    if (
-      (e.isDefaultPrevented && e.isDefaultPrevented()) ||
-      e.defaultPrevented
-    ) {
-      return;
-    }
-
-    if (!elementHovered() && !scrollbarFocused()) {
-      return;
-    }
-
-    var activeElement = document.activeElement
-      ? document.activeElement
-      : i.ownerDocument.activeElement;
-    if (activeElement) {
-      if (activeElement.tagName === 'IFRAME') {
-        activeElement = activeElement.contentDocument.activeElement;
-      } else {
-        // go deeper if element is a webcomponent
-        while (activeElement.shadowRoot) {
-          activeElement = activeElement.shadowRoot.activeElement;
-        }
-      }
-      if (isEditable(activeElement)) {
-        return;
-      }
-    }
-
-    var deltaX = 0;
-    var deltaY = 0;
-
-    switch (e.which) {
-      case 37: // left
-        if (e.metaKey) {
-          deltaX = -i.contentWidth;
-        } else if (e.altKey) {
-          deltaX = -i.containerWidth;
-        } else {
-          deltaX = -30;
-        }
-        break;
-      case 38: // up
-        if (e.metaKey) {
-          deltaY = i.contentHeight;
-        } else if (e.altKey) {
-          deltaY = i.containerHeight;
-        } else {
-          deltaY = 30;
-        }
-        break;
-      case 39: // right
-        if (e.metaKey) {
-          deltaX = i.contentWidth;
-        } else if (e.altKey) {
-          deltaX = i.containerWidth;
-        } else {
-          deltaX = 30;
-        }
-        break;
-      case 40: // down
-        if (e.metaKey) {
-          deltaY = -i.contentHeight;
-        } else if (e.altKey) {
-          deltaY = -i.containerHeight;
-        } else {
-          deltaY = -30;
-        }
-        break;
-      case 32: // space bar
-        if (e.shiftKey) {
-          deltaY = i.containerHeight;
-        } else {
-          deltaY = -i.containerHeight;
-        }
-        break;
-      case 33: // page up
-        deltaY = i.containerHeight;
-        break;
-      case 34: // page down
-        deltaY = -i.containerHeight;
-        break;
-      case 36: // home
-        deltaY = i.contentHeight;
-        break;
-      case 35: // end
-        deltaY = -i.contentHeight;
-        break;
-      default:
-        return;
-    }
-
-    if (i.settings.suppressScrollX && deltaX !== 0) {
-      return;
-    }
-    if (i.settings.suppressScrollY && deltaY !== 0) {
-      return;
-    }
-
-    element.scrollTop -= deltaY;
-    element.scrollLeft += deltaX;
-    updateGeometry(i);
-
-    if (shouldPreventDefault(deltaX, deltaY)) {
-      e.preventDefault();
-    }
-  });
-};
-
-var wheel = function(i) {
-  var element = i.element;
-
-  function shouldPreventDefault(deltaX, deltaY) {
-    var roundedScrollTop = Math.floor(element.scrollTop);
-    var isTop = element.scrollTop === 0;
-    var isBottom =
-      roundedScrollTop + element.offsetHeight === element.scrollHeight;
-    var isLeft = element.scrollLeft === 0;
-    var isRight =
-      element.scrollLeft + element.offsetWidth === element.scrollWidth;
-
-    var hitsBound;
-
-    // pick axis with primary direction
-    if (Math.abs(deltaY) > Math.abs(deltaX)) {
-      hitsBound = isTop || isBottom;
-    } else {
-      hitsBound = isLeft || isRight;
-    }
-
-    return hitsBound ? !i.settings.wheelPropagation : true;
-  }
-
-  function getDeltaFromEvent(e) {
-    var deltaX = e.deltaX;
-    var deltaY = -1 * e.deltaY;
-
-    if (typeof deltaX === 'undefined' || typeof deltaY === 'undefined') {
-      // OS X Safari
-      deltaX = -1 * e.wheelDeltaX / 6;
-      deltaY = e.wheelDeltaY / 6;
-    }
-
-    if (e.deltaMode && e.deltaMode === 1) {
-      // Firefox in deltaMode 1: Line scrolling
-      deltaX *= 10;
-      deltaY *= 10;
-    }
-
-    if (deltaX !== deltaX && deltaY !== deltaY /* NaN checks */) {
-      // IE in some mouse drivers
-      deltaX = 0;
-      deltaY = e.wheelDelta;
-    }
-
-    if (e.shiftKey) {
-      // reverse axis with shift key
-      return [-deltaY, -deltaX];
-    }
-    return [deltaX, deltaY];
-  }
-
-  function shouldBeConsumedByChild(target, deltaX, deltaY) {
-    // FIXME: this is a workaround for <select> issue in FF and IE #571
-    if (!env.isWebKit && element.querySelector('select:focus')) {
-      return true;
-    }
-
-    if (!element.contains(target)) {
-      return false;
-    }
-
-    var cursor = target;
-
-    while (cursor && cursor !== element) {
-      if (cursor.classList.contains(cls.element.consuming)) {
+    this.handlers[eventName] = this.handlers[eventName].filter(function (handler) {
+      if (target && handler !== target) {
         return true;
       }
+      this$1.element.removeEventListener(eventName, handler, false);
+      return false;
+    });
+  };
 
-      var style = get(cursor);
-      var overflow = [style.overflow, style.overflowX, style.overflowY].join(
-        ''
-      );
-
-      // if scrollable
-      if (overflow.match(/(scroll|auto)/)) {
-        var maxScrollTop = cursor.scrollHeight - cursor.clientHeight;
-        if (maxScrollTop > 0) {
-          if (
-            !(cursor.scrollTop === 0 && deltaY > 0) &&
-            !(cursor.scrollTop === maxScrollTop && deltaY < 0)
-          ) {
-            return true;
-          }
-        }
-        var maxScrollLeft = cursor.scrollWidth - cursor.clientWidth;
-        if (maxScrollLeft > 0) {
-          if (
-            !(cursor.scrollLeft === 0 && deltaX < 0) &&
-            !(cursor.scrollLeft === maxScrollLeft && deltaX > 0)
-          ) {
-            return true;
-          }
-        }
-      }
-
-      cursor = cursor.parentNode;
+  EventElement.prototype.unbindAll = function unbindAll () {
+    for (var name in this.handlers) {
+      this.unbind(name);
     }
+  };
 
-    return false;
+  prototypeAccessors.isEmpty.get = function () {
+      var this$1 = this;
+
+    return Object.keys(this.handlers).every(
+      function (key) { return this$1.handlers[key].length === 0; }
+    );
+  };
+
+  Object.defineProperties( EventElement.prototype, prototypeAccessors );
+
+  var EventManager = function EventManager() {
+    this.eventElements = [];
+  };
+
+  EventManager.prototype.eventElement = function eventElement (element) {
+    var ee = this.eventElements.filter(function (ee) { return ee.element === element; })[0];
+    if (!ee) {
+      ee = new EventElement(element);
+      this.eventElements.push(ee);
+    }
+    return ee;
+  };
+
+  EventManager.prototype.bind = function bind (element, eventName, handler) {
+    this.eventElement(element).bind(eventName, handler);
+  };
+
+  EventManager.prototype.unbind = function unbind (element, eventName, handler) {
+    var ee = this.eventElement(element);
+    ee.unbind(eventName, handler);
+
+    if (ee.isEmpty) {
+      // remove
+      this.eventElements.splice(this.eventElements.indexOf(ee), 1);
+    }
+  };
+
+  EventManager.prototype.unbindAll = function unbindAll () {
+    this.eventElements.forEach(function (e) { return e.unbindAll(); });
+    this.eventElements = [];
+  };
+
+  EventManager.prototype.once = function once (element, eventName, handler) {
+    var ee = this.eventElement(element);
+    var onceHandler = function (evt) {
+      ee.unbind(eventName, onceHandler);
+      handler(evt);
+    };
+    ee.bind(eventName, onceHandler);
+  };
+
+  function createEvent(name) {
+    if (typeof window.CustomEvent === 'function') {
+      return new CustomEvent(name);
+    } else {
+      var evt = document.createEvent('CustomEvent');
+      evt.initCustomEvent(name, false, false, undefined);
+      return evt;
+    }
   }
 
-  function mousewheelHandler(e) {
-    var ref = getDeltaFromEvent(e);
-    var deltaX = ref[0];
-    var deltaY = ref[1];
+  function processScrollDiff(
+    i,
+    axis,
+    diff,
+    useScrollingClass,
+    forceFireReachEvent
+  ) {
+    if ( useScrollingClass === void 0 ) useScrollingClass = true;
+    if ( forceFireReachEvent === void 0 ) forceFireReachEvent = false;
 
-    if (shouldBeConsumedByChild(e.target, deltaX, deltaY)) {
-      return;
+    var fields;
+    if (axis === 'top') {
+      fields = [
+        'contentHeight',
+        'containerHeight',
+        'scrollTop',
+        'y',
+        'up',
+        'down' ];
+    } else if (axis === 'left') {
+      fields = [
+        'contentWidth',
+        'containerWidth',
+        'scrollLeft',
+        'x',
+        'left',
+        'right' ];
+    } else {
+      throw new Error('A proper axis should be provided');
     }
 
-    var shouldPrevent = false;
-    if (!i.settings.useBothWheelAxes) {
-      // deltaX will only be used for horizontal scrolling and deltaY will
-      // only be used for vertical scrolling - this is the default
-      element.scrollTop -= deltaY * i.settings.wheelSpeed;
-      element.scrollLeft += deltaX * i.settings.wheelSpeed;
-    } else if (i.scrollbarYActive && !i.scrollbarXActive) {
-      // only vertical scrollbar is active and useBothWheelAxes option is
-      // active, so let's scroll vertical bar using both mouse wheel axes
-      if (deltaY) {
-        element.scrollTop -= deltaY * i.settings.wheelSpeed;
-      } else {
-        element.scrollTop += deltaX * i.settings.wheelSpeed;
-      }
-      shouldPrevent = true;
-    } else if (i.scrollbarXActive && !i.scrollbarYActive) {
-      // useBothWheelAxes and only horizontal bar is active, so use both
-      // wheel axes for horizontal bar
-      if (deltaX) {
-        element.scrollLeft += deltaX * i.settings.wheelSpeed;
-      } else {
-        element.scrollLeft -= deltaY * i.settings.wheelSpeed;
-      }
-      shouldPrevent = true;
+    processScrollDiff$1(i, diff, fields, useScrollingClass, forceFireReachEvent);
+  }
+
+  function processScrollDiff$1(
+    i,
+    diff,
+    ref,
+    useScrollingClass,
+    forceFireReachEvent
+  ) {
+    var contentHeight = ref[0];
+    var containerHeight = ref[1];
+    var scrollTop = ref[2];
+    var y = ref[3];
+    var up = ref[4];
+    var down = ref[5];
+    if ( useScrollingClass === void 0 ) useScrollingClass = true;
+    if ( forceFireReachEvent === void 0 ) forceFireReachEvent = false;
+
+    var element = i.element;
+
+    // reset reach
+    i.reach[y] = null;
+
+    // 1 for subpixel rounding
+    if (element[scrollTop] < 1) {
+      i.reach[y] = 'start';
     }
 
-    updateGeometry(i);
+    // 1 for subpixel rounding
+    if (element[scrollTop] > i[contentHeight] - i[containerHeight] - 1) {
+      i.reach[y] = 'end';
+    }
 
-    shouldPrevent = shouldPrevent || shouldPreventDefault(deltaX, deltaY);
-    if (shouldPrevent && !e.ctrlKey) {
+    if (diff) {
+      element.dispatchEvent(createEvent(("ps-scroll-" + y)));
+
+      if (diff < 0) {
+        element.dispatchEvent(createEvent(("ps-scroll-" + up)));
+      } else if (diff > 0) {
+        element.dispatchEvent(createEvent(("ps-scroll-" + down)));
+      }
+
+      if (useScrollingClass) {
+        setScrollingClassInstantly(i, y);
+      }
+    }
+
+    if (i.reach[y] && (diff || forceFireReachEvent)) {
+      element.dispatchEvent(createEvent(("ps-" + y + "-reach-" + (i.reach[y]))));
+    }
+  }
+
+  function toInt(x) {
+    return parseInt(x, 10) || 0;
+  }
+
+  function isEditable(el) {
+    return (
+      matches(el, 'input,[contenteditable]') ||
+      matches(el, 'select,[contenteditable]') ||
+      matches(el, 'textarea,[contenteditable]') ||
+      matches(el, 'button,[contenteditable]')
+    );
+  }
+
+  function outerWidth(element) {
+    var styles = get(element);
+    return (
+      toInt(styles.width) +
+      toInt(styles.paddingLeft) +
+      toInt(styles.paddingRight) +
+      toInt(styles.borderLeftWidth) +
+      toInt(styles.borderRightWidth)
+    );
+  }
+
+  var env = {
+    isWebKit:
+      typeof document !== 'undefined' &&
+      'WebkitAppearance' in document.documentElement.style,
+    supportsTouch:
+      typeof window !== 'undefined' &&
+      ('ontouchstart' in window ||
+        ('maxTouchPoints' in window.navigator &&
+          window.navigator.maxTouchPoints > 0) ||
+        (window.DocumentTouch && document instanceof window.DocumentTouch)),
+    supportsIePointer:
+      typeof navigator !== 'undefined' && navigator.msMaxTouchPoints,
+    isChrome:
+      typeof navigator !== 'undefined' &&
+      /Chrome/i.test(navigator && navigator.userAgent),
+  };
+
+  function updateGeometry(i) {
+    var element = i.element;
+    var roundedScrollTop = Math.floor(element.scrollTop);
+    var rect = element.getBoundingClientRect();
+
+    i.containerWidth = Math.ceil(rect.width);
+    i.containerHeight = Math.ceil(rect.height);
+    i.contentWidth = element.scrollWidth;
+    i.contentHeight = element.scrollHeight;
+
+    if (!element.contains(i.scrollbarXRail)) {
+      // clean up and append
+      queryChildren(element, cls.element.rail('x')).forEach(function (el) { return remove(el); }
+      );
+      element.appendChild(i.scrollbarXRail);
+    }
+    if (!element.contains(i.scrollbarYRail)) {
+      // clean up and append
+      queryChildren(element, cls.element.rail('y')).forEach(function (el) { return remove(el); }
+      );
+      element.appendChild(i.scrollbarYRail);
+    }
+
+    if (
+      !i.settings.suppressScrollX &&
+      i.containerWidth + i.settings.scrollXMarginOffset < i.contentWidth
+    ) {
+      i.scrollbarXActive = true;
+      i.railXWidth = i.containerWidth - i.railXMarginWidth;
+      i.railXRatio = i.containerWidth / i.railXWidth;
+      i.scrollbarXWidth = getThumbSize(
+        i,
+        toInt((i.railXWidth * i.containerWidth) / i.contentWidth)
+      );
+      i.scrollbarXLeft = toInt(
+        ((i.negativeScrollAdjustment + element.scrollLeft) *
+          (i.railXWidth - i.scrollbarXWidth)) /
+          (i.contentWidth - i.containerWidth)
+      );
+    } else {
+      i.scrollbarXActive = false;
+    }
+
+    if (
+      !i.settings.suppressScrollY &&
+      i.containerHeight + i.settings.scrollYMarginOffset < i.contentHeight
+    ) {
+      i.scrollbarYActive = true;
+      i.railYHeight = i.containerHeight - i.railYMarginHeight;
+      i.railYRatio = i.containerHeight / i.railYHeight;
+      i.scrollbarYHeight = getThumbSize(
+        i,
+        toInt((i.railYHeight * i.containerHeight) / i.contentHeight)
+      );
+      i.scrollbarYTop = toInt(
+        (roundedScrollTop * (i.railYHeight - i.scrollbarYHeight)) /
+          (i.contentHeight - i.containerHeight)
+      );
+    } else {
+      i.scrollbarYActive = false;
+    }
+
+    if (i.scrollbarXLeft >= i.railXWidth - i.scrollbarXWidth) {
+      i.scrollbarXLeft = i.railXWidth - i.scrollbarXWidth;
+    }
+    if (i.scrollbarYTop >= i.railYHeight - i.scrollbarYHeight) {
+      i.scrollbarYTop = i.railYHeight - i.scrollbarYHeight;
+    }
+
+    updateCss(element, i);
+
+    if (i.scrollbarXActive) {
+      element.classList.add(cls.state.active('x'));
+    } else {
+      element.classList.remove(cls.state.active('x'));
+      i.scrollbarXWidth = 0;
+      i.scrollbarXLeft = 0;
+      element.scrollLeft = i.isRtl === true ? i.contentWidth : 0;
+    }
+    if (i.scrollbarYActive) {
+      element.classList.add(cls.state.active('y'));
+    } else {
+      element.classList.remove(cls.state.active('y'));
+      i.scrollbarYHeight = 0;
+      i.scrollbarYTop = 0;
+      element.scrollTop = 0;
+    }
+  }
+
+  function getThumbSize(i, thumbSize) {
+    if (i.settings.minScrollbarLength) {
+      thumbSize = Math.max(thumbSize, i.settings.minScrollbarLength);
+    }
+    if (i.settings.maxScrollbarLength) {
+      thumbSize = Math.min(thumbSize, i.settings.maxScrollbarLength);
+    }
+    return thumbSize;
+  }
+
+  function updateCss(element, i) {
+    var xRailOffset = { width: i.railXWidth };
+    var roundedScrollTop = Math.floor(element.scrollTop);
+
+    if (i.isRtl) {
+      xRailOffset.left =
+        i.negativeScrollAdjustment +
+        element.scrollLeft +
+        i.containerWidth -
+        i.contentWidth;
+    } else {
+      xRailOffset.left = element.scrollLeft;
+    }
+    if (i.isScrollbarXUsingBottom) {
+      xRailOffset.bottom = i.scrollbarXBottom - roundedScrollTop;
+    } else {
+      xRailOffset.top = i.scrollbarXTop + roundedScrollTop;
+    }
+    set(i.scrollbarXRail, xRailOffset);
+
+    var yRailOffset = { top: roundedScrollTop, height: i.railYHeight };
+    if (i.isScrollbarYUsingRight) {
+      if (i.isRtl) {
+        yRailOffset.right =
+          i.contentWidth -
+          (i.negativeScrollAdjustment + element.scrollLeft) -
+          i.scrollbarYRight -
+          i.scrollbarYOuterWidth -
+          9;
+      } else {
+        yRailOffset.right = i.scrollbarYRight - element.scrollLeft;
+      }
+    } else {
+      if (i.isRtl) {
+        yRailOffset.left =
+          i.negativeScrollAdjustment +
+          element.scrollLeft +
+          i.containerWidth * 2 -
+          i.contentWidth -
+          i.scrollbarYLeft -
+          i.scrollbarYOuterWidth;
+      } else {
+        yRailOffset.left = i.scrollbarYLeft + element.scrollLeft;
+      }
+    }
+    set(i.scrollbarYRail, yRailOffset);
+
+    set(i.scrollbarX, {
+      left: i.scrollbarXLeft,
+      width: i.scrollbarXWidth - i.railBorderXWidth,
+    });
+    set(i.scrollbarY, {
+      top: i.scrollbarYTop,
+      height: i.scrollbarYHeight - i.railBorderYWidth,
+    });
+  }
+
+  function clickRail(i) {
+    var element = i.element;
+
+    i.event.bind(i.scrollbarY, 'mousedown', function (e) { return e.stopPropagation(); });
+    i.event.bind(i.scrollbarYRail, 'mousedown', function (e) {
+      var positionTop =
+        e.pageY -
+        window.pageYOffset -
+        i.scrollbarYRail.getBoundingClientRect().top;
+      var direction = positionTop > i.scrollbarYTop ? 1 : -1;
+
+      i.element.scrollTop += direction * i.containerHeight;
+      updateGeometry(i);
+
+      e.stopPropagation();
+    });
+
+    i.event.bind(i.scrollbarX, 'mousedown', function (e) { return e.stopPropagation(); });
+    i.event.bind(i.scrollbarXRail, 'mousedown', function (e) {
+      var positionLeft =
+        e.pageX -
+        window.pageXOffset -
+        i.scrollbarXRail.getBoundingClientRect().left;
+      var direction = positionLeft > i.scrollbarXLeft ? 1 : -1;
+
+      i.element.scrollLeft += direction * i.containerWidth;
+      updateGeometry(i);
+
+      e.stopPropagation();
+    });
+  }
+
+  function dragThumb(i) {
+    bindMouseScrollHandler(i, [
+      'containerWidth',
+      'contentWidth',
+      'pageX',
+      'railXWidth',
+      'scrollbarX',
+      'scrollbarXWidth',
+      'scrollLeft',
+      'x',
+      'scrollbarXRail' ]);
+    bindMouseScrollHandler(i, [
+      'containerHeight',
+      'contentHeight',
+      'pageY',
+      'railYHeight',
+      'scrollbarY',
+      'scrollbarYHeight',
+      'scrollTop',
+      'y',
+      'scrollbarYRail' ]);
+  }
+
+  function bindMouseScrollHandler(
+    i,
+    ref
+  ) {
+    var containerHeight = ref[0];
+    var contentHeight = ref[1];
+    var pageY = ref[2];
+    var railYHeight = ref[3];
+    var scrollbarY = ref[4];
+    var scrollbarYHeight = ref[5];
+    var scrollTop = ref[6];
+    var y = ref[7];
+    var scrollbarYRail = ref[8];
+
+    var element = i.element;
+
+    var startingScrollTop = null;
+    var startingMousePageY = null;
+    var scrollBy = null;
+
+    function mouseMoveHandler(e) {
+      if (e.touches && e.touches[0]) {
+        e[pageY] = e.touches[0].pageY;
+      }
+      element[scrollTop] =
+        startingScrollTop + scrollBy * (e[pageY] - startingMousePageY);
+      addScrollingClass(i, y);
+      updateGeometry(i);
+
       e.stopPropagation();
       e.preventDefault();
     }
-  }
 
-  if (typeof window.onwheel !== 'undefined') {
-    i.event.bind(element, 'wheel', mousewheelHandler);
-  } else if (typeof window.onmousewheel !== 'undefined') {
-    i.event.bind(element, 'mousewheel', mousewheelHandler);
-  }
-};
+    function mouseUpHandler() {
+      removeScrollingClass(i, y);
+      i[scrollbarYRail].classList.remove(cls.state.clicking);
+      i.event.unbind(i.ownerDocument, 'mousemove', mouseMoveHandler);
+    }
 
-var touch = function(i) {
-  if (!env.supportsTouch && !env.supportsIePointer) {
-    return;
-  }
-
-  var element = i.element;
-
-  function shouldPrevent(deltaX, deltaY) {
-    var scrollTop = Math.floor(element.scrollTop);
-    var scrollLeft = element.scrollLeft;
-    var magnitudeX = Math.abs(deltaX);
-    var magnitudeY = Math.abs(deltaY);
-
-    if (magnitudeY > magnitudeX) {
-      // user is perhaps trying to swipe up/down the page
-
-      if (
-        (deltaY < 0 && scrollTop === i.contentHeight - i.containerHeight) ||
-        (deltaY > 0 && scrollTop === 0)
-      ) {
-        // set prevent for mobile Chrome refresh
-        return window.scrollY === 0 && deltaY > 0 && env.isChrome;
+    function bindMoves(e, touchMode) {
+      startingScrollTop = element[scrollTop];
+      if (touchMode && e.touches) {
+        e[pageY] = e.touches[0].pageY;
       }
-    } else if (magnitudeX > magnitudeY) {
-      // user is perhaps trying to swipe left/right across the page
-
-      if (
-        (deltaX < 0 && scrollLeft === i.contentWidth - i.containerWidth) ||
-        (deltaX > 0 && scrollLeft === 0)
-      ) {
-        return true;
-      }
-    }
-
-    return true;
-  }
-
-  function applyTouchMove(differenceX, differenceY) {
-    element.scrollTop -= differenceY;
-    element.scrollLeft -= differenceX;
-
-    updateGeometry(i);
-  }
-
-  var startOffset = {};
-  var startTime = 0;
-  var speed = {};
-  var easingLoop = null;
-
-  function getTouch(e) {
-    if (e.targetTouches) {
-      return e.targetTouches[0];
-    } else {
-      // Maybe IE pointer
-      return e;
-    }
-  }
-
-  function shouldHandle(e) {
-    if (e.pointerType && e.pointerType === 'pen' && e.buttons === 0) {
-      return false;
-    }
-    if (e.targetTouches && e.targetTouches.length === 1) {
-      return true;
-    }
-    if (
-      e.pointerType &&
-      e.pointerType !== 'mouse' &&
-      e.pointerType !== e.MSPOINTER_TYPE_MOUSE
-    ) {
-      return true;
-    }
-    return false;
-  }
-
-  function touchStart(e) {
-    if (!shouldHandle(e)) {
-      return;
-    }
-
-    var touch = getTouch(e);
-
-    startOffset.pageX = touch.pageX;
-    startOffset.pageY = touch.pageY;
-
-    startTime = new Date().getTime();
-
-    if (easingLoop !== null) {
-      clearInterval(easingLoop);
-    }
-  }
-
-  function shouldBeConsumedByChild(target, deltaX, deltaY) {
-    if (!element.contains(target)) {
-      return false;
-    }
-
-    var cursor = target;
-
-    while (cursor && cursor !== element) {
-      if (cursor.classList.contains(cls.element.consuming)) {
-        return true;
+      startingMousePageY = e[pageY];
+      scrollBy =
+        (i[contentHeight] - i[containerHeight]) /
+        (i[railYHeight] - i[scrollbarYHeight]);
+      if (!touchMode) {
+        i.event.bind(i.ownerDocument, 'mousemove', mouseMoveHandler);
+        i.event.once(i.ownerDocument, 'mouseup', mouseUpHandler);
+        e.preventDefault();
+      } else {
+        i.event.bind(i.ownerDocument, 'touchmove', mouseMoveHandler);
       }
 
-      var style = get(cursor);
-      var overflow = [style.overflow, style.overflowX, style.overflowY].join(
-        ''
-      );
+      i[scrollbarYRail].classList.add(cls.state.clicking);
 
-      // if scrollable
-      if (overflow.match(/(scroll|auto)/)) {
-        var maxScrollTop = cursor.scrollHeight - cursor.clientHeight;
-        if (maxScrollTop > 0) {
-          if (
-            !(cursor.scrollTop === 0 && deltaY > 0) &&
-            !(cursor.scrollTop === maxScrollTop && deltaY < 0)
-          ) {
-            return true;
-          }
+      e.stopPropagation();
+    }
+
+    i.event.bind(i[scrollbarY], 'mousedown', function (e) {
+      bindMoves(e);
+    });
+    i.event.bind(i[scrollbarY], 'touchstart', function (e) {
+      bindMoves(e, true);
+    });
+  }
+
+  function keyboard(i) {
+    var element = i.element;
+
+    var elementHovered = function () { return matches(element, ':hover'); };
+    var scrollbarFocused = function () { return matches(i.scrollbarX, ':focus') || matches(i.scrollbarY, ':focus'); };
+
+    function shouldPreventDefault(deltaX, deltaY) {
+      var scrollTop = Math.floor(element.scrollTop);
+      if (deltaX === 0) {
+        if (!i.scrollbarYActive) {
+          return false;
         }
-        var maxScrollLeft = cursor.scrollLeft - cursor.clientWidth;
-        if (maxScrollLeft > 0) {
-          if (
-            !(cursor.scrollLeft === 0 && deltaX < 0) &&
-            !(cursor.scrollLeft === maxScrollLeft && deltaX > 0)
-          ) {
-            return true;
-          }
+        if (
+          (scrollTop === 0 && deltaY > 0) ||
+          (scrollTop >= i.contentHeight - i.containerHeight && deltaY < 0)
+        ) {
+          return !i.settings.wheelPropagation;
         }
       }
 
-      cursor = cursor.parentNode;
+      var scrollLeft = element.scrollLeft;
+      if (deltaY === 0) {
+        if (!i.scrollbarXActive) {
+          return false;
+        }
+        if (
+          (scrollLeft === 0 && deltaX < 0) ||
+          (scrollLeft >= i.contentWidth - i.containerWidth && deltaX > 0)
+        ) {
+          return !i.settings.wheelPropagation;
+        }
+      }
+      return true;
     }
 
-    return false;
-  }
-
-  function touchMove(e) {
-    if (shouldHandle(e)) {
-      var touch = getTouch(e);
-
-      var currentOffset = { pageX: touch.pageX, pageY: touch.pageY };
-
-      var differenceX = currentOffset.pageX - startOffset.pageX;
-      var differenceY = currentOffset.pageY - startOffset.pageY;
-
-      if (shouldBeConsumedByChild(e.target, differenceX, differenceY)) {
+    i.event.bind(i.ownerDocument, 'keydown', function (e) {
+      if (
+        (e.isDefaultPrevented && e.isDefaultPrevented()) ||
+        e.defaultPrevented
+      ) {
         return;
       }
 
-      applyTouchMove(differenceX, differenceY);
-      startOffset = currentOffset;
-
-      var currentTime = new Date().getTime();
-
-      var timeGap = currentTime - startTime;
-      if (timeGap > 0) {
-        speed.x = differenceX / timeGap;
-        speed.y = differenceY / timeGap;
-        startTime = currentTime;
+      if (!elementHovered() && !scrollbarFocused()) {
+        return;
       }
 
-      if (shouldPrevent(differenceX, differenceY)) {
+      var activeElement = document.activeElement
+        ? document.activeElement
+        : i.ownerDocument.activeElement;
+      if (activeElement) {
+        if (activeElement.tagName === 'IFRAME') {
+          activeElement = activeElement.contentDocument.activeElement;
+        } else {
+          // go deeper if element is a webcomponent
+          while (activeElement.shadowRoot) {
+            activeElement = activeElement.shadowRoot.activeElement;
+          }
+        }
+        if (isEditable(activeElement)) {
+          return;
+        }
+      }
+
+      var deltaX = 0;
+      var deltaY = 0;
+
+      switch (e.which) {
+        case 37: // left
+          if (e.metaKey) {
+            deltaX = -i.contentWidth;
+          } else if (e.altKey) {
+            deltaX = -i.containerWidth;
+          } else {
+            deltaX = -30;
+          }
+          break;
+        case 38: // up
+          if (e.metaKey) {
+            deltaY = i.contentHeight;
+          } else if (e.altKey) {
+            deltaY = i.containerHeight;
+          } else {
+            deltaY = 30;
+          }
+          break;
+        case 39: // right
+          if (e.metaKey) {
+            deltaX = i.contentWidth;
+          } else if (e.altKey) {
+            deltaX = i.containerWidth;
+          } else {
+            deltaX = 30;
+          }
+          break;
+        case 40: // down
+          if (e.metaKey) {
+            deltaY = -i.contentHeight;
+          } else if (e.altKey) {
+            deltaY = -i.containerHeight;
+          } else {
+            deltaY = -30;
+          }
+          break;
+        case 32: // space bar
+          if (e.shiftKey) {
+            deltaY = i.containerHeight;
+          } else {
+            deltaY = -i.containerHeight;
+          }
+          break;
+        case 33: // page up
+          deltaY = i.containerHeight;
+          break;
+        case 34: // page down
+          deltaY = -i.containerHeight;
+          break;
+        case 36: // home
+          deltaY = i.contentHeight;
+          break;
+        case 35: // end
+          deltaY = -i.contentHeight;
+          break;
+        default:
+          return;
+      }
+
+      if (i.settings.suppressScrollX && deltaX !== 0) {
+        return;
+      }
+      if (i.settings.suppressScrollY && deltaY !== 0) {
+        return;
+      }
+
+      element.scrollTop -= deltaY;
+      element.scrollLeft += deltaX;
+      updateGeometry(i);
+
+      if (shouldPreventDefault(deltaX, deltaY)) {
+        e.preventDefault();
+      }
+    });
+  }
+
+  function wheel(i) {
+    var element = i.element;
+
+    function shouldPreventDefault(deltaX, deltaY) {
+      var roundedScrollTop = Math.floor(element.scrollTop);
+      var isTop = element.scrollTop === 0;
+      var isBottom =
+        roundedScrollTop + element.offsetHeight === element.scrollHeight;
+      var isLeft = element.scrollLeft === 0;
+      var isRight =
+        element.scrollLeft + element.offsetWidth === element.scrollWidth;
+
+      var hitsBound;
+
+      // pick axis with primary direction
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        hitsBound = isTop || isBottom;
+      } else {
+        hitsBound = isLeft || isRight;
+      }
+
+      return hitsBound ? !i.settings.wheelPropagation : true;
+    }
+
+    function getDeltaFromEvent(e) {
+      var deltaX = e.deltaX;
+      var deltaY = -1 * e.deltaY;
+
+      if (typeof deltaX === 'undefined' || typeof deltaY === 'undefined') {
+        // OS X Safari
+        deltaX = (-1 * e.wheelDeltaX) / 6;
+        deltaY = e.wheelDeltaY / 6;
+      }
+
+      if (e.deltaMode && e.deltaMode === 1) {
+        // Firefox in deltaMode 1: Line scrolling
+        deltaX *= 10;
+        deltaY *= 10;
+      }
+
+      if (deltaX !== deltaX && deltaY !== deltaY /* NaN checks */) {
+        // IE in some mouse drivers
+        deltaX = 0;
+        deltaY = e.wheelDelta;
+      }
+
+      if (e.shiftKey) {
+        // reverse axis with shift key
+        return [-deltaY, -deltaX];
+      }
+      return [deltaX, deltaY];
+    }
+
+    function shouldBeConsumedByChild(target, deltaX, deltaY) {
+      // FIXME: this is a workaround for <select> issue in FF and IE #571
+      if (!env.isWebKit && element.querySelector('select:focus')) {
+        return true;
+      }
+
+      if (!element.contains(target)) {
+        return false;
+      }
+
+      var cursor = target;
+
+      while (cursor && cursor !== element) {
+        if (cursor.classList.contains(cls.element.consuming)) {
+          return true;
+        }
+
+        var style = get(cursor);
+
+        // if deltaY && vertical scrollable
+        if (deltaY && style.overflowY.match(/(scroll|auto)/)) {
+          var maxScrollTop = cursor.scrollHeight - cursor.clientHeight;
+          if (maxScrollTop > 0) {
+            if (
+              (cursor.scrollTop > 0 && deltaY < 0) ||
+              (cursor.scrollTop < maxScrollTop && deltaY > 0)
+            ) {
+              return true;
+            }
+          }
+        }
+        // if deltaX && horizontal scrollable
+        if (deltaX && style.overflowX.match(/(scroll|auto)/)) {
+          var maxScrollLeft = cursor.scrollWidth - cursor.clientWidth;
+          if (maxScrollLeft > 0) {
+            if (
+              (cursor.scrollLeft > 0 && deltaX < 0) ||
+              (cursor.scrollLeft < maxScrollLeft && deltaX > 0)
+            ) {
+              return true;
+            }
+          }
+        }
+
+        cursor = cursor.parentNode;
+      }
+
+      return false;
+    }
+
+    function mousewheelHandler(e) {
+      var ref = getDeltaFromEvent(e);
+      var deltaX = ref[0];
+      var deltaY = ref[1];
+
+      if (shouldBeConsumedByChild(e.target, deltaX, deltaY)) {
+        return;
+      }
+
+      var shouldPrevent = false;
+      if (!i.settings.useBothWheelAxes) {
+        // deltaX will only be used for horizontal scrolling and deltaY will
+        // only be used for vertical scrolling - this is the default
+        element.scrollTop -= deltaY * i.settings.wheelSpeed;
+        element.scrollLeft += deltaX * i.settings.wheelSpeed;
+      } else if (i.scrollbarYActive && !i.scrollbarXActive) {
+        // only vertical scrollbar is active and useBothWheelAxes option is
+        // active, so let's scroll vertical bar using both mouse wheel axes
+        if (deltaY) {
+          element.scrollTop -= deltaY * i.settings.wheelSpeed;
+        } else {
+          element.scrollTop += deltaX * i.settings.wheelSpeed;
+        }
+        shouldPrevent = true;
+      } else if (i.scrollbarXActive && !i.scrollbarYActive) {
+        // useBothWheelAxes and only horizontal bar is active, so use both
+        // wheel axes for horizontal bar
+        if (deltaX) {
+          element.scrollLeft += deltaX * i.settings.wheelSpeed;
+        } else {
+          element.scrollLeft -= deltaY * i.settings.wheelSpeed;
+        }
+        shouldPrevent = true;
+      }
+
+      updateGeometry(i);
+
+      shouldPrevent = shouldPrevent || shouldPreventDefault(deltaX, deltaY);
+      if (shouldPrevent && !e.ctrlKey) {
+        e.stopPropagation();
         e.preventDefault();
       }
     }
-  }
-  function touchEnd() {
-    if (i.settings.swipeEasing) {
-      clearInterval(easingLoop);
-      easingLoop = setInterval(function() {
-        if (i.isInitialized) {
-          clearInterval(easingLoop);
-          return;
-        }
 
-        if (!speed.x && !speed.y) {
-          clearInterval(easingLoop);
-          return;
-        }
-
-        if (Math.abs(speed.x) < 0.01 && Math.abs(speed.y) < 0.01) {
-          clearInterval(easingLoop);
-          return;
-        }
-
-        applyTouchMove(speed.x * 30, speed.y * 30);
-
-        speed.x *= 0.8;
-        speed.y *= 0.8;
-      }, 10);
+    if (typeof window.onwheel !== 'undefined') {
+      i.event.bind(element, 'wheel', mousewheelHandler);
+    } else if (typeof window.onmousewheel !== 'undefined') {
+      i.event.bind(element, 'mousewheel', mousewheelHandler);
     }
   }
 
-  if (env.supportsTouch) {
-    i.event.bind(element, 'touchstart', touchStart);
-    i.event.bind(element, 'touchmove', touchMove);
-    i.event.bind(element, 'touchend', touchEnd);
-  } else if (env.supportsIePointer) {
-    if (window.PointerEvent) {
-      i.event.bind(element, 'pointerdown', touchStart);
-      i.event.bind(element, 'pointermove', touchMove);
-      i.event.bind(element, 'pointerup', touchEnd);
-    } else if (window.MSPointerEvent) {
-      i.event.bind(element, 'MSPointerDown', touchStart);
-      i.event.bind(element, 'MSPointerMove', touchMove);
-      i.event.bind(element, 'MSPointerUp', touchEnd);
+  function touch(i) {
+    if (!env.supportsTouch && !env.supportsIePointer) {
+      return;
+    }
+
+    var element = i.element;
+
+    function shouldPrevent(deltaX, deltaY) {
+      var scrollTop = Math.floor(element.scrollTop);
+      var scrollLeft = element.scrollLeft;
+      var magnitudeX = Math.abs(deltaX);
+      var magnitudeY = Math.abs(deltaY);
+
+      if (magnitudeY > magnitudeX) {
+        // user is perhaps trying to swipe up/down the page
+
+        if (
+          (deltaY < 0 && scrollTop === i.contentHeight - i.containerHeight) ||
+          (deltaY > 0 && scrollTop === 0)
+        ) {
+          // set prevent for mobile Chrome refresh
+          return window.scrollY === 0 && deltaY > 0 && env.isChrome;
+        }
+      } else if (magnitudeX > magnitudeY) {
+        // user is perhaps trying to swipe left/right across the page
+
+        if (
+          (deltaX < 0 && scrollLeft === i.contentWidth - i.containerWidth) ||
+          (deltaX > 0 && scrollLeft === 0)
+        ) {
+          return true;
+        }
+      }
+
+      return true;
+    }
+
+    function applyTouchMove(differenceX, differenceY) {
+      element.scrollTop -= differenceY;
+      element.scrollLeft -= differenceX;
+
+      updateGeometry(i);
+    }
+
+    var startOffset = {};
+    var startTime = 0;
+    var speed = {};
+    var easingLoop = null;
+
+    function getTouch(e) {
+      if (e.targetTouches) {
+        return e.targetTouches[0];
+      } else {
+        // Maybe IE pointer
+        return e;
+      }
+    }
+
+    function shouldHandle(e) {
+      if (e.pointerType && e.pointerType === 'pen' && e.buttons === 0) {
+        return false;
+      }
+      if (e.targetTouches && e.targetTouches.length === 1) {
+        return true;
+      }
+      if (
+        e.pointerType &&
+        e.pointerType !== 'mouse' &&
+        e.pointerType !== e.MSPOINTER_TYPE_MOUSE
+      ) {
+        return true;
+      }
+      return false;
+    }
+
+    function touchStart(e) {
+      if (!shouldHandle(e)) {
+        return;
+      }
+
+      var touch = getTouch(e);
+
+      startOffset.pageX = touch.pageX;
+      startOffset.pageY = touch.pageY;
+
+      startTime = new Date().getTime();
+
+      if (easingLoop !== null) {
+        clearInterval(easingLoop);
+      }
+    }
+
+    function shouldBeConsumedByChild(target, deltaX, deltaY) {
+      if (!element.contains(target)) {
+        return false;
+      }
+
+      var cursor = target;
+
+      while (cursor && cursor !== element) {
+        if (cursor.classList.contains(cls.element.consuming)) {
+          return true;
+        }
+
+        var style = get(cursor);
+
+        // if deltaY && vertical scrollable
+        if (deltaY && style.overflowY.match(/(scroll|auto)/)) {
+          var maxScrollTop = cursor.scrollHeight - cursor.clientHeight;
+          if (maxScrollTop > 0) {
+            if (
+              (cursor.scrollTop > 0 && deltaY < 0) ||
+              (cursor.scrollTop < maxScrollTop && deltaY > 0)
+            ) {
+              return true;
+            }
+          }
+        }
+        // if deltaX && horizontal scrollable
+        if (deltaX && style.overflowX.match(/(scroll|auto)/)) {
+          var maxScrollLeft = cursor.scrollWidth - cursor.clientWidth;
+          if (maxScrollLeft > 0) {
+            if (
+              (cursor.scrollLeft > 0 && deltaX < 0) ||
+              (cursor.scrollLeft < maxScrollLeft && deltaX > 0)
+            ) {
+              return true;
+            }
+          }
+        }
+
+        cursor = cursor.parentNode;
+      }
+
+      return false;
+    }
+
+    function touchMove(e) {
+      if (shouldHandle(e)) {
+        var touch = getTouch(e);
+
+        var currentOffset = { pageX: touch.pageX, pageY: touch.pageY };
+
+        var differenceX = currentOffset.pageX - startOffset.pageX;
+        var differenceY = currentOffset.pageY - startOffset.pageY;
+
+        if (shouldBeConsumedByChild(e.target, differenceX, differenceY)) {
+          return;
+        }
+
+        applyTouchMove(differenceX, differenceY);
+        startOffset = currentOffset;
+
+        var currentTime = new Date().getTime();
+
+        var timeGap = currentTime - startTime;
+        if (timeGap > 0) {
+          speed.x = differenceX / timeGap;
+          speed.y = differenceY / timeGap;
+          startTime = currentTime;
+        }
+
+        if (shouldPrevent(differenceX, differenceY)) {
+          e.preventDefault();
+        }
+      }
+    }
+    function touchEnd() {
+      if (i.settings.swipeEasing) {
+        clearInterval(easingLoop);
+        easingLoop = setInterval(function() {
+          if (i.isInitialized) {
+            clearInterval(easingLoop);
+            return;
+          }
+
+          if (!speed.x && !speed.y) {
+            clearInterval(easingLoop);
+            return;
+          }
+
+          if (Math.abs(speed.x) < 0.01 && Math.abs(speed.y) < 0.01) {
+            clearInterval(easingLoop);
+            return;
+          }
+
+          applyTouchMove(speed.x * 30, speed.y * 30);
+
+          speed.x *= 0.8;
+          speed.y *= 0.8;
+        }, 10);
+      }
+    }
+
+    if (env.supportsTouch) {
+      i.event.bind(element, 'touchstart', touchStart);
+      i.event.bind(element, 'touchmove', touchMove);
+      i.event.bind(element, 'touchend', touchEnd);
+    } else if (env.supportsIePointer) {
+      if (window.PointerEvent) {
+        i.event.bind(element, 'pointerdown', touchStart);
+        i.event.bind(element, 'pointermove', touchMove);
+        i.event.bind(element, 'pointerup', touchEnd);
+      } else if (window.MSPointerEvent) {
+        i.event.bind(element, 'MSPointerDown', touchStart);
+        i.event.bind(element, 'MSPointerMove', touchMove);
+        i.event.bind(element, 'MSPointerUp', touchEnd);
+      }
     }
   }
-};
 
-var defaultSettings = function () { return ({
-  handlers: ['click-rail', 'drag-thumb', 'keyboard', 'wheel', 'touch'],
-  maxScrollbarLength: null,
-  minScrollbarLength: null,
-  scrollingThreshold: 1000,
-  scrollXMarginOffset: 0,
-  scrollYMarginOffset: 0,
-  suppressScrollX: false,
-  suppressScrollY: false,
-  swipeEasing: true,
-  useBothWheelAxes: false,
-  wheelPropagation: true,
-  wheelSpeed: 1,
-}); };
+  var defaultSettings = function () { return ({
+    handlers: ['click-rail', 'drag-thumb', 'keyboard', 'wheel', 'touch'],
+    maxScrollbarLength: null,
+    minScrollbarLength: null,
+    scrollingThreshold: 1000,
+    scrollXMarginOffset: 0,
+    scrollYMarginOffset: 0,
+    suppressScrollX: false,
+    suppressScrollY: false,
+    swipeEasing: true,
+    useBothWheelAxes: false,
+    wheelPropagation: true,
+    wheelSpeed: 1,
+  }); };
 
-var handlers = {
-  'click-rail': clickRail,
-  'drag-thumb': dragThumb,
-  keyboard: keyboard,
-  wheel: wheel,
-  touch: touch,
-};
-
-var PerfectScrollbar = function PerfectScrollbar(element, userSettings) {
-  var this$1 = this;
-  if ( userSettings === void 0 ) userSettings = {};
-
-  if (typeof element === 'string') {
-    element = document.querySelector(element);
-  }
-
-  if (!element || !element.nodeName) {
-    throw new Error('no element is specified to initialize PerfectScrollbar');
-  }
-
-  this.element = element;
-
-  element.classList.add(cls.main);
-
-  this.settings = defaultSettings();
-  for (var key in userSettings) {
-    this$1.settings[key] = userSettings[key];
-  }
-
-  this.containerWidth = null;
-  this.containerHeight = null;
-  this.contentWidth = null;
-  this.contentHeight = null;
-
-  var focus = function () { return element.classList.add(cls.state.focus); };
-  var blur = function () { return element.classList.remove(cls.state.focus); };
-
-  this.isRtl = get(element).direction === 'rtl';
-  this.isNegativeScroll = (function () {
-    var originalScrollLeft = element.scrollLeft;
-    var result = null;
-    element.scrollLeft = -1;
-    result = element.scrollLeft < 0;
-    element.scrollLeft = originalScrollLeft;
-    return result;
-  })();
-  this.negativeScrollAdjustment = this.isNegativeScroll
-    ? element.scrollWidth - element.clientWidth
-    : 0;
-  this.event = new EventManager();
-  this.ownerDocument = element.ownerDocument || document;
-
-  this.scrollbarXRail = div(cls.element.rail('x'));
-  element.appendChild(this.scrollbarXRail);
-  this.scrollbarX = div(cls.element.thumb('x'));
-  this.scrollbarXRail.appendChild(this.scrollbarX);
-  this.scrollbarX.setAttribute('tabindex', 0);
-  this.event.bind(this.scrollbarX, 'focus', focus);
-  this.event.bind(this.scrollbarX, 'blur', blur);
-  this.scrollbarXActive = null;
-  this.scrollbarXWidth = null;
-  this.scrollbarXLeft = null;
-  var railXStyle = get(this.scrollbarXRail);
-  this.scrollbarXBottom = parseInt(railXStyle.bottom, 10);
-  if (isNaN(this.scrollbarXBottom)) {
-    this.isScrollbarXUsingBottom = false;
-    this.scrollbarXTop = toInt(railXStyle.top);
-  } else {
-    this.isScrollbarXUsingBottom = true;
-  }
-  this.railBorderXWidth =
-    toInt(railXStyle.borderLeftWidth) + toInt(railXStyle.borderRightWidth);
-  // Set rail to display:block to calculate margins
-  set(this.scrollbarXRail, { display: 'block' });
-  this.railXMarginWidth =
-    toInt(railXStyle.marginLeft) + toInt(railXStyle.marginRight);
-  set(this.scrollbarXRail, { display: '' });
-  this.railXWidth = null;
-  this.railXRatio = null;
-
-  this.scrollbarYRail = div(cls.element.rail('y'));
-  element.appendChild(this.scrollbarYRail);
-  this.scrollbarY = div(cls.element.thumb('y'));
-  this.scrollbarYRail.appendChild(this.scrollbarY);
-  this.scrollbarY.setAttribute('tabindex', 0);
-  this.event.bind(this.scrollbarY, 'focus', focus);
-  this.event.bind(this.scrollbarY, 'blur', blur);
-  this.scrollbarYActive = null;
-  this.scrollbarYHeight = null;
-  this.scrollbarYTop = null;
-  var railYStyle = get(this.scrollbarYRail);
-  this.scrollbarYRight = parseInt(railYStyle.right, 10);
-  if (isNaN(this.scrollbarYRight)) {
-    this.isScrollbarYUsingRight = false;
-    this.scrollbarYLeft = toInt(railYStyle.left);
-  } else {
-    this.isScrollbarYUsingRight = true;
-  }
-  this.scrollbarYOuterWidth = this.isRtl ? outerWidth(this.scrollbarY) : null;
-  this.railBorderYWidth =
-    toInt(railYStyle.borderTopWidth) + toInt(railYStyle.borderBottomWidth);
-  set(this.scrollbarYRail, { display: 'block' });
-  this.railYMarginHeight =
-    toInt(railYStyle.marginTop) + toInt(railYStyle.marginBottom);
-  set(this.scrollbarYRail, { display: '' });
-  this.railYHeight = null;
-  this.railYRatio = null;
-
-  this.reach = {
-    x:
-      element.scrollLeft <= 0
-        ? 'start'
-        : element.scrollLeft >= this.contentWidth - this.containerWidth
-          ? 'end'
-          : null,
-    y:
-      element.scrollTop <= 0
-        ? 'start'
-        : element.scrollTop >= this.contentHeight - this.containerHeight
-          ? 'end'
-          : null,
+  var handlers = {
+    'click-rail': clickRail,
+    'drag-thumb': dragThumb,
+    keyboard: keyboard,
+    wheel: wheel,
+    touch: touch,
   };
 
-  this.isAlive = true;
+  var PerfectScrollbar = function PerfectScrollbar(element, userSettings) {
+    var this$1 = this;
+    if ( userSettings === void 0 ) userSettings = {};
 
-  this.settings.handlers.forEach(function (handlerName) { return handlers[handlerName](this$1); });
+    if (typeof element === 'string') {
+      element = document.querySelector(element);
+    }
 
-  this.lastScrollTop = Math.floor(element.scrollTop); // for onScroll only
-  this.lastScrollLeft = element.scrollLeft; // for onScroll only
-  this.event.bind(this.element, 'scroll', function (e) { return this$1.onScroll(e); });
-  updateGeometry(this);
-};
+    if (!element || !element.nodeName) {
+      throw new Error('no element is specified to initialize PerfectScrollbar');
+    }
 
-PerfectScrollbar.prototype.update = function update () {
-  if (!this.isAlive) {
-    return;
-  }
+    this.element = element;
 
-  // Recalcuate negative scrollLeft adjustment
-  this.negativeScrollAdjustment = this.isNegativeScroll
-    ? this.element.scrollWidth - this.element.clientWidth
-    : 0;
+    element.classList.add(cls.main);
 
-  // Recalculate rail margins
-  set(this.scrollbarXRail, { display: 'block' });
-  set(this.scrollbarYRail, { display: 'block' });
-  this.railXMarginWidth =
-    toInt(get(this.scrollbarXRail).marginLeft) +
-    toInt(get(this.scrollbarXRail).marginRight);
-  this.railYMarginHeight =
-    toInt(get(this.scrollbarYRail).marginTop) +
-    toInt(get(this.scrollbarYRail).marginBottom);
+    this.settings = defaultSettings();
+    for (var key in userSettings) {
+      this.settings[key] = userSettings[key];
+    }
 
-  // Hide scrollbars not to affect scrollWidth and scrollHeight
-  set(this.scrollbarXRail, { display: 'none' });
-  set(this.scrollbarYRail, { display: 'none' });
+    this.containerWidth = null;
+    this.containerHeight = null;
+    this.contentWidth = null;
+    this.contentHeight = null;
 
-  updateGeometry(this);
+    var focus = function () { return element.classList.add(cls.state.focus); };
+    var blur = function () { return element.classList.remove(cls.state.focus); };
 
-  processScrollDiff(this, 'top', 0, false, true);
-  processScrollDiff(this, 'left', 0, false, true);
+    this.isRtl = get(element).direction === 'rtl';
+    if (this.isRtl === true) {
+      element.classList.add(cls.rtl);
+    }
+    this.isNegativeScroll = (function () {
+      var originalScrollLeft = element.scrollLeft;
+      var result = null;
+      element.scrollLeft = -1;
+      result = element.scrollLeft < 0;
+      element.scrollLeft = originalScrollLeft;
+      return result;
+    })();
+    this.negativeScrollAdjustment = this.isNegativeScroll
+      ? element.scrollWidth - element.clientWidth
+      : 0;
+    this.event = new EventManager();
+    this.ownerDocument = element.ownerDocument || document;
 
-  set(this.scrollbarXRail, { display: '' });
-  set(this.scrollbarYRail, { display: '' });
-};
+    this.scrollbarXRail = div(cls.element.rail('x'));
+    element.appendChild(this.scrollbarXRail);
+    this.scrollbarX = div(cls.element.thumb('x'));
+    this.scrollbarXRail.appendChild(this.scrollbarX);
+    this.scrollbarX.setAttribute('tabindex', 0);
+    this.event.bind(this.scrollbarX, 'focus', focus);
+    this.event.bind(this.scrollbarX, 'blur', blur);
+    this.scrollbarXActive = null;
+    this.scrollbarXWidth = null;
+    this.scrollbarXLeft = null;
+    var railXStyle = get(this.scrollbarXRail);
+    this.scrollbarXBottom = parseInt(railXStyle.bottom, 10);
+    if (isNaN(this.scrollbarXBottom)) {
+      this.isScrollbarXUsingBottom = false;
+      this.scrollbarXTop = toInt(railXStyle.top);
+    } else {
+      this.isScrollbarXUsingBottom = true;
+    }
+    this.railBorderXWidth =
+      toInt(railXStyle.borderLeftWidth) + toInt(railXStyle.borderRightWidth);
+    // Set rail to display:block to calculate margins
+    set(this.scrollbarXRail, { display: 'block' });
+    this.railXMarginWidth =
+      toInt(railXStyle.marginLeft) + toInt(railXStyle.marginRight);
+    set(this.scrollbarXRail, { display: '' });
+    this.railXWidth = null;
+    this.railXRatio = null;
 
-PerfectScrollbar.prototype.onScroll = function onScroll (e) {
-  if (!this.isAlive) {
-    return;
-  }
+    this.scrollbarYRail = div(cls.element.rail('y'));
+    element.appendChild(this.scrollbarYRail);
+    this.scrollbarY = div(cls.element.thumb('y'));
+    this.scrollbarYRail.appendChild(this.scrollbarY);
+    this.scrollbarY.setAttribute('tabindex', 0);
+    this.event.bind(this.scrollbarY, 'focus', focus);
+    this.event.bind(this.scrollbarY, 'blur', blur);
+    this.scrollbarYActive = null;
+    this.scrollbarYHeight = null;
+    this.scrollbarYTop = null;
+    var railYStyle = get(this.scrollbarYRail);
+    this.scrollbarYRight = parseInt(railYStyle.right, 10);
+    if (isNaN(this.scrollbarYRight)) {
+      this.isScrollbarYUsingRight = false;
+      this.scrollbarYLeft = toInt(railYStyle.left);
+    } else {
+      this.isScrollbarYUsingRight = true;
+    }
+    this.scrollbarYOuterWidth = this.isRtl ? outerWidth(this.scrollbarY) : null;
+    this.railBorderYWidth =
+      toInt(railYStyle.borderTopWidth) + toInt(railYStyle.borderBottomWidth);
+    set(this.scrollbarYRail, { display: 'block' });
+    this.railYMarginHeight =
+      toInt(railYStyle.marginTop) + toInt(railYStyle.marginBottom);
+    set(this.scrollbarYRail, { display: '' });
+    this.railYHeight = null;
+    this.railYRatio = null;
 
-  updateGeometry(this);
-  processScrollDiff(this, 'top', this.element.scrollTop - this.lastScrollTop);
-  processScrollDiff(
-    this,
-    'left',
-    this.element.scrollLeft - this.lastScrollLeft
-  );
+    this.reach = {
+      x:
+        element.scrollLeft <= 0
+          ? 'start'
+          : element.scrollLeft >= this.contentWidth - this.containerWidth
+          ? 'end'
+          : null,
+      y:
+        element.scrollTop <= 0
+          ? 'start'
+          : element.scrollTop >= this.contentHeight - this.containerHeight
+          ? 'end'
+          : null,
+    };
 
-  this.lastScrollTop = Math.floor(this.element.scrollTop);
-  this.lastScrollLeft = this.element.scrollLeft;
-};
+    this.isAlive = true;
 
-PerfectScrollbar.prototype.destroy = function destroy () {
-  if (!this.isAlive) {
-    return;
-  }
+    this.settings.handlers.forEach(function (handlerName) { return handlers[handlerName](this$1); });
 
-  this.event.unbindAll();
-  remove(this.scrollbarX);
-  remove(this.scrollbarY);
-  remove(this.scrollbarXRail);
-  remove(this.scrollbarYRail);
-  this.removePsClasses();
+    this.lastScrollTop = Math.floor(element.scrollTop); // for onScroll only
+    this.lastScrollLeft = element.scrollLeft; // for onScroll only
+    this.event.bind(this.element, 'scroll', function (e) { return this$1.onScroll(e); });
+    updateGeometry(this);
+  };
 
-  // unset elements
-  this.element = null;
-  this.scrollbarX = null;
-  this.scrollbarY = null;
-  this.scrollbarXRail = null;
-  this.scrollbarYRail = null;
+  PerfectScrollbar.prototype.update = function update () {
+    if (!this.isAlive) {
+      return;
+    }
 
-  this.isAlive = false;
-};
+    // Recalcuate negative scrollLeft adjustment
+    this.negativeScrollAdjustment = this.isNegativeScroll
+      ? this.element.scrollWidth - this.element.clientWidth
+      : 0;
 
-PerfectScrollbar.prototype.removePsClasses = function removePsClasses () {
-  this.element.className = this.element.className
-    .split(' ')
-    .filter(function (name) { return !name.match(/^ps([-_].+|)$/); })
-    .join(' ');
-};
+    // Recalculate rail margins
+    set(this.scrollbarXRail, { display: 'block' });
+    set(this.scrollbarYRail, { display: 'block' });
+    this.railXMarginWidth =
+      toInt(get(this.scrollbarXRail).marginLeft) +
+      toInt(get(this.scrollbarXRail).marginRight);
+    this.railYMarginHeight =
+      toInt(get(this.scrollbarYRail).marginTop) +
+      toInt(get(this.scrollbarYRail).marginBottom);
 
-return PerfectScrollbar;
+    // Hide scrollbars not to affect scrollWidth and scrollHeight
+    set(this.scrollbarXRail, { display: 'none' });
+    set(this.scrollbarYRail, { display: 'none' });
+
+    updateGeometry(this);
+
+    processScrollDiff(this, 'top', 0, false, true);
+    processScrollDiff(this, 'left', 0, false, true);
+
+    set(this.scrollbarXRail, { display: '' });
+    set(this.scrollbarYRail, { display: '' });
+  };
+
+  PerfectScrollbar.prototype.onScroll = function onScroll (e) {
+    if (!this.isAlive) {
+      return;
+    }
+
+    updateGeometry(this);
+    processScrollDiff(this, 'top', this.element.scrollTop - this.lastScrollTop);
+    processScrollDiff(
+      this,
+      'left',
+      this.element.scrollLeft - this.lastScrollLeft
+    );
+
+    this.lastScrollTop = Math.floor(this.element.scrollTop);
+    this.lastScrollLeft = this.element.scrollLeft;
+  };
+
+  PerfectScrollbar.prototype.destroy = function destroy () {
+    if (!this.isAlive) {
+      return;
+    }
+
+    this.event.unbindAll();
+    remove(this.scrollbarX);
+    remove(this.scrollbarY);
+    remove(this.scrollbarXRail);
+    remove(this.scrollbarYRail);
+    this.removePsClasses();
+
+    // unset elements
+    this.element = null;
+    this.scrollbarX = null;
+    this.scrollbarY = null;
+    this.scrollbarXRail = null;
+    this.scrollbarYRail = null;
+
+    this.isAlive = false;
+  };
+
+  PerfectScrollbar.prototype.removePsClasses = function removePsClasses () {
+    this.element.className = this.element.className
+      .split(' ')
+      .filter(function (name) { return !name.match(/^ps([-_].+|)$/); })
+      .join(' ');
+  };
+
+  return PerfectScrollbar;
 
 })));
+//# sourceMappingURL=perfect-scrollbar.js.map
 
 ;
 /****************************************************************************
@@ -63645,7 +63794,7 @@ return PerfectScrollbar;
 
     var keys = ['Hours', 'Minutes', 'Seconds', 'Milliseconds'];
     var maxValues = [24, 60, 60, 1000];
-
+    
     // Capitalize first letter
     key = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
 
@@ -63691,7 +63840,7 @@ return PerfectScrollbar;
 }).call(this);
 ;
 //! moment-timezone.js
-//! version : 0.5.27
+//! version : 0.5.28
 //! Copyright (c) JS Foundation and other contributors
 //! license : MIT
 //! github.com/moment/moment-timezone
@@ -63716,9 +63865,10 @@ return PerfectScrollbar;
 	// 	return moment;
 	// }
 
-	var VERSION = "0.5.27",
+	var VERSION = "0.5.28",
 		zones = {},
 		links = {},
+		countries = {},
 		names = {},
 		guesses = {},
 		cachedGuess;
@@ -63857,6 +64007,13 @@ return PerfectScrollbar;
 			}
 		},
 
+		countries : function () {
+			var zone_name = this.name;
+			return Object.keys(countries).filter(function (country_code) {
+				return countries[country_code].zones.indexOf(zone_name) !== -1;
+			});
+		},
+
 		parse : function (timestamp) {
 			var target  = +timestamp,
 				offsets = this.offsets,
@@ -63896,6 +64053,15 @@ return PerfectScrollbar;
 			return this.offsets[this._index(mom)];
 		}
 	};
+
+	/************************************
+		Country object
+	************************************/
+
+	function Country (country_name, zone_names) {
+		this.name = country_name;
+		this.zones = zone_names;
+	}
 
 	/************************************
 		Current Timezone
@@ -64131,6 +64297,10 @@ return PerfectScrollbar;
 		return out.sort();
 	}
 
+	function getCountryNames () {
+		return Object.keys(countries);
+	}
+
 	function addLink (aliases) {
 		var i, alias, normal0, normal1;
 
@@ -64152,9 +64322,49 @@ return PerfectScrollbar;
 		}
 	}
 
+	function addCountries (data) {
+		var i, country_code, country_zones, split;
+		if (!data || !data.length) return;
+		for (i = 0; i < data.length; i++) {
+			split = data[i].split('|');
+			country_code = split[0].toUpperCase();
+			country_zones = split[1].split(' ');
+			countries[country_code] = new Country(
+				country_code,
+				country_zones
+			);
+		}
+	}
+
+	function getCountry (name) {
+		name = name.toUpperCase();
+		return countries[name] || null;
+	}
+
+	function zonesForCountry(country, with_offset) {
+		country = getCountry(country);
+
+		if (!country) return null;
+
+		var zones = country.zones.sort();
+
+		if (with_offset) {
+			return zones.map(function (zone_name) {
+				var zone = getZone(zone_name);
+				return {
+					name: zone_name,
+					offset: zone.utcOffset(new Date())
+				};
+			});
+		}
+
+		return zones;
+	}
+
 	function loadData (data) {
 		addZone(data.zones);
 		addLink(data.links);
+		addCountries(data.countries);
 		tz.dataVersion = data.version;
 	}
 
@@ -64201,6 +64411,7 @@ return PerfectScrollbar;
 	tz._zones       = zones;
 	tz._links       = links;
 	tz._names       = names;
+	tz._countries	= countries;
 	tz.add          = addZone;
 	tz.link         = addLink;
 	tz.load         = loadData;
@@ -64214,6 +64425,8 @@ return PerfectScrollbar;
 	tz.needsOffset  = needsOffset;
 	tz.moveInvalidForward   = true;
 	tz.moveAmbiguousForward = false;
+	tz.countries    = getCountryNames;
+	tz.zonesForCountry = zonesForCountry;
 
 	/************************************
 		Interface with Moment.js
@@ -64321,144 +64534,132 @@ return PerfectScrollbar;
 			"Africa/Algiers|CET|-10|0||26e5",
 			"Africa/Lagos|WAT|-10|0||17e6",
 			"Africa/Maputo|CAT|-20|0||26e5",
-			"Africa/Cairo|EET EEST|-20 -30|01010|1M2m0 gL0 e10 mn0|15e6",
-			"Africa/Casablanca|+00 +01|0 -10|01010101010101010101010101010101|1LHC0 A00 e00 y00 11A0 uM0 e00 Dc0 11A0 s00 e00 IM0 WM0 mo0 gM0 LA0 WM0 jA0 e00 28M0 e00 2600 e00 28M0 e00 2600 gM0 2600 e00 28M0 e00|32e5",
-			"Europe/Paris|CET CEST|-10 -20|01010101010101010101010|1LHB0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|11e6",
+			"Africa/Cairo|EET|-20|0||15e6",
+			"Africa/Casablanca|+00 +01|0 -10|010101010101010101010101010101|1O9e0 uM0 e00 Dc0 11A0 s00 e00 IM0 WM0 mo0 gM0 LA0 WM0 jA0 e00 28M0 e00 2600 e00 28M0 e00 2600 gM0 2600 e00 28M0 e00 2600 gM0|32e5",
+			"Europe/Paris|CET CEST|-10 -20|01010101010101010101010|1O9d0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00|11e6",
 			"Africa/Johannesburg|SAST|-20|0||84e5",
 			"Africa/Khartoum|EAT CAT|-30 -20|01|1Usl0|51e5",
-			"Africa/Sao_Tome|GMT WAT|0 -10|010|1UQN0 2q00",
-			"Africa/Tripoli|EET|-20|0||11e5",
-			"Africa/Windhoek|CAT WAT|-20 -10|010101010|1LKo0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0|32e4",
-			"America/Adak|HST HDT|a0 90|01010101010101010101010|1Lzo0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|326",
-			"America/Anchorage|AKST AKDT|90 80|01010101010101010101010|1Lzn0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|30e4",
+			"Africa/Sao_Tome|GMT WAT|0 -10|010|1UQN0 2q00|",
+			"Africa/Windhoek|CAT WAT|-20 -10|0101010|1Oc00 11B0 1nX0 11B0 1nX0 11B0|32e4",
+			"America/Adak|HST HDT|a0 90|01010101010101010101010|1O100 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|326",
+			"America/Anchorage|AKST AKDT|90 80|01010101010101010101010|1O0X0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|30e4",
 			"America/Santo_Domingo|AST|40|0||29e5",
 			"America/Fortaleza|-03|30|0||34e5",
-			"America/Asuncion|-03 -04|30 40|01010101010101010101010|1LEP0 1ip0 17b0 1ip0 19X0 1fB0 19X0 1fB0 19X0 1ip0 17b0 1ip0 17b0 1ip0 19X0 1fB0 19X0 1fB0 19X0 1fB0 19X0 1ip0|28e5",
+			"America/Asuncion|-03 -04|30 40|01010101010101010101010|1O6r0 1ip0 19X0 1fB0 19X0 1fB0 19X0 1ip0 17b0 1ip0 17b0 1ip0 19X0 1fB0 19X0 1fB0 19X0 1fB0 19X0 1ip0 17b0 1ip0|28e5",
 			"America/Panama|EST|50|0||15e5",
-			"America/Mexico_City|CST CDT|60 50|01010101010101010101010|1LKw0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0|20e6",
+			"America/Mexico_City|CST CDT|60 50|01010101010101010101010|1Oc80 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0|20e6",
 			"America/Managua|CST|60|0||22e5",
 			"America/La_Paz|-04|40|0||19e5",
 			"America/Lima|-05|50|0||11e6",
-			"America/Denver|MST MDT|70 60|01010101010101010101010|1Lzl0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|26e5",
-			"America/Campo_Grande|-03 -04|30 40|010101010101|1LqP0 1C10 On0 1zd0 On0 1zd0 On0 1zd0 On0 1HB0 FX0|77e4",
-			"America/Cancun|CST CDT EST|60 50 50|0102|1LKw0 1lb0 Dd0|63e4",
+			"America/Denver|MST MDT|70 60|01010101010101010101010|1O0V0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|26e5",
+			"America/Campo_Grande|-03 -04|30 40|0101010101|1NTf0 1zd0 On0 1zd0 On0 1zd0 On0 1HB0 FX0|77e4",
+			"America/Cancun|CST EST|60 50|01|1NKU0|63e4",
 			"America/Caracas|-0430 -04|4u 40|01|1QMT0|29e5",
-			"America/Chicago|CST CDT|60 50|01010101010101010101010|1Lzk0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|92e5",
-			"America/Chihuahua|MST MDT|70 60|01010101010101010101010|1LKx0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0|81e4",
+			"America/Chicago|CST CDT|60 50|01010101010101010101010|1O0U0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|92e5",
+			"America/Chihuahua|MST MDT|70 60|01010101010101010101010|1Oc90 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0|81e4",
 			"America/Phoenix|MST|70|0||42e5",
-			"America/Los_Angeles|PST PDT|80 70|01010101010101010101010|1Lzm0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|15e6",
-			"America/New_York|EST EDT|50 40|01010101010101010101010|1Lzj0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|21e6",
-			"America/Fort_Nelson|PST PDT MST|80 70 70|0102|1Lzm0 1zb0 Op0|39e2",
-			"America/Halifax|AST ADT|40 30|01010101010101010101010|1Lzi0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|39e4",
-			"America/Godthab|-03 -02|30 20|01010101010101010101010|1LHB0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|17e3",
-			"America/Grand_Turk|EST EDT AST|50 40 40|0101210101010101010|1Lzj0 1zb0 Op0 1zb0 5Ip0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|37e2",
-			"America/Havana|CST CDT|50 40|01010101010101010101010|1Lzh0 1zc0 Oo0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0|21e5",
-			"America/Metlakatla|PST AKST AKDT|80 90 80|012121201212121212121|1PAa0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 uM0 jB0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|14e2",
-			"America/Miquelon|-03 -02|30 20|01010101010101010101010|1Lzh0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|61e2",
-			"America/Montevideo|-02 -03|20 30|0101|1Lzg0 1o10 11z0|17e5",
+			"America/Los_Angeles|PST PDT|80 70|01010101010101010101010|1O0W0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|15e6",
+			"America/New_York|EST EDT|50 40|01010101010101010101010|1O0T0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|21e6",
+			"America/Fort_Nelson|PST MST|80 70|01|1O0W0|39e2",
+			"America/Halifax|AST ADT|40 30|01010101010101010101010|1O0S0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|39e4",
+			"America/Godthab|-03 -02|30 20|01010101010101010101010|1O9d0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00|17e3",
+			"America/Grand_Turk|EST EDT AST|50 40 40|0121010101010101010|1O0T0 1zb0 5Ip0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|37e2",
+			"America/Havana|CST CDT|50 40|01010101010101010101010|1O0R0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0|21e5",
+			"America/Metlakatla|PST AKST AKDT|80 90 80|01212120121212121212121|1PAa0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 uM0 jB0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|14e2",
+			"America/Miquelon|-03 -02|30 20|01010101010101010101010|1O0R0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|61e2",
+			"America/Montevideo|-02 -03|20 30|01|1O0Q0|17e5",
 			"America/Noronha|-02|20|0||30e2",
-			"America/Port-au-Prince|EST EDT|50 40|010101010101010101010|1Lzj0 1zb0 Op0 1zb0 3iN0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|23e5",
-			"Antarctica/Palmer|-03 -04|30 40|01010|1LSP0 Rd0 46n0 Ap0|40",
-			"America/Santiago|-03 -04|30 40|010101010101010101010|1LSP0 Rd0 46n0 Ap0 1Nb0 Ap0 1Nb0 Ap0 1zb0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 11B0|62e5",
-			"America/Sao_Paulo|-02 -03|20 30|010101010101|1LqO0 1C10 On0 1zd0 On0 1zd0 On0 1zd0 On0 1HB0 FX0|20e6",
-			"Atlantic/Azores|-01 +00|10 0|01010101010101010101010|1LHB0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|25e4",
-			"America/St_Johns|NST NDT|3u 2u|01010101010101010101010|1Lzhu 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|11e4",
+			"America/Port-au-Prince|EST EDT|50 40|010101010101010101010|1O0T0 1zb0 3iN0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|23e5",
+			"Antarctica/Palmer|-03 -04|30 40|010|1QSr0 Ap0|40",
+			"America/Santiago|-03 -04|30 40|010101010101010101010|1QSr0 Ap0 1Nb0 Ap0 1Nb0 Ap0 1zb0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 11B0 1nX0 11B0|62e5",
+			"America/Sao_Paulo|-02 -03|20 30|0101010101|1NTe0 1zd0 On0 1zd0 On0 1zd0 On0 1HB0 FX0|20e6",
+			"Atlantic/Azores|-01 +00|10 0|01010101010101010101010|1O9d0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00|25e4",
+			"America/St_Johns|NST NDT|3u 2u|01010101010101010101010|1O0Ru 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|11e4",
 			"Antarctica/Casey|+08 +11|-80 -b0|010|1RWg0 3m10|10",
 			"Asia/Bangkok|+07|-70|0||15e6",
-			"Pacific/Port_Moresby|+10|-a0|0||25e4",
-			"Pacific/Guadalcanal|+11|-b0|0||11e4",
+			"Asia/Vladivostok|+10|-a0|0||60e4",
+			"Pacific/Bougainville|+11|-b0|0||18e4",
 			"Asia/Tashkent|+05|-50|0||23e5",
-			"Pacific/Auckland|NZDT NZST|-d0 -c0|01010101010101010101010|1LKe0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1io0 1a00|14e5",
+			"Pacific/Auckland|NZDT NZST|-d0 -c0|01010101010101010101010|1ObO0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1io0 1a00 1fA0 1a00|14e5",
 			"Asia/Baghdad|+03|-30|0||66e5",
-			"Antarctica/Troll|+00 +02|0 -20|01010101010101010101010|1LHB0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|40",
+			"Antarctica/Troll|+00 +02|0 -20|01010101010101010101010|1O9d0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00|40",
 			"Asia/Dhaka|+06|-60|0||16e6",
-			"Asia/Amman|EET EEST|-20 -30|01010101010101010101010|1LGK0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00|25e5",
+			"Asia/Amman|EET EEST|-20 -30|01010101010101010101010|1O8m0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0|25e5",
 			"Asia/Kamchatka|+12|-c0|0||18e4",
-			"Asia/Baku|+04 +05|-40 -50|01010|1LHA0 1o00 11A0 1o00|27e5",
-			"Asia/Barnaul|+07 +06|-70 -60|010|1N7v0 3rd0",
-			"Asia/Beirut|EET EEST|-20 -30|01010101010101010101010|1LHy0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0|22e5",
+			"Asia/Baku|+04 +05|-40 -50|010|1O9c0 1o00|27e5",
+			"Asia/Barnaul|+06 +07|-60 -70|01|1QyI0|",
+			"Asia/Beirut|EET EEST|-20 -30|01010101010101010101010|1O9a0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0|22e5",
 			"Asia/Kuala_Lumpur|+08|-80|0||71e5",
 			"Asia/Kolkata|IST|-5u|0||15e6",
-			"Asia/Chita|+10 +08 +09|-a0 -80 -90|012|1N7s0 3re0|33e4",
+			"Asia/Chita|+08 +09|-80 -90|01|1QyG0|33e4",
 			"Asia/Ulaanbaatar|+08 +09|-80 -90|01010|1O8G0 1cJ0 1cP0 1cJ0|12e5",
 			"Asia/Shanghai|CST|-80|0||23e6",
 			"Asia/Colombo|+0530|-5u|0||22e5",
-			"Asia/Damascus|EET EEST|-20 -30|01010101010101010101010|1LGK0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0|26e5",
-			"Asia/Dili|+09|-90|0||19e4",
+			"Asia/Damascus|EET EEST|-20 -30|01010101010101010101010|1O8m0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1qL0|26e5",
+			"Asia/Yakutsk|+09|-90|0||28e4",
 			"Asia/Dubai|+04|-40|0||39e5",
-			"Asia/Famagusta|EET EEST +03|-20 -30 -30|0101012010101010101010|1LHB0 1o00 11A0 1o00 11A0 15U0 2Ks0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00",
-			"Asia/Gaza|EET EEST|-20 -30|01010101010101010101010|1LGK0 1nX0 1210 1nz0 1220 1qL0 WN0 1qL0 WN0 1qL0 11c0 1oo0 11c0 1rc0 Wo0 1rc0 Wo0 1rc0 11c0 1oo0 11c0 1oo0|18e5",
+			"Asia/Famagusta|EET EEST +03|-20 -30 -30|0101201010101010101010|1O9d0 1o00 11A0 15U0 2Ks0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00|",
+			"Asia/Gaza|EET EEST|-20 -30|01010101010101010101010|1O8K0 1nz0 1220 1qL0 WN0 1qL0 WN0 1qL0 11c0 1oo0 11c0 1rc0 Wo0 1rc0 Wo0 1rc0 11c0 1oo0 11c0 1oo0 11c0 1oo0|18e5",
 			"Asia/Hong_Kong|HKT|-80|0||73e5",
 			"Asia/Hovd|+07 +08|-70 -80|01010|1O8H0 1cJ0 1cP0 1cJ0|81e3",
-			"Asia/Irkutsk|+09 +08|-90 -80|01|1N7t0|60e4",
-			"Europe/Istanbul|EET EEST +03|-20 -30 -30|0101012|1LI10 1nA0 11A0 1tA0 U00 15w0|13e6",
+			"Europe/Istanbul|EET EEST +03|-20 -30 -30|01012|1O9d0 1tA0 U00 15w0|13e6",
 			"Asia/Jakarta|WIB|-70|0||31e6",
 			"Asia/Jayapura|WIT|-90|0||26e4",
-			"Asia/Jerusalem|IST IDT|-20 -30|01010101010101010101010|1LGM0 1oL0 10N0 1oL0 10N0 1rz0 W10 1rz0 W10 1rz0 10N0 1oL0 10N0 1oL0 10N0 1rz0 W10 1rz0 W10 1rz0 10N0 1oL0|81e4",
+			"Asia/Jerusalem|IST IDT|-20 -30|01010101010101010101010|1O8o0 1oL0 10N0 1rz0 W10 1rz0 W10 1rz0 10N0 1oL0 10N0 1oL0 10N0 1rz0 W10 1rz0 W10 1rz0 10N0 1oL0 10N0 1oL0|81e4",
 			"Asia/Kabul|+0430|-4u|0||46e5",
 			"Asia/Karachi|PKT|-50|0||24e6",
 			"Asia/Kathmandu|+0545|-5J|0||12e5",
-			"Asia/Yakutsk|+10 +09|-a0 -90|01|1N7s0|28e4",
-			"Asia/Krasnoyarsk|+08 +07|-80 -70|01|1N7u0|10e5",
-			"Asia/Magadan|+12 +10 +11|-c0 -a0 -b0|012|1N7q0 3Cq0|95e3",
+			"Asia/Magadan|+10 +11|-a0 -b0|01|1QJQ0|95e3",
 			"Asia/Makassar|WITA|-80|0||15e5",
 			"Asia/Manila|PST|-80|0||24e6",
-			"Europe/Athens|EET EEST|-20 -30|01010101010101010101010|1LHB0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|35e5",
-			"Asia/Novosibirsk|+07 +06|-70 -60|010|1N7v0 4eN0|15e5",
-			"Asia/Omsk|+07 +06|-70 -60|01|1N7v0|12e5",
+			"Europe/Athens|EET EEST|-20 -30|01010101010101010101010|1O9d0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00|35e5",
+			"Asia/Novosibirsk|+06 +07|-60 -70|01|1Rmk0|15e5",
 			"Asia/Pyongyang|KST KST|-90 -8u|010|1P4D0 6BA0|29e5",
 			"Asia/Qyzylorda|+06 +05|-60 -50|01|1Xei0|73e4",
 			"Asia/Rangoon|+0630|-6u|0||48e5",
-			"Asia/Sakhalin|+11 +10|-b0 -a0|010|1N7r0 3rd0|58e4",
+			"Asia/Sakhalin|+10 +11|-a0 -b0|01|1QyE0|58e4",
 			"Asia/Seoul|KST|-90|0||23e6",
-			"Asia/Srednekolymsk|+12 +11|-c0 -b0|01|1N7q0|35e2",
-			"Asia/Tehran|+0330 +0430|-3u -4u|01010101010101010101010|1LEku 1dz0 1cp0 1dz0 1cp0 1dz0 1cN0 1dz0 1cp0 1dz0 1cp0 1dz0 1cp0 1dz0 1cN0 1dz0 1cp0 1dz0 1cp0 1dz0 1cp0 1dz0|14e6",
+			"Asia/Tehran|+0330 +0430|-3u -4u|01010101010101010101010|1O6ku 1dz0 1cp0 1dz0 1cN0 1dz0 1cp0 1dz0 1cp0 1dz0 1cp0 1dz0 1cN0 1dz0 1cp0 1dz0 1cp0 1dz0 1cp0 1dz0 1cN0 1dz0|14e6",
 			"Asia/Tokyo|JST|-90|0||38e6",
-			"Asia/Tomsk|+07 +06|-70 -60|010|1N7v0 3Qp0|10e5",
-			"Asia/Vladivostok|+11 +10|-b0 -a0|01|1N7r0|60e4",
-			"Asia/Yekaterinburg|+06 +05|-60 -50|01|1N7w0|14e5",
-			"Europe/Lisbon|WET WEST|0 -10|01010101010101010101010|1LHB0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|27e5",
+			"Asia/Tomsk|+06 +07|-60 -70|01|1QXU0|10e5",
+			"Europe/Lisbon|WET WEST|0 -10|01010101010101010101010|1O9d0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00|27e5",
 			"Atlantic/Cape_Verde|-01|10|0||50e4",
-			"Australia/Sydney|AEDT AEST|-b0 -a0|01010101010101010101010|1LKg0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0|40e5",
-			"Australia/Adelaide|ACDT ACST|-au -9u|01010101010101010101010|1LKgu 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0|11e5",
+			"Australia/Sydney|AEDT AEST|-b0 -a0|01010101010101010101010|1ObQ0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0|40e5",
+			"Australia/Adelaide|ACDT ACST|-au -9u|01010101010101010101010|1ObQu 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0|11e5",
 			"Australia/Brisbane|AEST|-a0|0||20e5",
 			"Australia/Darwin|ACST|-9u|0||12e4",
 			"Australia/Eucla|+0845|-8J|0||368",
-			"Australia/Lord_Howe|+11 +1030|-b0 -au|01010101010101010101010|1LKf0 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1fAu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1fzu 1cMu|347",
+			"Australia/Lord_Howe|+11 +1030|-b0 -au|01010101010101010101010|1ObP0 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1fAu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1fzu 1cMu 1cLu 1cMu|347",
 			"Australia/Perth|AWST|-80|0||18e5",
-			"Pacific/Easter|-05 -06|50 60|010101010101010101010|1LSP0 Rd0 46n0 Ap0 1Nb0 Ap0 1Nb0 Ap0 1zb0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 11B0|30e2",
-			"Europe/Dublin|GMT IST|0 -10|01010101010101010101010|1LHB0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|12e5",
-			"Etc/GMT-1|+01|-10|0|",
+			"Pacific/Easter|-05 -06|50 60|010101010101010101010|1QSr0 Ap0 1Nb0 Ap0 1Nb0 Ap0 1zb0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 11B0 1nX0 11B0|30e2",
+			"Europe/Dublin|GMT IST|0 -10|01010101010101010101010|1O9d0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00|12e5",
+			"Etc/GMT-1|+01|-10|0||",
 			"Pacific/Fakaofo|+13|-d0|0||483",
 			"Pacific/Kiritimati|+14|-e0|0||51e2",
-			"Etc/GMT-2|+02|-20|0|",
+			"Etc/GMT-2|+02|-20|0||",
 			"Pacific/Tahiti|-10|a0|0||18e4",
 			"Pacific/Niue|-11|b0|0||12e2",
-			"Etc/GMT+12|-12|c0|0|",
+			"Etc/GMT+12|-12|c0|0||",
 			"Pacific/Galapagos|-06|60|0||25e3",
-			"Etc/GMT+7|-07|70|0|",
+			"Etc/GMT+7|-07|70|0||",
 			"Pacific/Pitcairn|-08|80|0||56",
 			"Pacific/Gambier|-09|90|0||125",
-			"Etc/UTC|UTC|0|0|",
-			"Europe/Ulyanovsk|+04 +03|-40 -30|010|1N7y0 3rd0|13e5",
-			"Europe/London|GMT BST|0 -10|01010101010101010101010|1LHB0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|10e6",
-			"Europe/Chisinau|EET EEST|-20 -30|01010101010101010101010|1LHA0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|67e4",
-			"Europe/Kaliningrad|+03 EET|-30 -20|01|1N7z0|44e4",
-			"Europe/Kirov|+04 +03|-40 -30|01|1N7y0|48e4",
-			"Europe/Moscow|MSK MSK|-40 -30|01|1N7y0|16e6",
-			"Europe/Saratov|+04 +03|-40 -30|010|1N7y0 5810",
-			"Europe/Simferopol|EET MSK MSK|-20 -40 -30|012|1LHA0 1nW0|33e4",
-			"Europe/Volgograd|+04 +03|-40 -30|010|1N7y0 9Jd0|10e5",
+			"Etc/UTC|UTC|0|0||",
+			"Europe/Ulyanovsk|+03 +04|-30 -40|01|1QyL0|13e5",
+			"Europe/London|GMT BST|0 -10|01010101010101010101010|1O9d0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00|10e6",
+			"Europe/Chisinau|EET EEST|-20 -30|01010101010101010101010|1O9c0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00|67e4",
+			"Europe/Moscow|MSK|-30|0||16e6",
+			"Europe/Saratov|+03 +04|-30 -40|01|1Sfz0|",
+			"Europe/Volgograd|+03 +04|-30 -40|01|1WQL0|10e5",
 			"Pacific/Honolulu|HST|a0|0||37e4",
-			"MET|MET MEST|-10 -20|01010101010101010101010|1LHB0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00",
-			"Pacific/Chatham|+1345 +1245|-dJ -cJ|01010101010101010101010|1LKe0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1io0 1a00|600",
-			"Pacific/Apia|+14 +13|-e0 -d0|01010101010101010101010|1LKe0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1io0 1a00|37e3",
-			"Pacific/Bougainville|+10 +11|-a0 -b0|01|1NwE0|18e4",
-			"Pacific/Fiji|+13 +12|-d0 -c0|01010101010101010101010|1Lfp0 1SN0 uM0 1SM0 uM0 1VA0 s00 1VA0 s00 1VA0 s00 20o0 pc0 20o0 s00 20o0 pc0 20o0 pc0 20o0 pc0 20o0|88e4",
+			"MET|MET MEST|-10 -20|01010101010101010101010|1O9d0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00|",
+			"Pacific/Chatham|+1345 +1245|-dJ -cJ|01010101010101010101010|1ObO0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1io0 1a00 1fA0 1a00|600",
+			"Pacific/Apia|+14 +13|-e0 -d0|01010101010101010101010|1ObO0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1io0 1a00 1fA0 1a00|37e3",
+			"Pacific/Fiji|+13 +12|-d0 -c0|01010101010101010101010|1NF20 1SM0 uM0 1VA0 s00 1VA0 s00 1VA0 s00 20o0 pc0 20o0 s00 20o0 pc0 20o0 pc0 20o0 pc0 20o0 pc0 20o0|88e4",
 			"Pacific/Guam|ChST|-a0|0||17e4",
 			"Pacific/Marquesas|-0930|9u|0||86e2",
 			"Pacific/Pago_Pago|SST|b0|0||37e2",
-			"Pacific/Norfolk|+1130 +11 +12|-bu -b0 -c0|0121212121212|1PoCu 9Jcu 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0|25e4",
+			"Pacific/Norfolk|+1130 +11 +12|-bu -b0 -c0|012121212121212|1PoCu 9Jcu 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0|25e4",
 			"Pacific/Tongatapu|+13 +14|-d0 -e0|010|1S4d0 s00|75e3"
 		],
 		"links": [
@@ -64489,7 +64690,10 @@ return PerfectScrollbar;
 			"Africa/Abidjan|Greenwich",
 			"Africa/Abidjan|Iceland",
 			"Africa/Algiers|Africa/Tunis",
+			"Africa/Cairo|Africa/Tripoli",
 			"Africa/Cairo|Egypt",
+			"Africa/Cairo|Europe/Kaliningrad",
+			"Africa/Cairo|Libya",
 			"Africa/Casablanca|Africa/El_Aaiun",
 			"Africa/Johannesburg|Africa/Maseru",
 			"Africa/Johannesburg|Africa/Mbabane",
@@ -64521,7 +64725,6 @@ return PerfectScrollbar;
 			"Africa/Nairobi|Indian/Antananarivo",
 			"Africa/Nairobi|Indian/Comoro",
 			"Africa/Nairobi|Indian/Mayotte",
-			"Africa/Tripoli|Libya",
 			"America/Adak|America/Atka",
 			"America/Adak|US/Aleutian",
 			"America/Anchorage|America/Juneau",
@@ -64705,9 +64908,11 @@ return PerfectScrollbar;
 			"Asia/Baghdad|Asia/Qatar",
 			"Asia/Baghdad|Asia/Riyadh",
 			"Asia/Baghdad|Etc/GMT-3",
+			"Asia/Baghdad|Europe/Kirov",
 			"Asia/Baghdad|Europe/Minsk",
 			"Asia/Bangkok|Antarctica/Davis",
 			"Asia/Bangkok|Asia/Ho_Chi_Minh",
+			"Asia/Bangkok|Asia/Krasnoyarsk",
 			"Asia/Bangkok|Asia/Novokuznetsk",
 			"Asia/Bangkok|Asia/Phnom_Penh",
 			"Asia/Bangkok|Asia/Saigon",
@@ -64719,14 +64924,13 @@ return PerfectScrollbar;
 			"Asia/Dhaka|Asia/Bishkek",
 			"Asia/Dhaka|Asia/Dacca",
 			"Asia/Dhaka|Asia/Kashgar",
+			"Asia/Dhaka|Asia/Omsk",
 			"Asia/Dhaka|Asia/Qostanay",
 			"Asia/Dhaka|Asia/Thimbu",
 			"Asia/Dhaka|Asia/Thimphu",
 			"Asia/Dhaka|Asia/Urumqi",
 			"Asia/Dhaka|Etc/GMT-6",
 			"Asia/Dhaka|Indian/Chagos",
-			"Asia/Dili|Etc/GMT-9",
-			"Asia/Dili|Pacific/Palau",
 			"Asia/Dubai|Asia/Muscat",
 			"Asia/Dubai|Asia/Tbilisi",
 			"Asia/Dubai|Asia/Yerevan",
@@ -64753,6 +64957,7 @@ return PerfectScrollbar;
 			"Asia/Kathmandu|Asia/Katmandu",
 			"Asia/Kolkata|Asia/Calcutta",
 			"Asia/Kuala_Lumpur|Asia/Brunei",
+			"Asia/Kuala_Lumpur|Asia/Irkutsk",
 			"Asia/Kuala_Lumpur|Asia/Kuching",
 			"Asia/Kuala_Lumpur|Asia/Singapore",
 			"Asia/Kuala_Lumpur|Etc/GMT-8",
@@ -64778,6 +64983,7 @@ return PerfectScrollbar;
 			"Asia/Tashkent|Asia/Dushanbe",
 			"Asia/Tashkent|Asia/Oral",
 			"Asia/Tashkent|Asia/Samarkand",
+			"Asia/Tashkent|Asia/Yekaterinburg",
 			"Asia/Tashkent|Etc/GMT-5",
 			"Asia/Tashkent|Indian/Kerguelen",
 			"Asia/Tashkent|Indian/Maldives",
@@ -64785,8 +64991,17 @@ return PerfectScrollbar;
 			"Asia/Tokyo|Japan",
 			"Asia/Ulaanbaatar|Asia/Choibalsan",
 			"Asia/Ulaanbaatar|Asia/Ulan_Bator",
+			"Asia/Vladivostok|Antarctica/DumontDUrville",
 			"Asia/Vladivostok|Asia/Ust-Nera",
+			"Asia/Vladivostok|Etc/GMT-10",
+			"Asia/Vladivostok|Pacific/Chuuk",
+			"Asia/Vladivostok|Pacific/Port_Moresby",
+			"Asia/Vladivostok|Pacific/Truk",
+			"Asia/Vladivostok|Pacific/Yap",
+			"Asia/Yakutsk|Asia/Dili",
 			"Asia/Yakutsk|Asia/Khandyga",
+			"Asia/Yakutsk|Etc/GMT-9",
+			"Asia/Yakutsk|Pacific/Palau",
 			"Atlantic/Azores|America/Scoresbysund",
 			"Atlantic/Cape_Verde|Etc/GMT+1",
 			"Australia/Adelaide|Australia/Broken_Hill",
@@ -64841,6 +65056,7 @@ return PerfectScrollbar;
 			"Europe/London|Europe/Jersey",
 			"Europe/London|GB",
 			"Europe/London|GB-Eire",
+			"Europe/Moscow|Europe/Simferopol",
 			"Europe/Moscow|W-SU",
 			"Europe/Paris|Africa/Ceuta",
 			"Europe/Paris|Arctic/Longyearbyen",
@@ -64881,19 +65097,21 @@ return PerfectScrollbar;
 			"Pacific/Auckland|Antarctica/McMurdo",
 			"Pacific/Auckland|Antarctica/South_Pole",
 			"Pacific/Auckland|NZ",
+			"Pacific/Bougainville|Antarctica/Macquarie",
+			"Pacific/Bougainville|Asia/Srednekolymsk",
+			"Pacific/Bougainville|Etc/GMT-11",
+			"Pacific/Bougainville|Pacific/Efate",
+			"Pacific/Bougainville|Pacific/Guadalcanal",
+			"Pacific/Bougainville|Pacific/Kosrae",
+			"Pacific/Bougainville|Pacific/Noumea",
+			"Pacific/Bougainville|Pacific/Pohnpei",
+			"Pacific/Bougainville|Pacific/Ponape",
 			"Pacific/Chatham|NZ-CHAT",
 			"Pacific/Easter|Chile/EasterIsland",
 			"Pacific/Fakaofo|Etc/GMT-13",
 			"Pacific/Fakaofo|Pacific/Enderbury",
 			"Pacific/Galapagos|Etc/GMT+6",
 			"Pacific/Gambier|Etc/GMT+9",
-			"Pacific/Guadalcanal|Antarctica/Macquarie",
-			"Pacific/Guadalcanal|Etc/GMT-11",
-			"Pacific/Guadalcanal|Pacific/Efate",
-			"Pacific/Guadalcanal|Pacific/Kosrae",
-			"Pacific/Guadalcanal|Pacific/Noumea",
-			"Pacific/Guadalcanal|Pacific/Pohnpei",
-			"Pacific/Guadalcanal|Pacific/Ponape",
 			"Pacific/Guam|Pacific/Saipan",
 			"Pacific/Honolulu|HST",
 			"Pacific/Honolulu|Pacific/Johnston",
@@ -64904,13 +65122,257 @@ return PerfectScrollbar;
 			"Pacific/Pago_Pago|Pacific/Samoa",
 			"Pacific/Pago_Pago|US/Samoa",
 			"Pacific/Pitcairn|Etc/GMT+8",
-			"Pacific/Port_Moresby|Antarctica/DumontDUrville",
-			"Pacific/Port_Moresby|Etc/GMT-10",
-			"Pacific/Port_Moresby|Pacific/Chuuk",
-			"Pacific/Port_Moresby|Pacific/Truk",
-			"Pacific/Port_Moresby|Pacific/Yap",
 			"Pacific/Tahiti|Etc/GMT+10",
 			"Pacific/Tahiti|Pacific/Rarotonga"
+		],
+		"countries": [
+			"AD|Europe/Andorra",
+			"AE|Asia/Dubai",
+			"AF|Asia/Kabul",
+			"AG|America/Port_of_Spain America/Antigua",
+			"AI|America/Port_of_Spain America/Anguilla",
+			"AL|Europe/Tirane",
+			"AM|Asia/Yerevan",
+			"AO|Africa/Lagos Africa/Luanda",
+			"AQ|Antarctica/Casey Antarctica/Davis Antarctica/DumontDUrville Antarctica/Mawson Antarctica/Palmer Antarctica/Rothera Antarctica/Syowa Antarctica/Troll Antarctica/Vostok Pacific/Auckland Antarctica/McMurdo",
+			"AR|America/Argentina/Buenos_Aires America/Argentina/Cordoba America/Argentina/Salta America/Argentina/Jujuy America/Argentina/Tucuman America/Argentina/Catamarca America/Argentina/La_Rioja America/Argentina/San_Juan America/Argentina/Mendoza America/Argentina/San_Luis America/Argentina/Rio_Gallegos America/Argentina/Ushuaia",
+			"AS|Pacific/Pago_Pago",
+			"AT|Europe/Vienna",
+			"AU|Australia/Lord_Howe Antarctica/Macquarie Australia/Hobart Australia/Currie Australia/Melbourne Australia/Sydney Australia/Broken_Hill Australia/Brisbane Australia/Lindeman Australia/Adelaide Australia/Darwin Australia/Perth Australia/Eucla",
+			"AW|America/Curacao America/Aruba",
+			"AX|Europe/Helsinki Europe/Mariehamn",
+			"AZ|Asia/Baku",
+			"BA|Europe/Belgrade Europe/Sarajevo",
+			"BB|America/Barbados",
+			"BD|Asia/Dhaka",
+			"BE|Europe/Brussels",
+			"BF|Africa/Abidjan Africa/Ouagadougou",
+			"BG|Europe/Sofia",
+			"BH|Asia/Qatar Asia/Bahrain",
+			"BI|Africa/Maputo Africa/Bujumbura",
+			"BJ|Africa/Lagos Africa/Porto-Novo",
+			"BL|America/Port_of_Spain America/St_Barthelemy",
+			"BM|Atlantic/Bermuda",
+			"BN|Asia/Brunei",
+			"BO|America/La_Paz",
+			"BQ|America/Curacao America/Kralendijk",
+			"BR|America/Noronha America/Belem America/Fortaleza America/Recife America/Araguaina America/Maceio America/Bahia America/Sao_Paulo America/Campo_Grande America/Cuiaba America/Santarem America/Porto_Velho America/Boa_Vista America/Manaus America/Eirunepe America/Rio_Branco",
+			"BS|America/Nassau",
+			"BT|Asia/Thimphu",
+			"BW|Africa/Maputo Africa/Gaborone",
+			"BY|Europe/Minsk",
+			"BZ|America/Belize",
+			"CA|America/St_Johns America/Halifax America/Glace_Bay America/Moncton America/Goose_Bay America/Blanc-Sablon America/Toronto America/Nipigon America/Thunder_Bay America/Iqaluit America/Pangnirtung America/Atikokan America/Winnipeg America/Rainy_River America/Resolute America/Rankin_Inlet America/Regina America/Swift_Current America/Edmonton America/Cambridge_Bay America/Yellowknife America/Inuvik America/Creston America/Dawson_Creek America/Fort_Nelson America/Vancouver America/Whitehorse America/Dawson",
+			"CC|Indian/Cocos",
+			"CD|Africa/Maputo Africa/Lagos Africa/Kinshasa Africa/Lubumbashi",
+			"CF|Africa/Lagos Africa/Bangui",
+			"CG|Africa/Lagos Africa/Brazzaville",
+			"CH|Europe/Zurich",
+			"CI|Africa/Abidjan",
+			"CK|Pacific/Rarotonga",
+			"CL|America/Santiago America/Punta_Arenas Pacific/Easter",
+			"CM|Africa/Lagos Africa/Douala",
+			"CN|Asia/Shanghai Asia/Urumqi",
+			"CO|America/Bogota",
+			"CR|America/Costa_Rica",
+			"CU|America/Havana",
+			"CV|Atlantic/Cape_Verde",
+			"CW|America/Curacao",
+			"CX|Indian/Christmas",
+			"CY|Asia/Nicosia Asia/Famagusta",
+			"CZ|Europe/Prague",
+			"DE|Europe/Zurich Europe/Berlin Europe/Busingen",
+			"DJ|Africa/Nairobi Africa/Djibouti",
+			"DK|Europe/Copenhagen",
+			"DM|America/Port_of_Spain America/Dominica",
+			"DO|America/Santo_Domingo",
+			"DZ|Africa/Algiers",
+			"EC|America/Guayaquil Pacific/Galapagos",
+			"EE|Europe/Tallinn",
+			"EG|Africa/Cairo",
+			"EH|Africa/El_Aaiun",
+			"ER|Africa/Nairobi Africa/Asmara",
+			"ES|Europe/Madrid Africa/Ceuta Atlantic/Canary",
+			"ET|Africa/Nairobi Africa/Addis_Ababa",
+			"FI|Europe/Helsinki",
+			"FJ|Pacific/Fiji",
+			"FK|Atlantic/Stanley",
+			"FM|Pacific/Chuuk Pacific/Pohnpei Pacific/Kosrae",
+			"FO|Atlantic/Faroe",
+			"FR|Europe/Paris",
+			"GA|Africa/Lagos Africa/Libreville",
+			"GB|Europe/London",
+			"GD|America/Port_of_Spain America/Grenada",
+			"GE|Asia/Tbilisi",
+			"GF|America/Cayenne",
+			"GG|Europe/London Europe/Guernsey",
+			"GH|Africa/Accra",
+			"GI|Europe/Gibraltar",
+			"GL|America/Godthab America/Danmarkshavn America/Scoresbysund America/Thule",
+			"GM|Africa/Abidjan Africa/Banjul",
+			"GN|Africa/Abidjan Africa/Conakry",
+			"GP|America/Port_of_Spain America/Guadeloupe",
+			"GQ|Africa/Lagos Africa/Malabo",
+			"GR|Europe/Athens",
+			"GS|Atlantic/South_Georgia",
+			"GT|America/Guatemala",
+			"GU|Pacific/Guam",
+			"GW|Africa/Bissau",
+			"GY|America/Guyana",
+			"HK|Asia/Hong_Kong",
+			"HN|America/Tegucigalpa",
+			"HR|Europe/Belgrade Europe/Zagreb",
+			"HT|America/Port-au-Prince",
+			"HU|Europe/Budapest",
+			"ID|Asia/Jakarta Asia/Pontianak Asia/Makassar Asia/Jayapura",
+			"IE|Europe/Dublin",
+			"IL|Asia/Jerusalem",
+			"IM|Europe/London Europe/Isle_of_Man",
+			"IN|Asia/Kolkata",
+			"IO|Indian/Chagos",
+			"IQ|Asia/Baghdad",
+			"IR|Asia/Tehran",
+			"IS|Atlantic/Reykjavik",
+			"IT|Europe/Rome",
+			"JE|Europe/London Europe/Jersey",
+			"JM|America/Jamaica",
+			"JO|Asia/Amman",
+			"JP|Asia/Tokyo",
+			"KE|Africa/Nairobi",
+			"KG|Asia/Bishkek",
+			"KH|Asia/Bangkok Asia/Phnom_Penh",
+			"KI|Pacific/Tarawa Pacific/Enderbury Pacific/Kiritimati",
+			"KM|Africa/Nairobi Indian/Comoro",
+			"KN|America/Port_of_Spain America/St_Kitts",
+			"KP|Asia/Pyongyang",
+			"KR|Asia/Seoul",
+			"KW|Asia/Riyadh Asia/Kuwait",
+			"KY|America/Panama America/Cayman",
+			"KZ|Asia/Almaty Asia/Qyzylorda Asia/Qostanay Asia/Aqtobe Asia/Aqtau Asia/Atyrau Asia/Oral",
+			"LA|Asia/Bangkok Asia/Vientiane",
+			"LB|Asia/Beirut",
+			"LC|America/Port_of_Spain America/St_Lucia",
+			"LI|Europe/Zurich Europe/Vaduz",
+			"LK|Asia/Colombo",
+			"LR|Africa/Monrovia",
+			"LS|Africa/Johannesburg Africa/Maseru",
+			"LT|Europe/Vilnius",
+			"LU|Europe/Luxembourg",
+			"LV|Europe/Riga",
+			"LY|Africa/Tripoli",
+			"MA|Africa/Casablanca",
+			"MC|Europe/Monaco",
+			"MD|Europe/Chisinau",
+			"ME|Europe/Belgrade Europe/Podgorica",
+			"MF|America/Port_of_Spain America/Marigot",
+			"MG|Africa/Nairobi Indian/Antananarivo",
+			"MH|Pacific/Majuro Pacific/Kwajalein",
+			"MK|Europe/Belgrade Europe/Skopje",
+			"ML|Africa/Abidjan Africa/Bamako",
+			"MM|Asia/Yangon",
+			"MN|Asia/Ulaanbaatar Asia/Hovd Asia/Choibalsan",
+			"MO|Asia/Macau",
+			"MP|Pacific/Guam Pacific/Saipan",
+			"MQ|America/Martinique",
+			"MR|Africa/Abidjan Africa/Nouakchott",
+			"MS|America/Port_of_Spain America/Montserrat",
+			"MT|Europe/Malta",
+			"MU|Indian/Mauritius",
+			"MV|Indian/Maldives",
+			"MW|Africa/Maputo Africa/Blantyre",
+			"MX|America/Mexico_City America/Cancun America/Merida America/Monterrey America/Matamoros America/Mazatlan America/Chihuahua America/Ojinaga America/Hermosillo America/Tijuana America/Bahia_Banderas",
+			"MY|Asia/Kuala_Lumpur Asia/Kuching",
+			"MZ|Africa/Maputo",
+			"NA|Africa/Windhoek",
+			"NC|Pacific/Noumea",
+			"NE|Africa/Lagos Africa/Niamey",
+			"NF|Pacific/Norfolk",
+			"NG|Africa/Lagos",
+			"NI|America/Managua",
+			"NL|Europe/Amsterdam",
+			"NO|Europe/Oslo",
+			"NP|Asia/Kathmandu",
+			"NR|Pacific/Nauru",
+			"NU|Pacific/Niue",
+			"NZ|Pacific/Auckland Pacific/Chatham",
+			"OM|Asia/Dubai Asia/Muscat",
+			"PA|America/Panama",
+			"PE|America/Lima",
+			"PF|Pacific/Tahiti Pacific/Marquesas Pacific/Gambier",
+			"PG|Pacific/Port_Moresby Pacific/Bougainville",
+			"PH|Asia/Manila",
+			"PK|Asia/Karachi",
+			"PL|Europe/Warsaw",
+			"PM|America/Miquelon",
+			"PN|Pacific/Pitcairn",
+			"PR|America/Puerto_Rico",
+			"PS|Asia/Gaza Asia/Hebron",
+			"PT|Europe/Lisbon Atlantic/Madeira Atlantic/Azores",
+			"PW|Pacific/Palau",
+			"PY|America/Asuncion",
+			"QA|Asia/Qatar",
+			"RE|Indian/Reunion",
+			"RO|Europe/Bucharest",
+			"RS|Europe/Belgrade",
+			"RU|Europe/Kaliningrad Europe/Moscow Europe/Simferopol Europe/Kirov Europe/Astrakhan Europe/Volgograd Europe/Saratov Europe/Ulyanovsk Europe/Samara Asia/Yekaterinburg Asia/Omsk Asia/Novosibirsk Asia/Barnaul Asia/Tomsk Asia/Novokuznetsk Asia/Krasnoyarsk Asia/Irkutsk Asia/Chita Asia/Yakutsk Asia/Khandyga Asia/Vladivostok Asia/Ust-Nera Asia/Magadan Asia/Sakhalin Asia/Srednekolymsk Asia/Kamchatka Asia/Anadyr",
+			"RW|Africa/Maputo Africa/Kigali",
+			"SA|Asia/Riyadh",
+			"SB|Pacific/Guadalcanal",
+			"SC|Indian/Mahe",
+			"SD|Africa/Khartoum",
+			"SE|Europe/Stockholm",
+			"SG|Asia/Singapore",
+			"SH|Africa/Abidjan Atlantic/St_Helena",
+			"SI|Europe/Belgrade Europe/Ljubljana",
+			"SJ|Europe/Oslo Arctic/Longyearbyen",
+			"SK|Europe/Prague Europe/Bratislava",
+			"SL|Africa/Abidjan Africa/Freetown",
+			"SM|Europe/Rome Europe/San_Marino",
+			"SN|Africa/Abidjan Africa/Dakar",
+			"SO|Africa/Nairobi Africa/Mogadishu",
+			"SR|America/Paramaribo",
+			"SS|Africa/Juba",
+			"ST|Africa/Sao_Tome",
+			"SV|America/El_Salvador",
+			"SX|America/Curacao America/Lower_Princes",
+			"SY|Asia/Damascus",
+			"SZ|Africa/Johannesburg Africa/Mbabane",
+			"TC|America/Grand_Turk",
+			"TD|Africa/Ndjamena",
+			"TF|Indian/Reunion Indian/Kerguelen",
+			"TG|Africa/Abidjan Africa/Lome",
+			"TH|Asia/Bangkok",
+			"TJ|Asia/Dushanbe",
+			"TK|Pacific/Fakaofo",
+			"TL|Asia/Dili",
+			"TM|Asia/Ashgabat",
+			"TN|Africa/Tunis",
+			"TO|Pacific/Tongatapu",
+			"TR|Europe/Istanbul",
+			"TT|America/Port_of_Spain",
+			"TV|Pacific/Funafuti",
+			"TW|Asia/Taipei",
+			"TZ|Africa/Nairobi Africa/Dar_es_Salaam",
+			"UA|Europe/Simferopol Europe/Kiev Europe/Uzhgorod Europe/Zaporozhye",
+			"UG|Africa/Nairobi Africa/Kampala",
+			"UM|Pacific/Pago_Pago Pacific/Wake Pacific/Honolulu Pacific/Midway",
+			"US|America/New_York America/Detroit America/Kentucky/Louisville America/Kentucky/Monticello America/Indiana/Indianapolis America/Indiana/Vincennes America/Indiana/Winamac America/Indiana/Marengo America/Indiana/Petersburg America/Indiana/Vevay America/Chicago America/Indiana/Tell_City America/Indiana/Knox America/Menominee America/North_Dakota/Center America/North_Dakota/New_Salem America/North_Dakota/Beulah America/Denver America/Boise America/Phoenix America/Los_Angeles America/Anchorage America/Juneau America/Sitka America/Metlakatla America/Yakutat America/Nome America/Adak Pacific/Honolulu",
+			"UY|America/Montevideo",
+			"UZ|Asia/Samarkand Asia/Tashkent",
+			"VA|Europe/Rome Europe/Vatican",
+			"VC|America/Port_of_Spain America/St_Vincent",
+			"VE|America/Caracas",
+			"VG|America/Port_of_Spain America/Tortola",
+			"VI|America/Port_of_Spain America/St_Thomas",
+			"VN|Asia/Bangkok Asia/Ho_Chi_Minh",
+			"VU|Pacific/Efate",
+			"WF|Pacific/Wallis",
+			"WS|Pacific/Apia",
+			"YE|Asia/Riyadh Asia/Aden",
+			"YT|Africa/Nairobi Indian/Mayotte",
+			"ZA|Africa/Johannesburg",
+			"ZM|Africa/Maputo Africa/Lusaka",
+			"ZW|Africa/Maputo Africa/Harare"
 		]
 	});
 
@@ -65140,12 +65602,14 @@ return PerfectScrollbar;
             }
             this.utcOffset = utcOffset;
             this.fullName = this.name;
+            this.utcOffsetText = '';
             if (utcOffset !== null){
-                this.fullName += ' (UTC' + (utcOffset<=0?'+':'-');
+                this.utcOffsetText = '(UTC' + (utcOffset<=0?'+':'-');
                 utcOffset = Math.abs(utcOffset);
                 var h = Math.floor(utcOffset / 60),
                     m = utcOffset % 60;
-                this.fullName += (h<10?'0':'') + h + ':' + (m<10?'0':'') + m + ')';
+                this.utcOffsetText += (h<10?'0':'') + h + ':' + (m<10?'0':'') + m + ')';
+                this.fullName += ' ' + this.utcOffsetText;
             }
         }
 
@@ -65378,7 +65842,7 @@ options:
     window.TimeSlider = function (input, options, pluginCount) {
         var _this = this;
 
-        this.VERSION = "6.1.4";
+        this.VERSION = "6.1.5";
 
         //Setting default options
         this.options = $.extend( true, {}, defaultOptions, options );
@@ -65696,6 +66160,9 @@ options:
         setFormat
         ***************************************************************/
         setFormat: function( format ){
+            //Reset label-width in case time-format is changed (12h <-> 24h)
+            this.options.maxLabelWidthRem = 0;
+
             this._updateOptionsFormat( format );
             this.update();
             this.updateDisplay();
@@ -65903,213 +66370,15 @@ options:
 
 }(jQuery, this, document));
 ;
-(function() {
-    var url = (function() {
-
-        function _t() {
-            return new RegExp(/(.*?)\.?([^\.]*?)\.(gl|com|net|org|biz|ws|in|me|co\.uk|co|org\.uk|ltd\.uk|plc\.uk|me\.uk|edu|mil|br\.com|cn\.com|eu\.com|hu\.com|no\.com|qc\.com|sa\.com|se\.com|se\.net|us\.com|uy\.com|ac|co\.ac|gv\.ac|or\.ac|ac\.ac|af|am|as|at|ac\.at|co\.at|gv\.at|or\.at|asn\.au|com\.au|edu\.au|org\.au|net\.au|id\.au|be|ac\.be|adm\.br|adv\.br|am\.br|arq\.br|art\.br|bio\.br|cng\.br|cnt\.br|com\.br|ecn\.br|eng\.br|esp\.br|etc\.br|eti\.br|fm\.br|fot\.br|fst\.br|g12\.br|gov\.br|ind\.br|inf\.br|jor\.br|lel\.br|med\.br|mil\.br|net\.br|nom\.br|ntr\.br|odo\.br|org\.br|ppg\.br|pro\.br|psc\.br|psi\.br|rec\.br|slg\.br|tmp\.br|tur\.br|tv\.br|vet\.br|zlg\.br|br|ab\.ca|bc\.ca|mb\.ca|nb\.ca|nf\.ca|ns\.ca|nt\.ca|on\.ca|pe\.ca|qc\.ca|sk\.ca|yk\.ca|ca|cc|ac\.cn|com\.cn|edu\.cn|gov\.cn|org\.cn|bj\.cn|sh\.cn|tj\.cn|cq\.cn|he\.cn|nm\.cn|ln\.cn|jl\.cn|hl\.cn|js\.cn|zj\.cn|ah\.cn|gd\.cn|gx\.cn|hi\.cn|sc\.cn|gz\.cn|yn\.cn|xz\.cn|sn\.cn|gs\.cn|qh\.cn|nx\.cn|xj\.cn|tw\.cn|hk\.cn|mo\.cn|cn|cx|cz|de|dk|fo|com\.ec|tm\.fr|com\.fr|asso\.fr|presse\.fr|fr|gf|gs|co\.il|net\.il|ac\.il|k12\.il|gov\.il|muni\.il|ac\.in|co\.in|org\.in|ernet\.in|gov\.in|net\.in|res\.in|is|it|ac\.jp|co\.jp|go\.jp|or\.jp|ne\.jp|ac\.kr|co\.kr|go\.kr|ne\.kr|nm\.kr|or\.kr|li|lt|lu|asso\.mc|tm\.mc|com\.mm|org\.mm|net\.mm|edu\.mm|gov\.mm|ms|nl|no|nu|pl|ro|org\.ro|store\.ro|tm\.ro|firm\.ro|www\.ro|arts\.ro|rec\.ro|info\.ro|nom\.ro|nt\.ro|se|si|com\.sg|org\.sg|net\.sg|gov\.sg|sk|st|tf|ac\.th|co\.th|go\.th|mi\.th|net\.th|or\.th|tm|to|com\.tr|edu\.tr|gov\.tr|k12\.tr|net\.tr|org\.tr|com\.tw|org\.tw|net\.tw|ac\.uk|uk\.com|uk\.net|gb\.com|gb\.net|vg|sh|kz|ch|info|ua|gov|name|pro|ie|hk|com\.hk|org\.hk|net\.hk|edu\.hk|us|tk|cd|by|ad|lv|eu\.lv|bz|es|jp|cl|ag|mobi|eu|co\.nz|org\.nz|net\.nz|maori\.nz|iwi\.nz|io|la|md|sc|sg|vc|tw|travel|my|se|tv|pt|com\.pt|edu\.pt|asia|fi|com\.ve|net\.ve|fi|org\.ve|web\.ve|info\.ve|co\.ve|tel|im|gr|ru|net\.ru|org\.ru|hr|com\.hr|ly|xyz)$/);
-        }
-
-        function _d(s) {
-          return decodeURIComponent(s.replace(/\+/g, ' '));
-        }
-
-        function _i(arg, str) {
-            var sptr = arg.charAt(0),
-                split = str.split(sptr);
-
-            if (sptr === arg) { return split; }
-
-            arg = parseInt(arg.substring(1), 10);
-
-            return split[arg < 0 ? split.length + arg : arg - 1];
-        }
-
-        function _f(arg, str) {
-            var sptr = arg.charAt(0),
-                split = str.split('&'),
-                field = [],
-                params = {},
-                tmp = [],
-                arg2 = arg.substring(1);
-
-            for (var i = 0, ii = split.length; i < ii; i++) {
-                field = split[i].match(/(.*?)=(.*)/);
-
-                // TODO: regex should be able to handle this.
-                if ( ! field) {
-                    field = [split[i], split[i], ''];
-                }
-
-                if (field[1].replace(/\s/g, '') !== '') {
-                    field[2] = _d(field[2] || '');
-
-                    // If we have a match just return it right away.
-                    if (arg2 === field[1]) { return field[2]; }
-
-                    // Check for array pattern.
-                    tmp = field[1].match(/(.*)\[([0-9]+)\]/);
-
-                    if (tmp) {
-                        params[tmp[1]] = params[tmp[1]] || [];
-
-                        params[tmp[1]][tmp[2]] = field[2];
-                    }
-                    else {
-                        params[field[1]] = field[2];
-                    }
-                }
-            }
-
-            if (sptr === arg) { return params; }
-
-            return params[arg2];
-        }
-
-        return function(arg, url) {
-            var _l = {}, tmp, tmp2;
-
-            if (arg === 'tld?') { return _t(); }
-
-            url = url || window.location.toString();
-
-            if ( ! arg) { return url; }
-
-            arg = arg.toString();
-
-            if (tmp = url.match(/^mailto:([^\/].+)/)) {
-                _l.protocol = 'mailto';
-                _l.email = tmp[1];
-            }
-            else {
-
-                // Ignore Hashbangs.
-                if (tmp = url.match(/(.*?)\/#\!(.*)/)) {
-                    url = tmp[1] + tmp[2];
-                }
-
-                // Hash.
-                if (tmp = url.match(/(.*?)#(.*)/)) {
-                    _l.hash = tmp[2];
-                    url = tmp[1];
-                }
-
-                // Return hash parts.
-                if (_l.hash && arg.match(/^#/)) { return _f(arg, _l.hash); }
-
-                // Query
-                if (tmp = url.match(/(.*?)\?(.*)/)) {
-                    _l.query = tmp[2];
-                    url = tmp[1];
-                }
-
-                // Return query parts.
-                if (_l.query && arg.match(/^\?/)) { return _f(arg, _l.query); }
-
-                // Protocol.
-                if (tmp = url.match(/(.*?)\:?\/\/(.*)/)) {
-                    _l.protocol = tmp[1].toLowerCase();
-                    url = tmp[2];
-                }
-
-                // Path.
-                if (tmp = url.match(/(.*?)(\/.*)/)) {
-                    _l.path = tmp[2];
-                    url = tmp[1];
-                }
-
-                // Clean up path.
-                _l.path = (_l.path || '').replace(/^([^\/])/, '/$1');
-
-                // Return path parts.
-                if (arg.match(/^[\-0-9]+$/)) { arg = arg.replace(/^([^\/])/, '/$1'); }
-                if (arg.match(/^\//)) { return _i(arg, _l.path.substring(1)); }
-
-                // File.
-                tmp = _i('/-1', _l.path.substring(1));
-
-                if (tmp && (tmp = tmp.match(/(.*?)\.([^.]+)$/))) {
-                    _l.file = tmp[0];
-                    _l.filename = tmp[1];
-                    _l.fileext = tmp[2];
-                }
-
-                // Port.
-                if (tmp = url.match(/(.*)\:([0-9]+)$/)) {
-                    _l.port = tmp[2];
-                    url = tmp[1];
-                }
-
-                // Auth.
-                if (tmp = url.match(/(.*?)@(.*)/)) {
-                    _l.auth = tmp[1];
-                    url = tmp[2];
-                }
-
-                // User and pass.
-                if (_l.auth) {
-                    tmp = _l.auth.match(/(.*)\:(.*)/);
-
-                    _l.user = tmp ? tmp[1] : _l.auth;
-                    _l.pass = tmp ? tmp[2] : undefined;
-                }
-
-                // Hostname.
-                _l.hostname = url.toLowerCase();
-
-                // Return hostname parts.
-                if (arg.charAt(0) === '.') { return _i(arg, _l.hostname); }
-
-                // Domain, tld and sub domain.
-                if (_t()) {
-                    tmp = _l.hostname.match(_t());
-
-                    if (tmp) {
-                        _l.tld = tmp[3];
-                        _l.domain = tmp[2] ? tmp[2] + '.' + tmp[3] : undefined;
-                        _l.sub = tmp[1] || undefined;
-                    }
-                }
-
-                // Set port and protocol defaults if not set.
-                _l.port = _l.port || (_l.protocol === 'https' ? '443' : '80');
-                _l.protocol = _l.protocol || (_l.port === '443' ? 'https' : 'http');
-            }
-
-            // Return arg.
-            if (arg in _l) { return _l[arg]; }
-
-            // Return everything.
-            if (arg === '{}') { return _l; }
-
-            // Default to undefined for no match.
-            return undefined;
-        };
-    })();
-
-	if (typeof window.define === 'function' && window.define.amd) {
-		window.define('js-url', [], function () {
-		    return url;
-		});
-	} else {
-		if(typeof window.jQuery !== 'undefined') {
-			window.jQuery.extend({
-				url: function(arg, url) { return window.url(arg, url); }
-			});
-		}
-
-		window.url = url;
-	}
-
-})();
-
+/*! @websanova/url - v2.6.3 - 2020-01-25 */
+!function(){function t(t,r){var a,o={};if("tld?"!==t){if(r=r||window.location.toString(),!t)return r;if(t=t.toString(),a=r.match(/^mailto:([^\/].+)/))o.protocol="mailto",o.email=a[1];else{if((a=r.match(/(.*?)\/#\!(.*)/))&&(r=a[1]+a[2]),(a=r.match(/(.*?)#(.*)/))&&(o.hash=a[2],r=a[1]),o.hash&&t.match(/^#/))return h(t,o.hash);if((a=r.match(/(.*?)\?(.*)/))&&(o.query=a[2],r=a[1]),o.query&&t.match(/^\?/))return h(t,o.query);if((a=r.match(/(.*?)\:?\/\/(.*)/))&&(o.protocol=a[1].toLowerCase(),r=a[2]),(a=r.match(/(.*?)(\/.*)/))&&(o.path=a[2],r=a[1]),o.path=(o.path||"").replace(/^([^\/])/,"/$1"),t.match(/^[\-0-9]+$/)&&(t=t.replace(/^([^\/])/,"/$1")),t.match(/^\//))return e(t,o.path.substring(1));if((a=(a=e("/-1",o.path.substring(1)))&&a.match(/(.*?)\.([^.]+)$/))&&(o.file=a[0],o.filename=a[1],o.fileext=a[2]),(a=r.match(/(.*)\:([0-9]+)$/))&&(o.port=a[2],r=a[1]),(a=r.match(/(.*?)@(.*)/))&&(o.auth=a[1],r=a[2]),o.auth&&(a=o.auth.match(/(.*)\:(.*)/),o.user=a?a[1]:o.auth,o.pass=a?a[2]:void 0),o.hostname=r.toLowerCase(),"."===t.charAt(0))return e(t,o.hostname);o.port=o.port||("https"===o.protocol?"443":"80"),o.protocol=o.protocol||("443"===o.port?"https":"http")}return t in o?o[t]:"{}"===t?o:void 0}}function e(t,r){var a=t.charAt(0),o=r.split(a);return a===t?o:o[(t=parseInt(t.substring(1),10))<0?o.length+t:t-1]}function h(t,r){for(var a,o=t.charAt(0),e=r.split("&"),h=[],n={},c=[],i=t.substring(1),p=0,u=e.length;p<u;p++)if(""!==(h=(h=e[p].match(/(.*?)=(.*)/))||[e[p],e[p],""])[1].replace(/\s/g,"")){if(h[2]=(a=h[2]||"",decodeURIComponent(a.replace(/\+/g," "))),i===h[1])return h[2];(c=h[1].match(/(.*)\[([0-9]+)\]/))?(n[c[1]]=n[c[1]]||[],n[c[1]][c[2]]=h[2]):n[h[1]]=h[2]}return o===t?n:n[i]}window.url=t}();
 ;
-/*
-  @package NOTY - Dependency-free notification library
-  @version version: 3.1.4
-  @contributors https://github.com/needim/noty/graphs/contributors
-  @documentation Examples and Documentation - http://needim.github.com/noty
-  @license Licensed under the MIT licenses: http://www.opensource.org/licenses/mit-license.php
+/* 
+  @package NOTY - Dependency-free notification library 
+  @version version: 3.1.4 
+  @contributors https://github.com/needim/noty/graphs/contributors 
+  @documentation Examples and Documentation - http://needim.github.com/noty 
+  @license Licensed under the MIT licenses: http://www.opensource.org/licenses/mit-license.php 
 */
 
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -68142,7 +68411,7 @@ Promise$2.prototype = {
     The primary way of interacting with a promise is through its `then` method,
     which registers callbacks to receive either a promise's eventual value or the
     reason why the promise cannot be fulfilled.
-
+  
     ```js
     findUser().then(function(user){
       // user is available
@@ -68150,14 +68419,14 @@ Promise$2.prototype = {
       // user is unavailable, and you are given the reason why
     });
     ```
-
+  
     Chaining
     --------
-
+  
     The return value of `then` is itself a promise.  This second, 'downstream'
     promise is resolved with the return value of the first promise's fulfillment
     or rejection handler, or rejected if the handler throws an exception.
-
+  
     ```js
     findUser().then(function (user) {
       return user.name;
@@ -68167,7 +68436,7 @@ Promise$2.prototype = {
       // If `findUser` fulfilled, `userName` will be the user's name, otherwise it
       // will be `'default name'`
     });
-
+  
     findUser().then(function (user) {
       throw new Error('Found user, but still unhappy');
     }, function (reason) {
@@ -68180,7 +68449,7 @@ Promise$2.prototype = {
     });
     ```
     If the downstream promise does not specify a rejection handler, rejection reasons will be propagated further downstream.
-
+  
     ```js
     findUser().then(function (user) {
       throw new PedagogicalException('Upstream error');
@@ -68192,15 +68461,15 @@ Promise$2.prototype = {
       // The `PedgagocialException` is propagated all the way down to here
     });
     ```
-
+  
     Assimilation
     ------------
-
+  
     Sometimes the value you want to propagate to a downstream promise can only be
     retrieved asynchronously. This can be achieved by returning a promise in the
     fulfillment or rejection handler. The downstream promise will then be pending
     until the returned promise is settled. This is called *assimilation*.
-
+  
     ```js
     findUser().then(function (user) {
       return findCommentsByAuthor(user);
@@ -68208,9 +68477,9 @@ Promise$2.prototype = {
       // The user's comments are now available
     });
     ```
-
+  
     If the assimliated promise rejects, then the downstream promise will also reject.
-
+  
     ```js
     findUser().then(function (user) {
       return findCommentsByAuthor(user);
@@ -68220,15 +68489,15 @@ Promise$2.prototype = {
       // If `findCommentsByAuthor` rejects, we'll have the reason here
     });
     ```
-
+  
     Simple Example
     --------------
-
+  
     Synchronous Example
-
+  
     ```javascript
     let result;
-
+  
     try {
       result = findResult();
       // success
@@ -68236,9 +68505,9 @@ Promise$2.prototype = {
       // failure
     }
     ```
-
+  
     Errback Example
-
+  
     ```js
     findResult(function(result, err){
       if (err) {
@@ -68248,9 +68517,9 @@ Promise$2.prototype = {
       }
     });
     ```
-
+  
     Promise Example;
-
+  
     ```javascript
     findResult().then(function(result){
       // success
@@ -68258,15 +68527,15 @@ Promise$2.prototype = {
       // failure
     });
     ```
-
+  
     Advanced Example
     --------------
-
+  
     Synchronous Example
-
+  
     ```javascript
     let author, books;
-
+  
     try {
       author = findAuthor();
       books  = findBooksByAuthor(author);
@@ -68275,19 +68544,19 @@ Promise$2.prototype = {
       // failure
     }
     ```
-
+  
     Errback Example
-
+  
     ```js
-
+  
     function foundBooks(books) {
-
+  
     }
-
+  
     function failure(reason) {
-
+  
     }
-
+  
     findAuthor(function(author, err){
       if (err) {
         failure(err);
@@ -68312,9 +68581,9 @@ Promise$2.prototype = {
       }
     });
     ```
-
+  
     Promise Example;
-
+  
     ```javascript
     findAuthor().
       then(findBooksByAuthor).
@@ -68324,7 +68593,7 @@ Promise$2.prototype = {
       // something went wrong
     });
     ```
-
+  
     @method then
     @param {Function} onFulfilled
     @param {Function} onRejected
@@ -68336,25 +68605,25 @@ Promise$2.prototype = {
   /**
     `catch` is simply sugar for `then(undefined, onRejection)` which makes it the same
     as the catch block of a try/catch statement.
-
+  
     ```js
     function findAuthor(){
       throw new Error('couldn't find that author');
     }
-
+  
     // synchronous
     try {
       findAuthor();
     } catch(reason) {
       // something went wrong
     }
-
+  
     // async with promises
     findAuthor().catch(function(reason){
       // something went wrong
     });
     ```
-
+  
     @method catch
     @param {Function} onRejection
     Useful for tooling.
@@ -69281,7 +69550,7 @@ module.exports = g;
         //Therefore if iOS, we shall assume that PDF support is not available
         !isIOS && (
             //Modern versions of Firefox come bundled with PDFJS
-            isFirefoxWithPDFJS ||
+            isFirefoxWithPDFJS || 
             //Browsers that still support the original MIME type check
             supportsPdfMimeType || (
                 //Pity the poor souls still using IE
@@ -69739,31 +70008,38 @@ module.exports = g;
                 semiTransparent: 'semi-transparent',
                 square         : 'square',
                 bigIcon        : 'big-icon',
+                extraLargeIcon : 'extra-large-icon',
                 selected       : 'active',
                 focus          : 'init_focus'
             };
 
-
         options = options || {};
+
+        //Add class-name corresponding to options
+        var newClass = [options.class || ''];
+        $.each( optionToClassName, function( id, className ){
+            if (options[id] && (!$.isFunction(options[id]) || options[id]()))
+                newClass.push(className);
+        });
+        options.class = newClass.join(' ');
+
         options =
             $._bsAdjustOptions( options, {
                 tagName         : 'a', //Using <a> instead of <button> to be able to control font-family
                 baseClass       : 'btn',
                 styleClass      : bsButtonClass,
-                class           : function( opt ){
-                                      var result = '';
-                                      $.each( optionToClassName, function( id, className ){
-                                          if (opt[id] && (!$.isFunction(opt[id]) || opt[id]()))
-                                              result = result + (result?' ':'') + className;
-                                      });
-                                     return result;
-                                  } (options),
                 useTouchSize    : true,
                 addOnClick      : true,
                 returnFromClick : false
             });
 
         var result = $('<'+ options.tagName + ' tabindex="0"/>');
+
+        //title are added to the button instead of only to the <span> with the text
+        if (options.title){
+            result.i18n(options.title, 'title');
+            options.title = null;
+        }
 
         if (options.tagName == 'a'){
             if (options.link)
@@ -69818,7 +70094,6 @@ module.exports = g;
     $.bsCheckboxButton = function( options ){
         //Clone options to avoid reflux
         options = $.extend({}, options);
-
         options.class = 'allow-zero-selected';
 
         //Use modernizr-mode and classes if icon and/or text containe two values
@@ -69852,7 +70127,13 @@ module.exports = g;
                 'far fa-square'                                          //Border
             ]]
         });
-        return $.bsButton( options ).checkbox( $.extend(options, {className: 'checked'}) );
+
+        //Bug fix: To avoid bsButton to add class 'active', selected is set to false in options for bsButton
+        var bsButtonOptions = $.extend({}, options);
+        bsButtonOptions.selected = false;
+        var $result = $.bsButton( bsButtonOptions ).checkbox( $.extend(options, {className: 'checked'}) );
+
+        return $result;
     };
 
     /**********************************************************
@@ -69877,6 +70158,7 @@ module.exports = g;
             });
 
         options.baseClassPostfix = options.vertical ? options.verticalClassPostfix : options.horizontalClassPostfix;
+
         var result = $('<'+ options.tagName + '/>')
                         ._bsAddIdAndName( options )
                         ._bsAddBaseClassAndSize( options );
@@ -69897,6 +70179,10 @@ module.exports = g;
 
         if (options.fullWidth)
             result.addClass('btn-group-full-width');
+
+        if (options.centerInParent)
+            result.addClass('btn-group-center-in-parent');
+
 
         if (options.border)
             result.addClass('btn-group-border');
@@ -70249,14 +70535,6 @@ module.exports = g;
         },
 
         /*******************************************************
-        getFormGroup
-        *******************************************************/
-        getFormGroup: function(){
-            this.$formGroup = this.$formGroup || this.getElement().parents('.form-group').first();
-            return this.$formGroup;
-        },
-
-        /*******************************************************
         setValue
         *******************************************************/
         setValue: function(value, validate){
@@ -70386,7 +70664,20 @@ module.exports = g;
                     this.resetValue( true );
                 }
 
-                this.getFormGroup().css('visibility', show ? 'visible' : 'hidden');
+                if (!this.$outerElement){
+                    //Find the element to show/hide
+                    this.$outerElement = this.getElement().parents('.form-group').first();
+                    if (!this.$outerElement.length)
+                        this.$outerElement = this.getElement();
+                }
+
+                if (this.options.freeSpaceWhenHidden)
+                    //When the element is invisible: Use display:none
+                    this.$outerElement.toggleClass('d-none', !show);
+                else
+                    //When the element is invisible: Use visibility:hidden to keep structure of form and it elements
+                    this.$outerElement.css('visibility', show ? 'visible' : 'hidden');
+
                 this.getElement().prop('disabled', !show);
 
                 this.modalForm._enableInputValidation( this, show );
@@ -70400,8 +70691,9 @@ module.exports = g;
     BsModalForm( options )
     options:
         content: json-object with full content Samer as content for bsModal with extention of
-            id, and
+            id = STRING
             showWhen and hideWhen = [id] of value: hide or show element when another element with id has value
+            freeSpaceWhenHidden = BOOLEAN, when true the element will not appear in the form when it is hidden (as display: none). If false the space is allocated to the hidden element (as visibility: hidden)
 
         extended.content: Same as options.content, but NOT BOTH
         useExtended: false - When true the extended.content is used as the content of the form
@@ -70463,7 +70755,6 @@ module.exports = g;
 
         //Create the form
         this.$form = $('<form/>');
-
         if (this.options.extended && this.options.useExtended){
             this.$form._bsAppendContent( this.options.extended.content, this.options.contentContext );
             this.options.extended.content = this.$form;
@@ -70535,6 +70826,7 @@ module.exports = g;
 
             this.showOrHide( null );
             this.isCreated = true;
+            this.onChanging();
         },
 
         /*******************************************************
@@ -70662,6 +70954,21 @@ module.exports = g;
             $.each( this.inputs, function( id, input ){
                 func( input );
             });
+        },
+
+        /*******************************************************
+        getInput(id or userId)
+        *******************************************************/
+        getInput: function(id){
+            var result = this.inputs[id];
+            if (!result)
+                this._eachInput( function( input ){
+                    if (input.options.userId == id){
+                        result = input;
+                        return false;
+                    }
+                });
+            return result;
         },
 
         /*******************************************************
@@ -71165,7 +71472,7 @@ options
 
         //Append the items
         $.each(list, function(index, itemOptions){
-            var $item = null;
+            var $item = null, radioGroup = null;
             switch (itemOptions.type){
                 case 'button':
                     $item = $.bsButton($.extend(itemOptions, {returnFromClick: true}));
@@ -71176,7 +71483,8 @@ options
                     break;
 
                 case 'radio':
-                    $item = $.bsRadioButtonGroup(itemOptions).children();
+                    $item = $.bsRadioButtonGroup( $.extend({vertical: true}, itemOptions));
+                    radioGroup = $item.data('radioGroup');
                     break;
 
                 case 'content':
@@ -71203,6 +71511,7 @@ options
                 );
 
             options.list[index].$item = $item;
+            options.list[index].radioGroup = radioGroup;
         });
         $result.data('bsMenu_options', options);
         var update = $.proxy(updateBsMenu, $result);
@@ -71213,8 +71522,55 @@ options
         return $result;
     };
 
+    function eachBsMenuListItem( itemFunc, values, $this ){
+        $.each($this.data('bsMenu_options').list, function(index, item){
+            if (item.id && ( (item.type == 'checkbox') || (item.type == 'radio') ) )
+                itemFunc(item, values, $this );
+        });
+        return values;
+    }
 
+    $.fn._bsMenu_getValues = function(){
+        var values = {};
+        eachBsMenuListItem(
+            function( item, values ){
+                switch (item.type){
+                    case 'checkbox':
+                        values[item.id] = item.$item._cbxGet();
+                        break;
+                    case 'radio':
+                        values[item.id] = item.radioGroup.getSelected();
+                        break;
+                }
+            },
+            values,
+            this
+        );
+        return values;
+    };
 
+    $.fn._bsMenu_setValues = function(values){
+        eachBsMenuListItem(
+            function( item, values ){
+                var newValue = values[item.id];
+                if (newValue !== undefined){
+                    switch (item.type){
+                        case 'checkbox':
+                            if (item.$item._cbxGet() != newValue)
+                                item.$item._cbxSet( newValue );
+                            break;
+                        case 'radio':
+                            if (item.radioGroup.getSelected() != newValue)
+                                item.radioGroup.setSelected( newValue );
+                            break;
+                    }
+                }
+            },
+            values,
+            this
+        );
+        return values;
+    };
 }(jQuery, this, document));
 ;
 /****************************************************************************
@@ -73188,10 +73544,22 @@ options
     **********************************************************/
     $.fn.bsMenuPopover = function( options ){
         options = adjustItemOptionsForPopover(options, 'list');
-        return this.bsPopover( $.extend(options, {content: $.bsMenu(options)}) );
+
+        options.content = $.bsMenu(options);
+        this.data('popover_menu', options.content);
+
+        return this.bsPopover( options );
     };
 
 
+
+    $.fn.bsMenuPopover_getValues = function(){
+        return this.data('popover_menu')._bsMenu_getValues();
+    };
+
+    $.fn.bsMenuPopover_setValues = function( values ){
+        this.data('popover_menu')._bsMenu_setValues(values);
+    };
 
 
 }(jQuery, this, document));
@@ -73288,6 +73656,9 @@ options
         },
 
         bsOnShow: function(){
+            //Translate content
+            this.$menu.localize();
+
             this.bsUpdateSelectedItem();
             this.bsUpdateLabel( false );
         },
@@ -74438,21 +74809,13 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         return options;
     };
 
-    //$._bsAdjustOptions: Adjust options to allow text/name/title/header etc.
+    //$._bsAdjustOptions: Adjust options to allow text/name/header etc.
     $._bsAdjustOptions = function( options, defaultOptions, forceOptions ){
         //*********************************************************************
         //adjustContentOptions: Adjust options for the content of elements
         function adjustContentAndContextOptions( options, context ){
-            options.icon     = options.icon || options.headerIcon || options.titleIcon;
-            options.text     = options.text || options.header || options.title;
-
-            options.iconClass = options.iconClass       || options.iconClassName       ||
-                                options.headerIconClass || options.headerIconClassName ||
-                                options.titleIconClass  || options.titleIconClassName;
-
-            options.textClass = options.textClass   || options.textClassName   ||
-                                options.headerClass || options.headerClassName ||
-                                options.titleClass  || options.titleClassName;
+            options.iconClass = options.iconClass || options.iconClassName;
+            options.textClass = options.textClass || options.textClassName;
 
             //If context is given => convert all function to proxy
             if (context)
@@ -74729,12 +75092,7 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
             }
 
             //**************************************************
-//Removed since no content is given
-//            if (checkForContent && (options.content != null))
-//                return this._bsAddHtml( options.content );
-
             options = options || '';
-
             var _this = this;
 
             //options = array => add each
@@ -74816,9 +75174,13 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
             });
 
             //Add value-format content
-            $.each( vfValueArray, function( index, vfValue ){
+            $.each( vfFormatArray, function( index ){
                 $._bsCreateElement( 'span', linkArray[ index ], titleArray[ index ], textStyleArray[ index ], textClassArray[index] )
-                    .vfValueFormat( vfValue || '', vfFormatArray[index], vfOptionsArray[index] )
+                    .vfValueFormat(
+                        vfValueArray[index] || '',
+                        vfFormatArray[index],
+                        vfOptionsArray[index]
+                    )
                     .appendTo( _this );
             });
 
@@ -74878,6 +75240,11 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                 return $.bsInput( options ).css('display', 'none');
             }
 
+            function buildInputGroup( options, $parent ){
+                return $parent
+                           .addClass('flex-column')
+                           ._bsAppendContent(options.content);
+            }
 
             if (!options)
                 return this;
@@ -74923,6 +75290,7 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                         case 'text'             :   buildFunc = buildText;              insideFormGroup = true; addBorder = true; noValidation = true; break;
                         case 'fileview'         :   buildFunc = $.bsFileView;           break;
                         case 'hidden'           :   buildFunc = buildHidden;            noValidation = true; break;
+                        case 'inputgroup'       :   buildFunc = buildInputGroup;        addBorder = true; insideFormGroup = true; buildInsideParent = true; break;
 //                        case 'xx'               :   buildFunc = $.bsXx;               break;
                     }
                 }
@@ -74939,6 +75307,14 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                     //Create outer form-group
                     insideInputGroup = true;
                     $parent = $divXXGroup('form-group', options).appendTo( $parent );
+                    if (options.smallBottomPadding)
+                        $parent.addClass('small-bottom-padding');
+
+                    if (options.lineBefore)
+                        $('<hr/>')
+                            .toggleClass('above-label', !!options.label)
+                            .appendTo( $parent );
+
                     if (noValidation || options.noValidation)
                         $parent.addClass('no-validation');
                 }
@@ -75182,8 +75558,10 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         domainParam     = '&domain=',
 
         domainDefaultShortTitle = {
-            'fa': {da: 'Skydeområde', en: 'Firing Area'},
-            'fe': {da: "Skydeøvelser. Advarsel", en: "Firing exercises. Warning"}
+            'nw': {da:'Navigationsadvarsel',        en:'Navigational Warning'},
+            'nm': {da:'Efterretning for Søfarende', en:'Notice to Mariners'},
+            'fa': {da: 'Skydeområde',               en: 'Firing Area'},
+            'fe': {da: "Skydeøvelser. Advarsel",    en: "Firing exercises. Warning"}
         },
 
         messageIndex = 0;
@@ -75521,14 +75899,13 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                 //Trim leading and trailing "."
                 shortTitle = trim(shortTitle);
             }
-
             return shortTitle;
         }
         this.shortTitle = {da: getShortTitle('da', this), en: getShortTitle('en', this)};
 
         if (!this.shortTitle.da && !this.shortTitle.en)
             this.shortTitle = domainDefaultShortTitle[this.domainId];
-console.log('this.shortTitle', this.shortTitle);
+
 
         //CREATE GEOJSON
         var geoJSONList = [];
@@ -76584,8 +76961,7 @@ console.log('this.shortTitle', this.shortTitle);
                         _this.each(partId, function( messagePart ){
 
                             //Add subject if it isn't already displayed as smallTitle
-console.log(_this, messagePart);//.subject, _this.shortTitle);
-                            if (!!messagePart.subject && !!_this.shortTitle && (trim(messagePart.subject.da) != trim(_this.shortTitle.da)) )
+                            if (!!messagePart.subject && (trim(messagePart.subject.da) != trim(_this.shortTitle.da)) )
                                 bsPart.content.push({
                                     text         : messagePart.subject,
                                     textClassName: 'd-block font-weight-bold'
@@ -77887,9 +78263,9 @@ Base object-class for all type of markers
             type       : 'base',  //Type of the marker
             size       : 'nl',    //Size of the marker. Possble values: 'extrasmall'/'sx', 'small'/'sm', '', 'large'/'lg', 'xlarge'*'xl'
 
-            scale      : null,    //Value = 40, 50, 60, 70, 80, 90, 120, 130, or 150: Scale specific icons to fit the other icons. Only for icon-marker
-            scaleY     : null,    //Value = 40, 50, 60, 70, 80, 90, 120, 130, or 150: Scale height of specific icons to better fit icons with very low height
-            scaleInner : null,    //Value = 40, 50, 60, 70, 80, 90, 120, 130, or 150: Scale inner icon in type=circle
+            scale      : null,    //Value = 40, 50, 60, 70, 80, 90, 120, 130, 150, 180 or 200: Scale specific icons to fit the other icons. Only for icon-marker
+            scaleY     : null,    //Value = 40, 50, 60, 70, 80, 90, 120, 130, 150, 180 or 200: Scale height of specific icons to better fit icons with very low height
+            scaleInner : null,    //Value = 40, 50, 60, 70, 80, 90, 120, 130, 150, 180 or 200: Scale inner icon in type=circle
 
             iconClass     : '',          //Fontawesome Font class-name ("fa-marker") for icon
             innerIconClass: '',          //Fontawesome Font class-name ("fa-home") for icon inside the marker
@@ -77957,7 +78333,7 @@ Base object-class for all type of markers
 
             options.colorName = options.colorName || options.fillColorName;
             options.borderColorName = options.borderColorName || options.lineColorName;
-            options.color = options.color || options.textColor || options.iconColor;
+//BRUGES MÅSKE IKKE:             options.color = options.color || options.textColor || options.iconColor;
             options.size = options.size.toLowerCase();
             options.size =  options.size == 'extrasmall' ? 'xs' :
                             options.size == 'small' ? 'sm' :
@@ -78667,7 +79043,7 @@ Extent L.Map with methods
             //bottomcenter need an extra container to be placed at the bottom
             this._controlCorners['bottomcenter'] =
                 L.DomUtil.create(
-                    'div',
+                    'div', 
                     'leaflet-bottom leaflet-center',
                     L.DomUtil.create('div', 'leaflet-control-bottomcenter',    this._controlContainer)
                 );
@@ -79367,7 +79743,7 @@ Extent L.Map with methods
         }
     });
 
-
+    
 
 (function() {
         numeral.register('format', 'bps', {
@@ -79793,7 +80169,8 @@ latlng-format-base, a class to validate, format, and transform positions (eq. le
         setFormat
         ************************************/
         setFormat: function( formatId, dontCallOnChange ){
-            var oldFormatId = this.options.formatId;
+            var oldFormatId = this.options.formatId,
+                oldDecimal = this.options.delimitersDecimal;
             if (formatId !== undefined)
                 this.options.formatId = formatId;
 
@@ -79834,7 +80211,7 @@ latlng-format-base, a class to validate, format, and transform positions (eq. le
                 $.extend( this.options, newOptions );
             }
 
-            if (!dontCallOnChange && (oldFormatId != formatId))
+            if (!dontCallOnChange && ((oldFormatId != formatId) || (oldDecimal != dS)))
                 $.each( this.onChangeList, function( index, rec ){
                     (rec.context ? $.proxy(rec.method, rec.context) : rec.method)(formatId, oldFormatId);
                 });
@@ -79890,7 +80267,7 @@ latlng-format-base, a class to validate, format, and transform positions (eq. le
                 var result = locale.apply(this, arguments);
 
                 //Update format
-                window.latLngFormat.setTempFormat();
+                window.latLngFormat.setFormat();
 
                 return result;
             };
@@ -81411,6 +81788,19 @@ Set methodes and options for format utm
 (function (L/*, window, document, undefined*/) {
     "use strict";
 
+    function adjust( mouseEvent ){
+        //Correct for -180 > longitude and longitude > 180
+        var lng = mouseEvent.latlng.lng;
+        lng = lng % 360;
+        if (lng > 180)
+            lng = lng - 360;
+        else
+            if (lng < -180)
+                lng = lng + 360;
+        mouseEvent.latlng.lng = lng;
+
+        return mouseEvent;
+    }
 
     function onMapMove( map ){
         if (map._mouseposition_mouseevent){
@@ -81418,7 +81808,7 @@ Set methodes and options for format utm
             if ( !newLatlng.equals( map._mouseposition_mouseevent.latlng ) ){
               //The mouse is at a new position
                 map._mouseposition_mouseevent.latlng = newLatlng;
-                map.fire( 'mouseposition', map._mouseposition_mouseevent );
+                map.fire( 'mouseposition', adjust( map._mouseposition_mouseevent ) );
             }
         }
     }
@@ -81431,17 +81821,7 @@ Set methodes and options for format utm
         this.on('mousemove', function( mouseEvent ){
             mouseEvent.type = 'mouseposition';
 
-            //Correct for -180 > longitude and longitude > 180
-            var lng = mouseEvent.latlng.lng;
-            lng = lng % 360;
-            if (lng > 180)
-                lng = lng - 360;
-            else
-                if (lng < -180)
-                    lng = lng + 360;
-            mouseEvent.latlng.lng = lng;
-
-            this._mouseposition_mouseevent = mouseEvent;
+            this._mouseposition_mouseevent = adjust( mouseEvent );
             this.fireEvent( 'mouseposition', mouseEvent );
         }, this);
 
@@ -81454,7 +81834,7 @@ Set methodes and options for format utm
         }, this);
 
         //Add zoomend-event
-        this.on('zoomend popupopen', function(){
+        this.on('moveend zoomend popupopen', function(){
             onMapMove( this );
         }, this);
 
@@ -81479,7 +81859,7 @@ Set methodes and options for format utm
 
 ;
 /*! =======================================================
-                      VERSION  10.6.2
+                      VERSION  10.6.2              
 ========================================================= */
 "use strict";
 
@@ -83553,9 +83933,44 @@ var windowIsDefined = (typeof window === "undefined" ? "undefined" : _typeof(win
 (function (/*$, L, window, document, undefined*/) {
     "use strict";
 
+
 }(jQuery, L, this, document));
 
 
+
+
+;
+/****************************************************************************
+9_leaflet-bootstrap-control-attribution.js
+
+Create standard attribution control, but with position='bottomleft' and hide by css visibility
+
+****************************************************************************/
+(function ($, L/*, window, document, undefined*/) {
+    "use strict";
+
+    var defaultBsAttributionOptions = {
+            position: 'bottomleft',
+            prefix  : false
+        };
+
+    L.Map.mergeOptions({
+        bsAttributionControl: false
+    });
+
+    L.Map.addInitHook(function () {
+        if (this.options.bsAttributionControl) {
+            this.bsAttributionControl = L.control.attribution( defaultBsAttributionOptions );
+
+            this.bsAttributionControl.addTo(this);
+            $(this.bsAttributionControl._container).addClass('leaflet-control-attribution-bs');
+
+            $(this._container).addClass('has-control-attribution-bs');
+        }
+    });
+
+
+}(jQuery, L, this, document));
 
 
 ;
@@ -83566,13 +83981,15 @@ L.BsControl = extention of L.Control with
 
 
 ****************************************************************************/
-(function ($, L, window/*, document, undefined*/) {
+(function ($, L, window, document, undefined) {
     "use strict";
 
     var controlTooltipPane = 'controlTooltipPane';
 
     L.BsControl = L.Control.extend({
         options: {
+            show            : true,
+
             tooltip         : null, //Individuel tooltip
             tooltipDirection: null, //Default = auto detection from control's position
 
@@ -83584,11 +84001,15 @@ L.BsControl = extention of L.Control with
             popupList       : null, //[] of items for bsPopoverMenu
 
 
-            closeText       : {da:'Skjul', en:'Hide'},
+            closeText       : {da:'Minimer', en:'Minimize'},//{da:'Skjul', en:'Hide'},
             onClose         : null //function. If not null and popupList not null => add as extra button to popupList with text = options.closeText
         },
 
+        //forceOptions = options to be forced (e.q. when special conditions are given). Must be set in initialize of desending objects
+        forceOptions: {},
+
         initialize: function ( options ) {
+            $.extend(options, this.forceOptions || {});
             L.Util.setOptions(this, options);
         },
 
@@ -83657,9 +84078,9 @@ L.BsControl = extention of L.Control with
                     popupList = this.options.popupList.slice();
 
                 if (this.options.onClose && window.bsIsTouch)
-                    popupList.push({type:'button', lineBefore: true, closeOnClick: true, text: this.options.closeText, onClick: this.options.onClose});
+                    popupList.push({type:'button', lineBefore: true, closeOnClick: true, icon: 'fa-window-minimize', text: this.options.closeText, onClick: this.options.onClose});
 
-                $popupElements.bsMenuPopover({
+                this.menuPopover = $popupElements.bsMenuPopover({
                     trigger     : popupTrigger,
                     delay       : popupTrigger == 'hover' ? 1000 : 0,
                     closeOnClick: true,
@@ -83703,7 +84124,54 @@ L.BsControl = extention of L.Control with
                 this._controlTooltipContent.push({icon: this.options.rightClickIcon, text: this.options.popupText});
             }
 
+            this.options.show ? this.show() : this.hide();
             return result;
+        },
+
+
+
+        show: function(){
+            return this.toggleShowHide(true);
+        },
+
+        hide: function(){
+            return this.toggleShowHide(false);
+        },
+
+        toggleShowHide: function( on ){
+		if ( on === undefined )
+            return this.toggleShowHide( !this.options.show );
+
+            this.$container = this.$container || $(this._container);
+            this.options.show = !!on;
+
+            this.$container.css('visibility', this.options.show ? 'inherit' : 'hidden');
+            this._onChange();
+            return this;
+        },
+
+        onChange: function(/*options*/){
+            //Nothing - overwriten by ancestors
+        },
+
+        _onChange: function(){
+            var state = this.getState();
+            this.onChange(state);
+            if (this.options.onChange)
+                this.options.onChange(state, this);
+        },
+
+        //getState: Return an object with the settings/state of the object -to be overwritten be inherits
+        getState: function(){
+            return {show: this.options.show };
+        },
+
+        setState: function(options){
+            $.extend(this.options, options, this.forceOptions || {});
+            if (this.menuPopover)
+                this.$popupElements.bsMenuPopover_setValues(this.options);
+            this.toggleShowHide(this.options.show);
+            return this;
         },
 
         hidePopup: function(){
@@ -83804,14 +84272,13 @@ Create leaflet-control for jquery-bootstrap button-classes:
 
         _bsButtons = L.BsControl.extend({
             options: {
-                position: 'topleft'
+                position  : 'topleft',
+                isExtended: false,
             },
 
             initialize: function(options){
                 //Set default bsControl-options
                 L.BsControl.prototype.initialize.call(this, options);
-
-                L.Util.setOptions(this, options);
             },
 
             _createContent: function(){},
@@ -83833,21 +84300,30 @@ Create leaflet-control for jquery-bootstrap button-classes:
         initialize: function(options){
             //Set default _bsButtons-options
             _bsButtons.prototype.initialize.call(this, options);
-
-            L.Util.setOptions(this, options);
         },
 
         _createContent: function(){ return $.bsButton(this.options); }
     });
 
+
+    L.Control.BsCheckboxButton = _bsButtons.extend({
+        initialize: function(options){
+            //Set default _bsButtons-options
+            _bsButtons.prototype.initialize.call(this, options);
+        },
+
+        _createContent: function(){ return $.bsCheckboxButton(this.options); }
+    });
+
+
     L.Control.BsButtonGroup = _bsButtons.extend({
-        options       : { vertical: true },
+        options: {
+            vertical: true
+        },
 
         initialize: function(options){
             //Set default _bsButtons-options
             _bsButtons.prototype.initialize.call(this, options);
-
-            L.Util.setOptions(this, options);
         },
 
         _createContent: function(){ return $.bsButtonGroup(this.options); }
@@ -83858,6 +84334,7 @@ Create leaflet-control for jquery-bootstrap button-classes:
     });
 
     L.control.bsButton           = function(options){ return new L.Control.BsButton(options);           };
+    L.control.bsCheckboxButton   = function(options){ return new L.Control.BsCheckboxButton(options);   };
     L.control.bsButtonGroup      = function(options){ return new L.Control.BsButtonGroup(options);      };
     L.control.bsRadioButtonGroup = function(options){ return new L.Control.BsRadioButtonGroup(options); };
 
@@ -83867,17 +84344,14 @@ Create leaflet-control for jquery-bootstrap button-classes:
     ********************************************************************************/
     L.Control.BsButtonBox = L.Control.BsButton.extend({
         options: {
-            addOnClose: true
+            addOnClose: true,
+            isExtended: false
         },
 
         initialize: function(options){
-            //Set default BsButtons-options
             L.Control.BsButton.prototype.initialize.call(this, options);
 
-            L.Util.setOptions(this, options);
-
-            //Set isExtended and default onToggle-function
-            this.isExtended = this.options.isExtended;
+            //Set default onToggle-function
             this.onToggle = $.proxy(this.toggle, this);
             if (this.options.addOnClose)
                 this.options.onClose = this.onToggle;
@@ -83953,12 +84427,11 @@ Create leaflet-control for jquery-bootstrap button-classes:
                     //Add default onClick if clickable and bsControl will not add popup triggered by click
                     if (modalOptions.clickable && !modalOptions.onClick && !(this.options.popupList && window.bsIsTouch))
                         modalOptions.onClick = this.onToggle;
-
                     $contentContainer._bsModalContent(modalOptions);
                 }
             }
 
-            if (this.isExtended)
+            if (this.options.isExtended)
                 this.toggle();
 
             return $container;
@@ -83968,17 +84441,33 @@ Create leaflet-control for jquery-bootstrap button-classes:
             return this.$contentContainer;
         },
 
-
         //toggle : change between button-state and extended
         toggle: function(){
             this.hidePopup();
             this.hideTooltip();
             this.$container.modernizrToggle('extended');
-            this.isExtended = this.$container.hasClass('extended');
-            if (this.options.onToggle)
-                this.options.onToggle( this.isExtended );
+            this.options.isExtended = this.$container.hasClass('extended');
+            this._onChange();
             return false;
-        }
+        },
+
+        getState: function(BsControl_getState){
+            return function () {
+                return $.extend(
+                    {isExtended: this.options.isExtended},
+                    BsControl_getState.call(this)
+                );
+            };
+        }(L.BsControl.prototype.getState),
+
+        setState: function(BsControl_setState){
+            return function (options) {
+                BsControl_setState.call(this, options);
+                this.$container.modernizrToggle('extended', this.options.isExtended);
+                return this;
+            };
+        }(L.BsControl.prototype.setState),
+
     });
 
 
@@ -84157,8 +84646,9 @@ https://github.com/nerik/leaflet-graphicscale
     L.Control.BsScale = L.Control.BsButtonBox.extend({
         options: {
             icon                : 'fa-ruler-horizontal',//Icon for bsButton
-            mode                : 'both',               //'metric', 'nautical', or 'both'
-            position            : 'bottomleft',
+            mode                : 'METRIC',             //'METRIC', 'NAUTICAL', or 'BOTH'
+            showBoth            : false,
+            position            : 'bottomright',
             minUnitWidth        : 40,
             maxUnitsWidth       : 200,                  //Max width
             maxUnitsWidthPercent: 90,                   //Max width as percent of map wisth
@@ -84174,75 +84664,96 @@ https://github.com/nerik/leaflet-graphicscale
         },
 
         initialize: function(options){
-            this.options.onToggle = $.proxy(this._updateScales, this);
-
             //Set default BsButtonBox-options and own options
             L.Control.BsButtonBox.prototype.initialize.call(this, options);
-            L.Util.setOptions(this, options);
 
             //Set default tooltip-diretion
             if (!this.options.tooltipDirection)
                 this.options.tooltipDirection = (this.options.position.indexOf('top') !== -1) ? 'bottom' : 'top';
 
-            //Set popup-items
-            this.options.popupList = [
-                {
-                    icon: this.options.icon,
-                    text: {da:'Vis', en:'Show'}
-                },
-                {
-                    radioGroupId: 'bsScale',
-                    type        :'radio',
-                    closeOnClick: true,
-                    onChange: $.proxy(this.setMode, this),
-                    list: [
-                        {id:'metric',   text: {da:'Kilometer', en:'Metric'},     selected: this.options.mode == 'metric'  },
-                        {id:'nautical', text: {da:'Sømil', en:'Nautical miles'}, selected: this.options.mode == 'nautical'},
-                        {id:'both',     text: {da:'Begge', en:'Both'},           selected: this.options.mode == 'both'    }
-                    ]
-                }
-           ];
+            //Set popup-items - two different modes: With and without options.selectFormat
+            this.options.popupList = [];
+            if (options.selectFormat)
+                this.options.popupList.push(
+                    {                 icon: this.options.icon, text: {da:'Skala', en:'Scale'} },
+                    {type:'checkbox', id:'showBoth',           text: {da:'Vis km og nm', en:'Show km and nm'}, selected: this.options.showBoth, onChange: $.proxy(this._setBoth, this), closeOnClick: true},
+                    {type:'button',   icon:'fa-cog',           text: {da:'Format...', en:'Format...'}, onClick: $.proxy(this.options.selectFormat, this), closeOnClick: true, }
+                );
+                else
+                    this.options.popupList.push(
+                        {
+                            icon: this.options.icon,
+                            text: {da:'Vis', en:'Show'}
+                        },
+                        {
+                            radioGroupId: 'mode',
+                            type        :'radio',
+                            selectedId: this.options.mode,
+                            closeOnClick: true,
+                            onChange    : $.proxy(this.setMode, this),
+                            list: [
+                                {id:'METRIC',   text: {da:'Kilometer', en:'Metric'}     },
+                                {id:'NAUTICAL', text: {da:'Sømil', en:'Nautical miles'} },
+                                {id:'BOTH',     text: {da:'Begge', en:'Both'}           }
+                            ]
+                        }
+                    );
         },
 
-		onAdd: function (map) {
+        onAdd: function (map) {
             this._map = map;
-			var result = L.Control.BsButtonBox.prototype.onAdd.call(this, map ),
+            var result = L.Control.BsButtonBox.prototype.onAdd.call(this, map ),
                 $contentContainer = this.$contentContainer.bsModal.$body;
 
-            $contentContainer.empty();
+            this.$container
+                .addClass( 'leaflet-button-box-scale' )
+                .addClass( $._bsGetSizeClass({baseClass: 'leaflet-button-box-scale', useTouchSize: true}) );
 
             //Create and add nautical-scale
-            this.naticalScale = new L.Control.SingleScale( L.extend({type:'nautical', labelPlacement:'top', parent:this}, this.options ) );
+            $contentContainer.empty();
+            this.naticalScale = new L.Control.SingleScale( L.extend({type:'NAUTICAL', labelPlacement:'top', parent:this}, this.options ) );
             this.$naticalScaleContainer = $(this.naticalScale.onAdd( this._map )).appendTo( $contentContainer );
 
             //Create and add metric-scale
-            this.metricScale = new L.Control.SingleScale( L.extend({type:'metric', labelPlacement:'bottom', parent:this}, this.options ) );
+            this.metricScale = new L.Control.SingleScale( L.extend({type:'METRIC', labelPlacement:'bottom', parent:this}, this.options ) );
             this.$metricScaleContainer = $(this.metricScale.onAdd( this._map )).appendTo( $contentContainer );
 
             this.setMode( this.options.mode, result );
-
-			return result;
-		},
+            return result;
+        },
 
         onRemove: function (map) {
             this.metricScale.onRemove(map);
             this.nauticalScale.onRemove(map);
         },
 
-        setMode: function( mode, container ){
+        _setBoth: function(id, selected){
+            this.setBoth(selected);
+        },
+
+        setBoth: function(selected){
+            this.options.showBoth = selected;
+            this.setMode( this.options.mode );
+            this._onChange();
+        },
+
+        setMode: function(mode, container){
             this.options.mode = mode;
 
-            $(this.getContainer() || container).toggleClass('both', mode == 'both');
+            if (this.options.selectFormat)
+                mode = this.options.showBoth ? 'BOTH' : mode;
+            $(this.getContainer() || container).toggleClass('both', mode == 'BOTH');
 
             //naticalScale
-            this.$naticalScaleContainer.toggleClass('hidden', (mode == 'metric'));
-            if ((mode == 'both') || (mode == 'nautical'))
-                this.naticalScale._setLabelPlacement( mode == 'both' ? 'top' : 'bottom' );
+            this.$naticalScaleContainer.toggleClass('hidden', (mode == 'METRIC'));
+            if ((mode == 'BOTH') || (mode == 'NAUTICAL'))
+                this.naticalScale._setLabelPlacement( mode == 'BOTH' ? 'top' : 'bottom' );
 
             //metricScale
-            this.$metricScaleContainer.toggleClass('hidden', mode == 'nautical');
+            this.$metricScaleContainer.toggleClass('hidden', mode == 'NAUTICAL');
 
             this._updateScales();
+            this._onChange();
         },
 
         _updateScales: function(){
@@ -84250,7 +84761,32 @@ https://github.com/nerik/leaflet-graphicscale
                 this.naticalScale._update();
             if (this.metricScale)
             this.metricScale._update();
-        }
+        },
+
+        onChange: function(/*state*/){
+            this._updateScales();
+        },
+
+        getState: function(BsButtonBox_getState){
+            return function () {
+                return $.extend(
+                    this.options.selectFormat ? {showBoth: this.options.showBoth} : {mode: this.options.mode},
+                    BsButtonBox_getState.call(this)
+                );
+            };
+        }(L.Control.BsButtonBox.prototype.getState),
+
+        setState: function(BsButtonBox_setState){
+            return function (options) {
+                BsButtonBox_setState.call(this, options);
+                if (this.options.selectFormat)
+                    this.setBoth(this.options.showBoth);
+                else
+                    this.setMode(this.options.mode);
+                return this;
+            };
+        }(L.Control.BsButtonBox.prototype.setState),
+
     });
 
 
@@ -84262,7 +84798,7 @@ https://github.com/nerik/leaflet-graphicscale
 
     L.Control.SingleScale = L.Control.extend({
         options: {
-            type: 'nautical',//'metric', or 'nautical'
+            type: 'NAUTICAL',//'METRIC', or 'NAUTICAL'
         },
 
         onAdd: function(map) {
@@ -84358,7 +84894,7 @@ https://github.com/nerik/leaflet-graphicscale
                 dist = halfWorldMeters * (bounds.getNorthEast().lng - bounds.getSouthWest().lng) / 180,
                 size = this._map.getSize();
 
-            if (this.options.type == 'nautical'){
+            if (this.options.type == 'NAUTICAL'){
                 dist = dist/1.852;
             }
 
@@ -84521,7 +85057,7 @@ https://github.com/nerik/leaflet-graphicscale
         },
 
         _getDisplayUnit: function(meters) {
-            if (this.options.type == 'metric'){
+            if (this.options.type == 'METRIC'){
                 var displayUnit = (meters<1000) ? 'm' : 'km';
                 return {
                     unit: displayUnit,
@@ -84795,6 +85331,7 @@ https://github.com/nerik/leaflet-graphicscale
                         );
                     }
 
+                    item.class = 'text-truncate';
                     list.push(item);
                 });
             });
@@ -84872,7 +85409,7 @@ Options for selectiong position-format and to activate context-menu
     ********************************************************************************/
     L.Control.BsPosition = L.Control.BsButtonBox.extend({
         options: {
-            position    : 'bottomright',
+            position    : 'bottomleft',
             text       : '',
             icon       : [[
                 iconCursorPosition + ' icon-show-for-checked',
@@ -84883,7 +85420,6 @@ Options for selectiong position-format and to activate context-menu
             popupPlacement  : 'top',
             tooltipDirection: 'top',
 
-NIELS: 'DAV do',
             content     : {
                 semiTransparent    : true,
                 clickable          : true,
@@ -84894,21 +85430,18 @@ NIELS: 'DAV do',
             },
 
             isExtended        : false,
-            showCursorPosition: true,
+            mode              : 'CURSOR',
             inclContextmenu   : true,   //If true a button is added to the right with info for cursor and contextmenu for map center
             selectFormat      : null    //function() to select format for position using latlng-format (fcoo/latlng-format)
         },
 
         initialize: function ( options ) {
+            if (window.bsIsTouch)
+                //Zoom- and history buttons are shown in a bsModal-box
+                this.forceOptions = {mode: 'MAPCENTER'};
+
             //Set default BsButtonBox-options and own options
             L.Control.BsButtonBox.prototype.initialize.call(this, options);
-            L.Util.setOptions(this, options);
-
-
-            this.options.onToggle = $.proxy( this.setCenterMarker, this );
-
-            if (window.bsIsTouch)
-                this.options.showCursorPosition = false;
 
             //Adjust tooltipDirection and popupPlacement to position
             if (this.options.position.toUpperCase().indexOf('TOP') !== -1)
@@ -84920,20 +85453,21 @@ NIELS: 'DAV do',
                 popupList = [
                     {text: {da:'Position ved', en:'Position at'} },
                     {
-                        radioGroupId: 'bsPosition',
+                        radioGroupId: 'mode',
                         type        : 'radio',
+                        selectedId  : this.options.mode,
                         closeOnClick: true,
-                        onChange: $.proxy(this._setModeFromRadio, this),
+                        onChange: $.proxy(this.setMode, this),
                         list: [
-                            {id:'cursor',     icon: iconCursorPosition, text: {da:'Cursor', en:'Cursor'},          selected: this.options.showCursorPosition },
-                            {id:'map-center', icon: iconMapCenter,      text: {da:'Kortcentrum', en:'Map Center'}, selected: !this.options.showCursorPosition },
+                            {id:'CURSOR',    icon: iconCursorPosition, text: {da:'Cursor', en:'Cursor'},        },
+                            {id:'MAPCENTER', icon: iconMapCenter,      text: {da:'Kortcentrum', en:'Map Center'}},
                         ]
                     }
                 ];
 
             if (this.options.selectFormat)
                 popupList.push(
-                    {type:'button', closeOnClick: true, lineBefore: true, text: {da:'Format...', en:'Format...'}, onClick: this.options.selectFormat}
+                    {type:'button', closeOnClick: true, icon: 'fa-cog', text: {da:'Format...', en:'Format...'}, onClick: $.proxy(this.options.selectFormat, this)}
                 );
             this.options.popupList = popupList.length ? popupList : null;
 
@@ -84948,8 +85482,16 @@ NIELS: 'DAV do',
             window.latLngFormat.onChange( $.proxy( this._onLatLngFormatChanged, this ));
         },
 
-        onAdd: function(map){
+        addMapContainer: function(map){
+            this.$mapContainers = this.$mapContainers || {};
+            this.$mapContainers[ L.Util.stamp(map) ] = $(map.getContainer());
+        },
+
+        addCenterMarker: function(map, isInOtherMap){
             //Create pane to contain marker for map center. Is placed just below popup-pane
+            var mapId = L.Util.stamp(map);
+            this.centerMarkers = this.centerMarkers || {};
+
             if (!map.getPane(controlPositionMarkerPane)){
                 map.createPane(controlPositionMarkerPane);
 
@@ -84961,17 +85503,21 @@ NIELS: 'DAV do',
             }
 
             //Append the cross in the center of the map
-            this.centerMarker = L.marker([0,0], {
+            var centerMarker = L.marker([0,0], {
                 icon: L.divIcon({
-                    className : 'leaflet-position-marker show-for-control-position-map-center',
+                    className : 'leaflet-position-marker show-for-control-position-map-center' + (isInOtherMap ? ' inside-other-map' : ''),
                     iconSize  : [36, 36],
                     iconAnchor: [18, 18],
                 }),
                 pane: controlPositionMarkerPane
             });
-            this.centerMarker.addTo(map);
+            centerMarker.addTo(map);
+            this.centerMarkers[ mapId ] = centerMarker;
+        },
 
-            this.$mapContainer = $(map.getContainer());
+        onAdd: function(map){
+            this.addMapContainer(map);
+            this.addCenterMarker(map);
 
             //Create the content for the control
             var result = L.Control.BsButtonBox.prototype.onAdd.call(this, map ),
@@ -85057,7 +85603,8 @@ NIELS: 'DAV do',
         },
 
         onRemove: function (map) {
-            this.centerMarker.remove();
+            this.centerMarkers[L.Util(map)].remove();
+            delete this.centerMarkers[L.Util(map)];
             map.off('mouseposition', this._onMousePosition, this);
             map.off('move', this._onMapMove, this);
             map.off('moveend', this._onMapMoveEnd, this);
@@ -85065,31 +85612,51 @@ NIELS: 'DAV do',
         },
 
         _onLoad: function(){
-            this.setMode( this.options.showCursorPosition );
-            this.setCenterMarker( this.isExtended );
+            this.setMode( this.options.mode );
         },
 
-        _setModeFromRadio: function( id ){
-            this.setMode( id == 'cursor' );
-        },
+        setMode: function( mode ){
+            this.options.mode = mode;
 
-        setMode: function( showCursorPosition ){
-            this.options.showCursorPosition = showCursorPosition;
-
-            var isCursor = !!this.options.showCursorPosition;
+            var isCursor = (this.options.mode == 'CURSOR');
 
             this._updatePositions();
 
             this.bsButton.modernizrToggle( 'checked', isCursor );
-            this.$mapContainer
-                .modernizrToggle( 'control-position-cursor', isCursor )
-                .modernizrToggle( 'control-position-map-center',  !isCursor );
+
+            $.each(this.$mapContainers, function(id, $container){
+                $container
+                    .modernizrToggle( 'control-position-cursor',       isCursor )
+                    .modernizrToggle( 'control-position-map-center',  !isCursor );
+            });
+
+            this._onChange();
+
         },
 
-        setCenterMarker: function( show ){
-            var $icon = $(this.centerMarker._icon);
-            show ? $icon.show() : $icon.hide();
+
+        onChange: function(/*state*/){
+            var showCenterMarker = this.options.show && this.options.isExtended && (this.options.mode == 'MAPCENTER');
+            $.each(this.centerMarkers, function(id, marker){
+                var $icon = $(marker._icon);
+                showCenterMarker ? $icon.show() : $icon.hide();
+            });
         },
+
+        getState: function(BsButtonBox_getState){
+            return function () {
+                return $.extend({mode: this.options.mode}, BsButtonBox_getState.call(this) );
+            };
+        }(L.Control.BsButtonBox.prototype.getState),
+
+        setState: function(BsButtonBox_setState){
+            return function (options) {
+                BsButtonBox_setState.call(this, options);
+                this.setMode(this.options.mode);
+                return this;
+            };
+        }(L.Control.BsButtonBox.prototype.setState),
+
 
 
         _onLatLngFormatChanged: function( newFormatId ){
@@ -85119,12 +85686,12 @@ NIELS: 'DAV do',
         },
 
         _saveAndSetMinWidth: function(){
-            if (!this.isExtended) return;
+            if (!this.options.isExtended) return;
 
             var minWidth = this.latLngFormatWidth[this.latLngFormatId] =
                     Math.max(
                         this.latLngFormatWidth[this.latLngFormatId] || 0,
-                        this.options.showCursorPosition ?
+                        this.options.mode == 'CURSOR' ?
                             this.$cursorPosition.outerWidth() :
                             this.$centerPosition.outerWidth()
                     );
@@ -85136,13 +85703,27 @@ NIELS: 'DAV do',
             return latlng.format({separator: this.latLngFormatSeparator});
         },
 
-        _onMousePosition: function ( mouseEvent ) {
+        _onMousePosition: function ( mouseEvent, fromOtherMap ) {
+            if (this.dontUpdateMousePosition) return;
+
             if ((this.mouseEvent ? this.mouseEvent.latlng : null) != (mouseEvent ? mouseEvent.latlng : null)){
-                if (mouseEvent && mouseEvent.latlng)
+                if ( mouseEvent &&
+                     mouseEvent.latlng &&
+                    (!fromOtherMap || this._map.getBounds().contains(mouseEvent.latlng))
+                   )
                     this.$cursorPosition.html( this._formatLatLng( mouseEvent.latlng ) );
                 else {
                     this._saveAndSetMinWidth();
                     this.$cursorPosition.html('&nbsp;');
+                }
+
+                if (this.syncWithList && !this.dontUpdateMousePosition){
+                    this.dontUpdateMousePosition = true;
+
+                    $.each(this.syncWithList, function(id, map){
+                        map.bsPositionControl._onMousePosition( mouseEvent, true );
+                    });
+                    this.dontUpdateMousePosition = false;
                 }
             }
             this.mouseEvent = mouseEvent;
@@ -85151,13 +85732,17 @@ NIELS: 'DAV do',
         },
 
         _onMapMove: function(){
-            if (this.isExtended && !this.options.showCursorPosition)
+            if (this.options.isExtended && (this.options.mode == 'MAPCENTER'))
                 this._onMapMoveEnd();
         },
 
         _onMapMoveEnd: function(){
-            this.centerMarker.setLatLng(this._map.getCenter());
-            this.$centerPosition.html( this._formatLatLng( this._map.getCenter() ) );
+            var position = this._map.getCenter();
+            $.each( this.centerMarkers, function(id, marker){
+                marker.setLatLng(position);
+            });
+
+            this.$centerPosition.html( this._formatLatLng( position ) );
         },
 
         _fireContentmenuOnMapCenter: function(){
@@ -85182,7 +85767,6 @@ NIELS: 'DAV do',
                 visibility.push(element.style.visibility);
                 element.style.visibility = 'hidden'; // Temporarily hide the element (without changing the layout)
             }
-
 
             //Reset visibility
             $.each( elements, function(index, elem){
@@ -85213,6 +85797,64 @@ NIELS: 'DAV do',
                     target: theElement
                 }
             });
+        },
+
+        /*****************************************************
+        add and remove other maps
+        *****************************************************/
+        addOther: function(map, onlyCursorPosition){
+            if (!map.bsPositionControl){
+                map.bsPositionControl = this;
+                map.on('mouseposition', map.bsPositionControl._onMousePosition, map.bsPositionControl);
+                if (onlyCursorPosition)
+                    this.addMapContainer(map);
+                else
+                    map.bsPositionControl.addCenterMarker(map, true);
+
+                this.setMode( this.options.mode );
+            }
+            return map;
+        },
+
+        removeOther: function(map){
+            if (map.bsPositionControl){
+                var mapId = L.Util.stamp(map);
+
+                map.off('mouseposition', map.bsPositionControl._onMousePosition, map.bsPositionControl);
+
+                if (this.centerMarkers[mapId]){
+                    this.centerMarkers[mapId].remove();
+                    delete this.centerMarkers[mapId];
+                }
+
+                delete this.$mapContainers[mapId];
+
+                map.bsPositionControl = null;
+            }
+            return map;
+        },
+
+        /*****************************************************
+        Sync with other BsPosition of other maps
+        *****************************************************/
+        sync: function( map, oneWay ){
+            if (map.bsPositionControl){
+                var mapId = L.Util.stamp(map);
+                this.syncWithList = this.syncWithList || {};
+                this.syncWithList[mapId] = map;
+                if (!oneWay)
+                    map.bsPositionControl.sync(this._map, true);
+            }
+        },
+
+        desync: function( map ){
+            var mapId = L.Util.stamp(map);
+            this.syncWithList = this.syncWithList || {};
+            if (this.syncWithList[mapId]){
+                var otherPositionControl = this.syncWithList[mapId].bsPositionControl;
+                delete this.syncWithList[mapId];
+                otherPositionControl.desync( this._map );
+            }
         }
 
     });//end of L.Control.BsPosition
@@ -85243,7 +85885,7 @@ Create a zoom-control inside a bsButtonBox
 Can be used as leaflet standard zoom control with Bootstrap style
 
 ****************************************************************************/
-(function ($, L, window/*, document, undefined*/) {
+(function ($, L, window, document, undefined) {
     "use strict";
 
     /********************************************************************************
@@ -85268,7 +85910,7 @@ Can be used as leaflet standard zoom control with Bootstrap style
             extended   : false,
             showSlider : false,
             showHistory: false,
-
+            historyEnabled: true,
             semiTransparent: false,
 
             tooltipDirection: 'top',
@@ -85277,31 +85919,36 @@ Can be used as leaflet standard zoom control with Bootstrap style
             popupText   : {da:'Inds.', en:'Set.'},
 
             content     :'',
+
+            map_setView_options: {animate: false} //options for map.setView(center, zoom, options). Can beoverwriten
         },
 
         initialize: function ( options ) {
-            //Adjust options
-            if (window.bsIsTouch){
+            if (window.bsIsTouch)
                 //Zoom- and history buttons are shown in a bsModal-box
-                options.showHistory = true;
+                this.forceOptions = {showHistory: true};
+            else
+                //The Button-Box is allways extended. The history-buttons are hiden/shown using popup
+                this.forceOptions = {isExtended: true, addOnClose: false};
+
+
+            //Adjust options
+            if (window.bsIsTouch)
                 options.content = {
                     clickable          : false,
                     semiTransparent    : true,
                     noVerticalPadding  : true,
                     noHorizontalPadding: true,
-                    header: {text: {da:'Zoom/Center', en:'Zoom/Centre'}},
-                    content: 'This is not empty'
+                    header             : {text: {da:'Zoom/Center', en:'Zoom/Centre'}},
+                    inclHeader         : options.historyEnabled,
+                    content            : 'This is not empty'
                 };
-            }
-            else {
-                //The Button-Box is allways extended. The history-buttons are hiden/shown using popup
-                options.extended   = true;
-                options.addOnClose = false;
-            }
 
             //Set default BsButtonBox-options and own options
             L.Control.BsButtonBox.prototype.initialize.call(this, options);
-            L.Util.setOptions(this, options);
+
+            if (!this.options.historyEnabled)
+                this.options.showHistory = false;
 
             //Adjust popupPlacement to position
             function includes(pos, substring){
@@ -85321,11 +85968,11 @@ Can be used as leaflet standard zoom control with Bootstrap style
                 this.options.tooltipDirection = 'bottom';
 
             //Set popup-item(s)
-            if (!window.bsIsTouch){
+            if (!window.bsIsTouch && this.options.historyEnabled){
                 this.options.popupList = [
 //                    {text: 'Zoom'},
 //                    {type:'checkbox', text: {da:'Vis skylder', en:'Show slider'}, selected: this.options.showSlider, onChange: $.proxy(this._showSlider, this), closeOnClick: true},
-                    {type:'checkbox', text: {da:'Vis historik-knapper', en:'Show History Buttons'}, selected: this.options.showHistory, onChange: $.proxy(this._showHistory, this), closeOnClick: true},
+                    {id: 'showHistory', type:'checkbox', text: {da:'Vis historik-knapper', en:'Show History Buttons'}, selected: this.options.showHistory, onChange: $.proxy(this._showHistory, this), closeOnClick: true},
 //                    {type:'content',  content: $historyContent,                   closeOnClick: false, lineBefore: true}
                 ];
             }
@@ -85342,7 +85989,7 @@ Can be used as leaflet standard zoom control with Bootstrap style
             //Add zoom-control to map
             this.zoom.addTo(map);
 
-			var result = L.Control.BsButtonBox.prototype.onAdd.call(this, map ),
+            var result = L.Control.BsButtonBox.prototype.onAdd.call(this, map ),
                 //If touch-mode => Create the content inside the bsModal-body else create it inside the control
                 $contentContainer = window.bsIsTouch ? this.$contentContainer.bsModal.$body : this.$contentContainer;
 
@@ -85365,60 +86012,66 @@ Can be used as leaflet standard zoom control with Bootstrap style
             //$-elements with popup buttons to go back/to first and go forward/to last. Will be set later
             var $backButtons, $forwardButtons;
 
-            //Create historyList to save a list of center,zoom from the map
-            this.historyList = new window.HistoryList({
-                action  : $.proxy(this._setZoomCenter, this ),
-                onUpdate: function( backAvail, forwardAvail ){
-                    if (!$backButtons) return;
-                    $backButtons.toggleClass('disabled', !backAvail );
-                    $forwardButtons.toggleClass('disabled', !forwardAvail );
-                }
-            });
+            if (this.options.historyEnabled){
+                //Create historyList to save a list of center,zoom from the map
+                this.historyList = new window.HistoryList({
+                    action  : $.proxy(this._setZoomCenter, this ),
+                    onUpdate: function( backAvail, forwardAvail ){
+                        if (!$backButtons) return;
+                        $backButtons.toggleClass('disabled', !backAvail );
+                        $forwardButtons.toggleClass('disabled', !forwardAvail );
+                    },
+                    compare: function(zoomCenter1, zoomCenter2){
+                        return (zoomCenter1.zoom == zoomCenter2.zoom) && zoomCenter1.center.equals(zoomCenter2.center);
+                    }
+                });
 
-            //Append history-buttons as two vertical bsButtonGroup
-            var buttonGroupOptions = {
-                class   : 'show-for-history',
-                vertical: true,
-                center  : true,
-                buttonOptions: {
-                    square: true
-                },
-            };
+                //Append history-buttons as two vertical bsButtonGroup
+                var buttonGroupOptions = {
+                    class   : 'show-for-history',
+                    vertical: true,
+                    center  : true,
+                    buttonOptions: {
+                        square: true
+                    },
+                };
 
-            $forwardButtons =
-                $.bsButtonGroup( $.extend(buttonGroupOptions, {
-                    list: [
-                        {id:'history_last',    icon: 'fa-arrow-to-right' , onClick: $.proxy(this.historyList.goLast,    this.historyList) },
-                        {id:'history_forward', icon: 'fa-arrow-right'    , onClick: $.proxy(this.historyList.goForward, this.historyList) },
-                    ]} )
-                )
-                    .css('margin-right', '2px')
-                    .prependTo($contentContainer)
-                    .find('.btn')
-                        .addClass('disabled')
-                        .css({
-                            'border-top-left-radius': '0px',
-                            'border-bottom-left-radius': '0px'
-                        });
+                $forwardButtons =
+                    $.bsButtonGroup( $.extend(buttonGroupOptions, {
+                        list: [
+                            {id:'history_last',    icon: 'fa-arrow-to-right', bigIcon: true, onClick: $.proxy(this.historyList.goLast,    this.historyList) },
+                            {id:'history_forward', icon: 'fa-angle-right'   , bigIcon: true, onClick: $.proxy(this.historyList.goForward, this.historyList) },
+                        ]} )
+                    )
+                        .css('margin-right', '2px')
+                        .prependTo($contentContainer)
+                        .find('.btn')
+                            .addClass('disabled')
+                            .css({
+                                'border-top-left-radius': '0px',
+                                'border-bottom-left-radius': '0px'
+                            });
 
-            $backButtons =
-                $.bsButtonGroup( $.extend(buttonGroupOptions, {
-                    list: [
-                        {id:'history_first', icon: 'fa-arrow-to-left', onClick: $.proxy(this.historyList.goFirst, this.historyList) },
-                        {id:'history_back',  icon: 'fa-arrow-left'   , onClick: $.proxy(this.historyList.goBack,  this.historyList) },
-                    ]} )
-                )
-                    .prependTo($contentContainer)
-                    .find('.btn')
-                        .addClass('disabled')
-                        .css({
-                            'border-top-right-radius': '0px',
-                            'border-bottom-right-radius': '0px'
-                        });
+                $backButtons =
+                    $.bsButtonGroup( $.extend(buttonGroupOptions, {
+                        list: [
+                            {id:'history_first', icon: 'fa-arrow-to-left', bigIcon: true, onClick: $.proxy(this.historyList.goFirst, this.historyList) },
+                            {id:'history_back',  icon: 'fa-angle-left'   , bigIcon: true, onClick: $.proxy(this.historyList.goBack,  this.historyList) },
+                        ]} )
+                    )
+                        .prependTo($contentContainer)
+                        .find('.btn')
+                            .addClass('disabled')
+                            .css({
+                                'border-top-right-radius': '0px',
+                                'border-bottom-right-radius': '0px'
+                            });
 
-            $contentContainer.find('.btn-group-vertical').css('margin-top', 0);
+                $contentContainer.find('.btn-group-vertical').css('margin-top', 0);
 
-            this._showHistory( '', this.options.showHistory);
+                this.showHistory(this.options.showHistory);
+
+            }   //end of if (this.options.historyEnabled){...
 
 /* SLIDER REMOVED FOR NOW. Waits for better slider-zoom in leaflet
             //Create zoom-slider between zoom-out and zoom-in buttons
@@ -85455,6 +86108,16 @@ Can be used as leaflet standard zoom control with Bootstrap style
             map.off('moveend', this._onMoveEnd, this);
         },
 
+
+        enableHistory: function(on){
+            this.options.historyEnabled = (on === undefined) ? true : !!on;
+            return this;
+        },
+
+        disableHistory: function(){
+            return this.enableHistory(false);
+        },
+
         _getZoomCenter: function() {
             return {
                 zoom  : this._map.getZoom(),
@@ -85462,7 +86125,7 @@ Can be used as leaflet standard zoom control with Bootstrap style
             };
         },
         _setZoomCenter: function( zoomCenter ) {
-            this._map.setView( zoomCenter.center, zoomCenter.zoom, {animate: false} );
+            this._map.setView( zoomCenter.center, zoomCenter.zoom, this.options.map_setView_options );
         },
 
         _onLoad: function(){
@@ -85471,14 +86134,21 @@ Can be used as leaflet standard zoom control with Bootstrap style
         },
 
         _onMoveEnd: function(){
-            this.historyList.callAction = false;
-            this.historyList.add( this._getZoomCenter() );
-            this.historyList._callOnUpdate();
+            if (this.options.historyEnabled){
+                this.historyList.callAction = false;
+                this.historyList.add( this._getZoomCenter() );
+                this.historyList._callOnUpdate();
+            }
         },
 
         _showHistory: function(id, show){
+            this.showHistory(show);
+        },
+
+        showHistory: function(show){
             this.options.showHistory = show;
             this.$contentContainer.modernizrToggle('history', !!this.options.showHistory);
+            this._onChange();
         },
 
 /* SLIDER REMOVED FOR NOW. Waits for better slider-zoom in leaflet
@@ -85540,6 +86210,23 @@ Can be used as leaflet standard zoom control with Bootstrap style
 
 //            this._updateSlider();
         },
+
+
+        getState: function(BsButtonBox_getState){
+            return function () {
+                return $.extend({showHistory: this.options.showHistory}, BsButtonBox_getState.call(this) );
+            };
+        }(L.Control.BsButtonBox.prototype.getState),
+
+        setState: function(BsButtonBox_setState){
+            return function (options) {
+                BsButtonBox_setState.call(this, options);
+                this.showHistory(this.options.showHistory);
+                return this;
+            };
+        }(L.Control.BsButtonBox.prototype.setState),
+
+
 
     });//end of L.Control.BsZoom
 
@@ -85869,6 +86556,7 @@ Adjust standard Leaflet popup to display as Bootstrap modal
             if (this && this.options){
                 options =
                     $.extend({
+keepInView: true,
                         sticky          : !this.options.tooltipPermanent,       //If true, the tooltip will follow the mouse instead of being fixed at the feature center.
                         interactive     : false,                                //If true, the tooltip will listen to the feature events.
                         permanent       : this.options.tooltipPermanent,        //Whether to open the tooltip permanently or only on mouseover.
