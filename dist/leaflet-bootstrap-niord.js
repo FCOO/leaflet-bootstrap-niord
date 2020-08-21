@@ -105,7 +105,7 @@
             //Load and add geoJSON-data
             var resolve = $.proxy(this.addMessageList, this);
             if (this.options.messageId)
-                ns.messages.getMessage( this.options.messageId, resolve );
+                ns.getMessage( this.options.messageId, resolve );
             else
                 if (this.options.message)
                     this.addMessageList( [this.options.message] );
