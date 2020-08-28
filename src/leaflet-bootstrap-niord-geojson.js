@@ -48,9 +48,17 @@
         else
             result.text = latLng.format(vfFormatOptions);
 
+        //iF Niord.options.onClickCoordinate = function( is given => add onClick to call it
+        if (window.Niord.options.onClickCoordinate){
+            result.link = lbn_onClickCoordinate;
+            //Craete data-coord_id as in jquery-bootstrap-niord
+            result.textData = {'coord_id': latLng.lng+' '+latLng.lat};
+        }
+
         return result;
     }
 
+    function lbn_onClickCoordinate(){ ns.__onClickCoordinate__(this); }
 
     function featureAddContextmenu(element, feature){
         var message = featureMessage( feature );

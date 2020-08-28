@@ -71,9 +71,14 @@
 
 
 
-        L.LatLng.setFormat( latLngFormat.LATLNGFORMAT_DMM   ); //Change format to Degrees Decimal minutes (N65 30.258')
-//        L.LatLng.setFormat( latLngFormat.LATLNGFORMAT_NAC   ); //Change format to NAC
+//        L.LatLng.setFormat( latLngFormat.LATLNGFORMAT_DMM   ); //Change format to Degrees Decimal minutes (N65 30.258')
+        L.LatLng.setFormat( latLngFormat.LATLNGFORMAT_NAC   ); //Change format to NAC
 
+        window.Niord.options.onClickCoordinate  = function(coord, text, message){
+            latLngFormat.setFormat(window.latLngFormat.LATLNGFORMAT_DMM);
+            $.bsNoty({text:text+ '<br>'+ latLngFormat(coord[1], coord[0]).format()});
+
+        }
 
         var map = L.map('map', {
             bsPositionControl: true,
