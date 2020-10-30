@@ -250,26 +250,27 @@
             if ((this.options.mode == ns.mmmFull) && !window.bsIsTouch){
                 iconSize = {width: 20/24, height: 20/24};
             }
+            var markerOptions = {
+                    size: size,
+                    iconSize: iconSize,
+                    colorName       : pathClassName,
+                    borderColorName : pathClassName,
+                    number          : size == 'normal' ? feature.properties.coordIndex : undefined,
+                    transparent     : !inModal,
+                    hover           : true,
+                    puls            : false,
+                    interactive     : true,
+                    tooltip                 : this._tooltip(feature),
+                    tooltipPermanent        : this.options.mode == ns.mmmFull,
+                    tooltipHideWhenDragging : true,
+                    tooltipHideWhenPopupOpen: true,
 
-            var result = L.bsMarkerCircle(latlng, {
-                            size: size,
-                            iconSize: iconSize,
+                    shadowWhenPopupOpen  : true
+                };
+            if (this.options.markerPane)
+                markerOptions.pane = this.options.markerPane;
 
-                            colorName       : pathClassName,
-                            borderColorName : pathClassName,
-                            number          : size == 'normal' ? feature.properties.coordIndex : undefined,
-                            transparent     : !inModal,
-                            hover           : true,
-                            puls            : false,
-                            interactive     : true,
-                            tooltip                 : this._tooltip(feature),
-                            tooltipPermanent        : this.options.mode == ns.mmmFull,
-                            tooltipHideWhenDragging : true,
-                            tooltipHideWhenPopupOpen: true,
-
-                            shadowWhenPopupOpen  : true
-
-                    });
+            var result = L.bsMarkerCircle(latlng, markerOptions);
 
             //Add popup
             var popupOptions = this._popup(feature);
