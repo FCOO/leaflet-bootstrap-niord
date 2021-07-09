@@ -9,7 +9,6 @@
 ****************************************************************************/
 (function ($, L, window, document, undefined) {
     "use strict";
-
     //Create namespace
     window.Niord = window.Niord || {};
 	var ns = window.Niord;
@@ -206,13 +205,15 @@
 
         //Create the icons for large icon, small icon, popup and line
         var mmmIcons = ns.options.leaflet.mmmIcons,
-            colorClassName = 'niord-'+message.domainId,
-            largeMarkerIcon       = L.bsMarkerAsIcon(colorClassName, colorClassName,  {extraClassName:'fa-lg',              partOfList: true, faClassName: mmmIcons.markerIcon  }),
-            largeMarkerOnLineIcon = L.bsMarkerAsIcon(colorClassName, colorClassName,  {extraClassName:'fa-lg fa-no-margin', partOfList: true, faClassName: mmmIcons.markerIcon  }),
-            smallMarkerIcon       = L.bsMarkerAsIcon(colorClassName, colorClassName,  {extraClassName:'fa-xs',              partOfList: true, faClassName: mmmIcons.markerIcon  }),
-            smallMarkerOnLineIcon =  L.bsMarkerAsIcon(colorClassName, colorClassName, {extraClassName:'fa-xs fa-no-margin', partOfList: true, faClassName: mmmIcons.markerIcon  }),
-            tooltipIcon           = L.bsMarkerAsIcon('white',        'black',         {extraClassName:'',                   partOfList: true, faClassName: mmmIcons.tooltipIcon }),
-            lineIcon              = L.bsMarkerAsIcon(colorClassName, colorClassName,  {extraClassName:'fa-no-margin',       partOfList: true, faClassName: mmmIcons.lineIcon    });
+            colorClassName       = 'fa-lbm-color-niord-'+message.domainId,
+            borderColorClassName = 'fa-lbm-border-color-niord-'+message.domainId,
+
+            largeMarkerIcon       = $.bsMarkerAsIcon( colorClassName,       borderColorClassName,  {extraClassName:'fa-lg',              partOfList: true, faClassName: mmmIcons.markerIcon  }),
+            largeMarkerOnLineIcon = $.bsMarkerAsIcon( colorClassName,       borderColorClassName,  {extraClassName:'fa-lg fa-no-margin', partOfList: true, faClassName: mmmIcons.markerIcon  }),
+            smallMarkerIcon       = $.bsMarkerAsIcon( colorClassName,       borderColorClassName,  {extraClassName:'fa-xs',              partOfList: true, faClassName: mmmIcons.markerIcon  }),
+            smallMarkerOnLineIcon = $.bsMarkerAsIcon( colorClassName,       borderColorClassName,  {extraClassName:'fa-xs fa-no-margin', partOfList: true, faClassName: mmmIcons.markerIcon  }),
+            tooltipIcon           = $.bsMarkerAsIcon( 'fa-lbm-color-white', 'fa-lbm-color-black',  {extraClassName:'',                   partOfList: true, faClassName: mmmIcons.tooltipIcon }),
+            lineIcon              = $.bsMarkerAsIcon( colorClassName,       borderColorClassName,  {extraClassName:'fa-no-margin',       partOfList: true, faClassName: mmmIcons.lineIcon    });
 
 
         var list       = [],

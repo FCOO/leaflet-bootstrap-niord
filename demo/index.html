@@ -70,7 +70,6 @@
         window.Niord.options.vfFormatId.date = 'TEST_DATE';
 
 
-
 //        L.LatLng.setFormat( latLngFormat.LATLNGFORMAT_DMM   ); //Change format to Degrees Decimal minutes (N65 30.258')
         L.LatLng.setFormat( latLngFormat.LATLNGFORMAT_NAC   ); //Change format to NAC
 
@@ -85,16 +84,17 @@
             bsPositionOptions: {
                 isExtended        : true,
                 showCursorPosition: false,
+                position          : 'bottomright',
             },
         })
-        .setView([56.2, 11.5], 6)
 
-/*
+        .setView([56.2, 11.5], 6)
+        
         .addContextmenuItems([
             {text:'MAP: Gode',       width: 200, onClick: function(latlng){ console.log('MAP 1',this, latlng); }},
             {text:'MAP: S.... Gode', onClick: function(latlng){ console.log('MAP 1',this, latlng); }}
         ]);
-*/
+
 
 		L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 		    maxZoom: 18,
@@ -102,6 +102,7 @@
         }).addTo(map);
 
         var niordOnMap = true;
+
         L.control.bsButton({
             position: 'topleft',
             icon:'fa-exchange-alt',
@@ -113,6 +114,7 @@
                     niord.removeFrom(map);
             }
         }).addTo(map)
+
 
         window.Niord.options.domainOnlyHover['fa'] = true;
         var niord = new L.GeoJSON.Niord({

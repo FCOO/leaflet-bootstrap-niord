@@ -399,7 +399,6 @@
 
         },
     });
-
     return L.GeoJSON.Niord;
 
 }(jQuery, L, this, document));
