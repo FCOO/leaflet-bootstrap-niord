@@ -90,6 +90,8 @@
             mode: 0,
             addInteractive: true,
             transparent   : true,
+            messages      : null, //Or create Messages
+            domain        : null, //Or []STRING
         },
 
         //initialize
@@ -110,16 +112,20 @@
 
             this.on('add', this._updateZIndex, this );
 
+            //Get or create Messages
+            this.messages = options.messages || ns.messages({autoLoad: true});
+
             //Load and add geoJSON-data
             var resolve = $.proxy(this.addMessageList, this);
+
             if (this.options.messageId)
-                ns.getMessage( this.options.messageId, resolve );
+                this.messages.getMessage( this.options.messageId, resolve );
             else
                 if (this.options.message)
                     this.addMessageList( [this.options.message] );
                 else {
                     //Load all or specified domains
-                    ns.getMessages( this.options.domain, resolve );
+                    this.messages.getMessages( this.options.domain, resolve );
                 }
 
         },

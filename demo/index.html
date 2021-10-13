@@ -73,7 +73,7 @@
 //        L.LatLng.setFormat( latLngFormat.LATLNGFORMAT_DMM   ); //Change format to Degrees Decimal minutes (N65 30.258')
         L.LatLng.setFormat( latLngFormat.LATLNGFORMAT_NAC   ); //Change format to NAC
 
-        window.Niord.options.onClickCoordinate  = function(coord, text, message){
+        window.Niord.options.onClickCoordinate  = function(coord, text, messageId){
             latLngFormat.setFormat(window.latLngFormat.LATLNGFORMAT_DMM);
             $.bsNoty({text:text+ '<br>'+ latLngFormat(coord[1], coord[0]).format()});
 
@@ -117,9 +117,13 @@
 
 
         window.Niord.options.domainOnlyHover['fa'] = true;
+
+        var message = window.Niord.messages();
+
         var niord = new L.GeoJSON.Niord({
                 domain:'fa nm fe nw',
                 _domain:'fa fe',
+                _messageId: '909504da-4340-4be4-9ebb-14e7b8b76368',
                 _messageId: 'NM-910-18',
                 _messageId: 'NM-620-18', // NM-086-18 NM-830-18 NM-853-18',
                 _messageId: 'NM-840-18',

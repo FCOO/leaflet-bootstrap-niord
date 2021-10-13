@@ -10570,15 +10570,15 @@ div.checkbox, div.radio {
       div.checkbox input:disabled + label::before, div.radio input:disabled + label::before {
         background-color: #fff !important;
         cursor: not-allowed !important; }
-    div.checkbox input + label i, div.radio input + label i {
+    div.checkbox input + label i.checkbox-icon, div.radio input + label i.checkbox-icon {
       line-height: 1;
       text-align: center;
       color: transparent;
       position: absolute;
       left: 0px; }
-    div.checkbox input:not(:checked):not(:disabled):hover + label i, div.radio input:not(:checked):not(:disabled):hover + label i {
+    div.checkbox input:not(:checked):not(:disabled):hover + label i.checkbox-icon, div.radio input:not(:checked):not(:disabled):hover + label i.checkbox-icon {
       color: #cccccc; }
-    div.checkbox input:checked + label i, div.radio input:checked + label i {
+    div.checkbox input:checked + label i.checkbox-icon, div.radio input:checked + label i.checkbox-icon {
       color: #fff; }
 
 div.radio input + label::before {
@@ -10588,8 +10588,9 @@ div.radio input + label::before {
 @mixin checkbox-radio-size-variant
 ***************************************************************************/
 div.checkbox, div.radio {
-  height: 2.125rem;
   font-size: 1rem; }
+  div.checkbox:not(.multi-lines), div.radio:not(.multi-lines) {
+    height: 2.125rem; }
   div.checkbox input + label, div.radio input + label {
     padding-left: 1.375rem;
     padding-top: 0.3125rem;
@@ -10599,7 +10600,7 @@ div.checkbox, div.radio {
       margin-top: 0.1875rem;
       width: 1.125rem;
       height: 1.125rem; }
-    div.checkbox input + label i, div.radio input + label i {
+    div.checkbox input + label i.checkbox-icon, div.radio input + label i.checkbox-icon {
       font-size: 0.875rem;
       width: 0.875rem;
       height: 0.875rem;
@@ -10609,7 +10610,7 @@ div.checkbox, div.radio {
 div.checkbox input label::before {
   border-radius: 0.25rem; }
 
-div.radio input + label i {
+div.radio input + label i.checkbox-icon {
   font-size: 0.375rem;
   width: 0.375rem;
   height: 0.375rem;
@@ -10617,8 +10618,9 @@ div.radio input + label i {
   margin-left: 0.375rem !important; }
 
 div.checkbox-sm, div.radio-sm {
-  height: 1.6875rem;
   font-size: 0.875rem; }
+  div.checkbox-sm:not(.multi-lines), div.radio-sm:not(.multi-lines) {
+    height: 1.6875rem; }
   div.checkbox-sm input + label, div.radio-sm input + label {
     padding-left: 1.1875rem;
     padding-top: 0.1875rem;
@@ -10628,7 +10630,7 @@ div.checkbox-sm, div.radio-sm {
       margin-top: 0.15625rem;
       width: 1rem;
       height: 1rem; }
-    div.checkbox-sm input + label i, div.radio-sm input + label i {
+    div.checkbox-sm input + label i.checkbox-icon, div.radio-sm input + label i.checkbox-icon {
       font-size: 0.75rem;
       width: 0.75rem;
       height: 0.75rem;
@@ -10638,7 +10640,7 @@ div.checkbox-sm, div.radio-sm {
 div.checkbox-sm input label::before {
   border-radius: 0.1875rem; }
 
-div.radio-sm input + label i {
+div.radio-sm input + label i.checkbox-icon {
   font-size: 0.375rem;
   width: 0.375rem;
   height: 0.375rem;
@@ -14199,6 +14201,14 @@ Adjust font-size and top for .inner to fit inside a fa-map-marker icon
 
 ************************************************/
 /************************************************************
+INCLUDE-JQUERY-BOOTSTRAP-VARIABLES
+USED IN FOR OTHER PACKAGES TO INCLUDE ALL SCSS-FILES NEEDED
+TO HAVE ACCESS TO ALL BOOTSTRAP AND FCOO/JQUERY-BOOTSTRAP SCSS-VARIABLES
+************************************************************/
+/***********************************************
+JQUERY-BOOTSTRAP: Set and adjust bootstrap default values
+************************************************/
+/************************************************************
 BOOTSTRAP-VARIABLES
 ************************************************************/
 /***********************************************
@@ -14244,6 +14254,12 @@ Adjust dropdown-menu
 /************************************************************
 Adjust modal
 ************************************************************/
+/***********************************************
+BOOTSTRAP: scss variables
+************************************************/
+/***********************************************
+JQUERY-BOOTSTRAP: Background-color and text color and Variables
+************************************************/
 /************************************************************
 COLOR
 
@@ -14748,7 +14764,7 @@ leaflet-bootstrap-control-position.scss
     align-items: center;
     text-align: center;
     line-height: 1;
-    padding: 0 0.25rem;
+    padding: 0 0.1875rem;
     padding-top: 1px;
     font-size: 13px; }
     .leaflet-control-container .input-group .bsPosition-content:active, .leaflet-control-container .input-group .bsPosition-content.active {
