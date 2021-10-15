@@ -79,11 +79,20 @@
     //Extend Niord.Messages to include contextmenu
     $.extend(ns.Messages.prototype, L.BsContextmenu.contextmenuInclude);
 
-    //Add default contextmenu-items to global object ns.messages
-    if (ns.messages.asModal)
-        ns.messages.addContextmenuItems([
-            {icon: 'fa-th-list', _lineBefore: true, text: {da:'Vis alle...', en:'Show all...'}, onClick: $.proxy(ns.messages.asModal, ns.messages) },
-        ]);
+    //Add default contextmenu-items to global constructor ns.Messages
+    ns.Messages = function( _Messages ){
+        return function(options){
+            var messages = new _Messages(options);
+
+            if (messages.asModal)
+                messages.addContextmenuItems([
+                    {icon: 'fa-th-list', _lineBefore: true, text: {da:'Vis alle...', en:'Show all...'}, onClick: $.proxy(messages.asModal, messages) },
+                ]);
+
+            return messages;
+        };
+    }(ns.Messages);
+
 
     //Extend Niord.Message with function to sync different maps
     ns.Message.prototype.maps_update_center_and_zoom = function(event){

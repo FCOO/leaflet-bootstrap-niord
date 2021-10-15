@@ -34954,11 +34954,6 @@ return L.GeometryUtil;
     return Connector;
   }(EventEmitter);
 
-  function format(value, format, lng, options) {
-    return value;
-  }
-
-  format.isDummy = true;
   function get() {
     return {
       debug: false,
@@ -35010,7 +35005,9 @@ return L.GeometryUtil;
       },
       interpolation: {
         escapeValue: true,
-        format: format,
+        format: function format(value, _format, lng, options) {
+          return value;
+        },
         prefix: '{{',
         suffix: '}}',
         formatSeparator: ',',
@@ -35097,7 +35094,8 @@ return L.GeometryUtil;
           }
         }
 
-        this.options = _objectSpread({}, get(), this.options, transformOptions(options));
+        var defOpts = get();
+        this.options = _objectSpread({}, defOpts, this.options, transformOptions(options));
 
         if (options.keySeparator !== undefined) {
           this.options.userDefinedKeySeparator = options.keySeparator;
@@ -35140,7 +35138,7 @@ return L.GeometryUtil;
             simplifyPluralSuffix: this.options.simplifyPluralSuffix
           });
 
-          if (formatter && this.options.interpolation.format && this.options.interpolation.format.isDummy) {
+          if (formatter && this.options.interpolation.format === defOpts.interpolation.format) {
             s.formatter = createClassOnDemand(formatter);
             s.formatter.init(s, this.options);
             this.options.interpolation.format = s.formatter.format.bind(s.formatter);
@@ -81064,12 +81062,11 @@ Set methodes and options for format utm
 
     //Default options and paths
         defaultOptions = {
-            autoLoad: false, //If true the getMessage will automatic load data
             domains : [
-                'niord-nw',   //All Danish navigational warnings are produced in the "niord-nw" domain.
-                'niord-nm',   //All Danish Notices to Mariners are produced in the "niord-nm" domain.
-                'niord-fa',   //All Danish firing areas are defined as miscellaneous Notices to Mariners in the "niord-fa" domain.
-                'niord-fe'    //The actual firing exercises are maintained as local navigational warnings in the "niord-fe" domain.
+                'nw',   //All Danish navigational warnings are produced in the "niord-nw" domain.
+                'nm',   //All Danish Notices to Mariners are produced in the "niord-nm" domain.
+                'fa',   //All Danish firing areas are defined as miscellaneous Notices to Mariners in the "niord-fa" domain.
+                'fe'    //The actual firing exercises are maintained as local navigational warnings in the "niord-fe" domain.
             ]
         },
         baseUrl         = 'https://niord.dma.dk/rest/public/v1/',
@@ -81098,7 +81095,13 @@ Set methodes and options for format utm
     domainUrl( domains ) - Return the url to retrive info from one or more domain(s)
     ********************************************/
     ns.domainUrl = function( domains ){
-        domains = $.isArray( domains ) ? domains : [domains];
+        domains = $.isArray( domains ) ? domains : domains.split(' ');
+
+        //domains need prefix "niord-" in api call
+        $.each(domains, function(index, id){
+            domains[index] = 'niord-'+id;
+        });
+
         return messagesUrl + dateFormatParam + domainParam + domains.join(domainParam);
     };
 
@@ -81599,8 +81602,7 @@ Set methodes and options for format utm
 
             switch (this.status){
                 case 'NOTHING':
-                    if (this.options.autoLoad)
-                        this.load(promiseOptions);
+                    this.load(promiseOptions);
                     break;
                 case 'LOADING':
                     /* Nothing - just wait */
@@ -81797,7 +81799,7 @@ Set methodes and options for format utm
                         };
 
                         //If it is not loading => load it
-                        if (this.options.autoLoad && (this.status == NOTHING))
+                        if (this.status == NOTHING)
                             this.load(promiseOptions);
                     }
             }
@@ -81917,8 +81919,8 @@ Set methodes and options for format utm
     Publications
     ************************************************************
     ***********************************************************/
-    ns.Publications = function(options){
-        this.options = $.extend( true, {}, defaultOptions, options || {} );
+    ns.Publications = function(/*options*/){
+        //this.options = $.extend( true, {}, defaultOptions, options || {} );
 
         this.init();
     };
@@ -81956,15 +81958,23 @@ Set methodes and options for format utm
     });
 
 
-    ns.messages = function(options){
-        return new ns.Messages(options);
+
+
+    /***********************************************************
+    ************************************************************
+    Global methods to get messages and publications
+    ************************************************************
+    ***********************************************************/
+    ns.load = function(options){
+        if (ns.messages)
+            return;
+
+        ns.messages      = new ns.Messages(options);
+        ns.publications  = new ns.Publications(/*options*/);
+
+        ns.messages.load();
+        ns.publications.load();
     };
-
-    ns.publications  = function(options){
-        return new ns.Publications(options);
-    };
-
-
 
 }(jQuery, this, document));
 

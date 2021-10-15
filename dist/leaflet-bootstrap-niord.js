@@ -64,7 +64,6 @@
         var message = featureMessage( feature );
 
         element
-//            .setContextmenuHeader( message.bsHeaderOptions('SMALL') )
             .addContextmenuItems([
                 message.bsHeaderOptions('SMALL'),
                 {
@@ -90,8 +89,8 @@
             mode: 0,
             addInteractive: true,
             transparent   : true,
-            messages      : null, //Or create Messages
-            domain        : null, //Or []STRING
+            messages      : null,
+            domain        : null,
         },
 
         //initialize
@@ -113,7 +112,12 @@
             this.on('add', this._updateZIndex, this );
 
             //Get or create Messages
-            this.messages = options.messages || ns.messages({autoLoad: true});
+            this.messages = options.messages;
+
+            if (!this.messages){
+                ns.load(options.domain ? {domains: options.domain} : {});
+                this.messages = ns.messages;
+            }
 
             //Load and add geoJSON-data
             var resolve = $.proxy(this.addMessageList, this);
@@ -492,11 +496,20 @@
     //Extend Niord.Messages to include contextmenu
     $.extend(ns.Messages.prototype, L.BsContextmenu.contextmenuInclude);
 
-    //Add default contextmenu-items to global object ns.messages
-    if (ns.messages.asModal)
-        ns.messages.addContextmenuItems([
-            {icon: 'fa-th-list', _lineBefore: true, text: {da:'Vis alle...', en:'Show all...'}, onClick: $.proxy(ns.messages.asModal, ns.messages) },
-        ]);
+    //Add default contextmenu-items to global constructor ns.Messages
+    ns.Messages = function( _Messages ){
+        return function(options){
+            var messages = new _Messages(options);
+
+            if (messages.asModal)
+                messages.addContextmenuItems([
+                    {icon: 'fa-th-list', _lineBefore: true, text: {da:'Vis alle...', en:'Show all...'}, onClick: $.proxy(messages.asModal, messages) },
+                ]);
+
+            return messages;
+        };
+    }(ns.Messages);
+
 
     //Extend Niord.Message with function to sync different maps
     ns.Message.prototype.maps_update_center_and_zoom = function(event){

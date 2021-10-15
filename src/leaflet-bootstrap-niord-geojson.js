@@ -64,7 +64,6 @@
         var message = featureMessage( feature );
 
         element
-//            .setContextmenuHeader( message.bsHeaderOptions('SMALL') )
             .addContextmenuItems([
                 message.bsHeaderOptions('SMALL'),
                 {
@@ -90,8 +89,8 @@
             mode: 0,
             addInteractive: true,
             transparent   : true,
-            messages      : null, //Or create Messages
-            domain        : null, //Or []STRING
+            messages      : null,
+            domain        : null,
         },
 
         //initialize
@@ -113,7 +112,12 @@
             this.on('add', this._updateZIndex, this );
 
             //Get or create Messages
-            this.messages = options.messages || ns.messages({autoLoad: true});
+            this.messages = options.messages;
+
+            if (!this.messages){
+                ns.load(options.domain ? {domains: options.domain} : {});
+                this.messages = ns.messages;
+            }
 
             //Load and add geoJSON-data
             var resolve = $.proxy(this.addMessageList, this);
