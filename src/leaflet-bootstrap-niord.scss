@@ -20,11 +20,11 @@
 
 //LEAFLET-BOOTSTRAP - mixin to create colors for bsMarker
 @import "../bower_components/sass-color-helpers/stylesheets/color-helpers";
-@import "../bower_components/leaflet-bootstrap-marker/src/leaflet-bootstrap-marker-mixin";
+@import "../bower_components/leaflet-bootstrap-marker-mixin/dist/leaflet-bootstrap-marker-mixin";
 
 
 //LEAFLET-POLYLINE - mixin to create colors for polyline and polygon
-@import "../bower_components/leaflet-polyline/src/leaflet-polyline-mixin";
+@import "../bower_components/leaflet-polyline-mixin/dist/leaflet-polyline-mixin";
 
 
 @mixin niord( $prefix, $color, $border-color){
