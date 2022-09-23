@@ -1,6 +1,6 @@
 {
   "name": "leaflet-bootstrap-niord",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "homepage": "https://github.com/FCOO/leaflet-bootstrap-niord",
   "authors": [
     "Niels Holt"
@@ -28,6 +28,7 @@
   "devDependencies": {
     "bourbon": "latest",
     "modernizr-mixin": "latest",
+    "sass-color-helpers": "^2.1.1",
     "mathsass": "latest"
   },
   "license": "MIT",
