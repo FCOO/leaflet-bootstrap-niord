@@ -166,7 +166,7 @@
 
                 var latLng = L.GeoJSON.coordsToLatLng(feature.geometry.coordinates);
                 result.push(
-                    latLngAsText(latLng, {textClass: 'text-nowrap  text-center d-block text-monospace'})
+                    latLngAsText(latLng, {textClass: 'text-nowrap  text-center d-block font-monospace'})
                 );
 
                 return {
