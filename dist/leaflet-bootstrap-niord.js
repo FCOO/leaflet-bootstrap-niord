@@ -444,6 +444,11 @@
     //window.Niord.options.leaflet.mapOptions = options for map-objects in modal-windows
     ns.options.leaflet.mapOptions = {
         zoomControl         : false,
+        bsZoomControl       : false,
+        bsZoomOptions: {
+            position      : 'topleft',
+            historyEnabled: false,
+        },
         attributionControl  : false,    //Use bsAttributionControl instead of default attribution-control
         bsAttributionControl: true,
 
@@ -605,7 +610,7 @@
         //Add button to change the details on the map == change between the map.niordGeoJSONLayers
         var controlButton =
             L.control.bsButton({
-                position  : 'topleft',
+                position  : 'topright',
                 text      : {da:'Vis...', en:'Show...'},
                 square    : false
             });
@@ -690,7 +695,8 @@
                     center      : true,
                     vertical    : true,
                     closeOnClick: true,
-                    placement   : 'rightbottom',
+                    placement   : 'left',
+                    _placement   : 'bottom',
                     selectedId  : selectedId,
                     list        : list
                 });
