@@ -51,7 +51,20 @@
         window.bsIsTouch = false;
         window.bsIsTouch = (window.location.search =='?touch');
 
-        window.Niord.options.normalModalExtendable = !window.bsIsTouch;
+
+        var niordOptions = window.Niord.options;
+        
+        niordOptions.normalModalExtendable = true;
+        niordOptions.modalIsExtended = !window.bsIsTouch;
+
+        //modalFooter = Footer in modal
+        niordOptions.modalFooter = {text: {da:'Footer in modal'}};
+
+        //modalSmallFooter = Footer in popup
+        niordOptions.modalSmallFooter = {text: {da:'Footer in popup'}}; 
+
+
+
 
         $.valueFormat.add({
             id    : 'TEST_DATE_WEEKDAY',

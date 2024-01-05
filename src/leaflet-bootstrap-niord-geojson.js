@@ -12,21 +12,24 @@
 
     //Create namespace
     window.Niord = window.Niord || {};
-	var ns = window.Niord;
+	var ns = window.Niord,
+        niordOptions = ns.options;
 
     //Extend Niord.options with leafletPopup = dimentions for leaflet popup
-    ns.options.leafletPopup = {
+    niordOptions.leafletPopup = {
         fixable  : true,
         maxHeight: 260,
         width    : 260,
+        clickable: true,
         extended : {
             maxHeight: 600,
-            width    : 320
+            width    : 320,
+            footer   : true
         }
     };
 
     //Extend Niord.options with domainOnlyHover = [domain-id] of boolean. If true => polygon only 'visible' on hover
-    ns.options.domainOnlyHover = {};
+    niordOptions.domainOnlyHover = {};
 
     function featureMessage( feature ){ return feature.properties.niordMessage; }
 
@@ -37,7 +40,7 @@
 
     function latLngAsText( latLng, baseOptions, vfFormatOptions ){
         var result = $.extend({}, baseOptions || {}),
-            vfFormatId = ns.options.vfFormatId.latLng;
+            vfFormatId = niordOptions.vfFormatId.latLng;
         vfFormatOptions = vfFormatOptions || {separator: '<br>'};
 
         if (vfFormatId){
@@ -174,8 +177,31 @@
                     content: result
                 };
             }
-            else
-                return $.extend(true, featureMessage(feature).bsModalSmallOptions(), ns.options.leafletPopup);
+            else {
+                const message = featureMessage(feature),
+                      messages = message.messages;
+
+                //Create button-list fotr popup = "Show more" and "Show all"
+                message._popupButtons = message._popupButtons || [
+                    {
+                        id     : 'showMore',
+                        icon   : 'fal fa-window-maximize',
+                        text   : {da: 'Vis mere', en:'Show more'},
+                        class  : 'min-width-8em',
+                        onClick: message.asModal.bind(message)
+                    },
+                    $.extend(true, messages._showAllButtonOptions(), {class  : 'min-width-8em'})
+                ];
+
+                return $.extend(true,
+                    featureMessage(feature).bsModalSmallOptions(),
+                    niordOptions.leafletPopup,
+                    {
+                        buttons: message._popupButtons,
+                        footer : niordOptions.modalSmallFooter
+                    }
+                );
+            }
 
         },
 
@@ -201,7 +227,7 @@
             if (featureTypeIsPolygon(feature))
                 result.colorName = domainColorName;
 
-            if (featureTypeIsPolygon(feature) && !this.options.mode && ns.options.domainOnlyHover[domainId]){
+            if (featureTypeIsPolygon(feature) && !this.options.mode && niordOptions.domainOnlyHover[domainId]){
                 result.borderColorName = 'none';
                 result.onlyShowOnHover = true;
             }

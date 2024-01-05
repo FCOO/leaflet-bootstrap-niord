@@ -722,122 +722,164 @@ The scss is divided in two parts: First the common part equal for all types and 
   left: 0;
   width: 100%;
   height: 100%;
-  overflow-x: hidden; }
-  .base-slider-container-outer .base-slider-container-full-width {
-    position: relative;
-    left: 0;
-    overflow-y: visible; }
+  overflow-x: hidden;
+}
+.base-slider-container-outer .base-slider-container-full-width {
+  position: relative;
+  left: 0;
+  overflow-y: visible;
+}
 
 /***************************************************************
 COMMON STYLE
 ***************************************************************/
+.pre-line, .grid .grid-color.pre, .base-slider-container .line .line-color.pre {
+  left: -50%;
+  width: 50%;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.post-line, .grid .grid-color.post, .base-slider-container .line .line-color.post {
+  left: 100%;
+  width: 50%;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
 .base-slider-container {
   position: relative;
   display: block;
   user-select: none;
-  box-sizing: border-box; }
-  .base-slider-container .line-background {
-    position: absolute;
-    display: block;
-    width: 100%;
-    top: 0; }
-  .base-slider-container .line {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 4px;
-    left: -1px;
-    overflow: hidden;
-    outline: none !important;
-    box-sizing: content-box;
-    background-color: transparent;
-    border: 1px solid #afb3bb;
-    border-bottom-left-radius: 2px;
-    border-top-left-radius: 2px;
-    border-bottom-right-radius: 2px;
-    border-top-right-radius: 2px; }
-    .base-slider-container .line .line-color {
-      position: absolute;
-      display: block;
-      height: 100%; }
-      .base-slider-container .line .line-color:first-child {
-        border-bottom-left-radius: 2px;
-        border-top-left-radius: 2px; }
-      .base-slider-container .line .line-color:last-child:not(:first-child) {
-        border-bottom-right-radius: 2px;
-        border-top-right-radius: 2px; }
-  .base-slider-container .handle {
-    position: absolute;
-    display: block;
-    z-index: 10;
-    top: 20.33px;
-    background-size: 100% 100%;
-    background-repeat: no-repeat;
-    background-attachment: local;
-    background-position: 0% 0%; }
-    .base-slider-container .handle.type-last {
-      z-index: 12; }
-  .base-slider-container .handle.pin {
-    position: absolute;
-    z-index: 100;
-    height: 10.2857142857px !important;
-    margin-top: -8.2285714286px;
-    width: 16px;
-    margin-left: -8px;
-    font-size: 10.2857142857px;
-    text-align: center;
-    background-image: none !important; }
-  .base-slider-container .marker-outer {
-    position: absolute;
-    top: 0px;
-    z-index: 2;
-    cursor: default;
-    font-family: Arial, sans-serif;
-    font-size: 10px; }
-    .base-slider-container .marker-outer .marker {
-      box-sizing: border-box;
-      width: 100%;
-      height: 100%;
-      margin-left: -50%;
-      padding: 0; }
-    .base-slider-container .marker-outer.frame .marker:after {
-      position: absolute;
-      display: block;
-      top: 100%;
-      left: 0;
-      width: 0;
-      height: 0;
-      margin-left: -3px;
-      content: "";
-      overflow: hidden;
-      border: 3px solid transparent;
-      border-top-color: black; }
-    .base-slider-container .marker-outer .marker-text {
-      display: inline-block;
-      cursor: inherit;
-      box-sizing: border-box;
-      line-height: 1.333;
-      padding: 1px 5px;
-      border: 1px solid transparent;
-      border-radius: 4px;
-      white-space: nowrap;
-      text-shadow: none; }
-    .base-slider-container .marker-outer.min-max .marker-text {
-      color: #555;
-      background-color: #d1d6e0;
-      border: 1px solid #afb3bb;
-      border-radius: 4px; }
-    .base-slider-container .marker-outer.single-from-to .marker-text {
-      color: #111; }
-    .base-slider-container .marker-outer.single-from-to.frame .marker-text {
-      background: white;
-      border: 1px solid black; }
+  box-sizing: border-box;
+}
+.base-slider-container .line-background {
+  position: absolute;
+  display: block;
+  width: 100%;
+  top: 0;
+}
+.base-slider-container.fixed .line {
+  overflow: visible;
+}
+.base-slider-container .line {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 4px;
+  left: -1px;
+  overflow: hidden;
+  outline: none !important;
+  box-sizing: content-box;
+  background-color: transparent;
+  border: 1px solid rgb(175, 179, 187);
+  border-bottom-left-radius: 2px;
+  border-top-left-radius: 2px;
+  border-bottom-right-radius: 2px;
+  border-top-right-radius: 2px;
+}
+.base-slider-container .line .line-color {
+  position: absolute;
+  display: block;
+  height: 100%;
+}
+.base-slider-container .line .line-color.pre {
+  top: -1px;
+  border: 1px solid rgb(175, 179, 187);
+}
+.base-slider-container .line .line-color.post {
+  top: -1px;
+  border: 1px solid rgb(175, 179, 187);
+}
+.base-slider-container .line .line-color:first-child {
+  border-bottom-left-radius: 2px;
+  border-top-left-radius: 2px;
+}
+.base-slider-container .line .line-color:last-child:not(:first-child) {
+  border-bottom-right-radius: 2px;
+  border-top-right-radius: 2px;
+}
+.base-slider-container .handle {
+  position: absolute;
+  display: block;
+  z-index: 10;
+  top: 20.33px;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-attachment: local;
+  background-position: 0% 0%;
+}
+.base-slider-container .handle.type-last {
+  z-index: 12;
+}
+.base-slider-container .handle.pin {
+  position: absolute;
+  z-index: 100;
+  height: 10.2857142857px !important;
+  margin-top: -8.2285714286px;
+  width: 16px;
+  margin-left: -8px;
+  font-size: 10.2857142857px;
+  text-align: center;
+  background-image: none !important;
+}
+.base-slider-container .marker-outer {
+  position: absolute;
+  top: 0px;
+  z-index: 2;
+  cursor: default;
+  font-family: Arial, sans-serif;
+  font-size: 10px;
+}
+.base-slider-container .marker-outer .marker {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  margin-left: -50%;
+  padding: 0;
+}
+.base-slider-container .marker-outer.frame .marker:after {
+  position: absolute;
+  display: block;
+  top: 100%;
+  left: 0;
+  width: 0;
+  height: 0;
+  margin-left: -3px;
+  content: "";
+  overflow: hidden;
+  border: 3px solid transparent;
+  border-top-color: black;
+}
+.base-slider-container .marker-outer .marker-text {
+  display: inline-block;
+  cursor: inherit;
+  box-sizing: border-box;
+  line-height: 1.333;
+  padding: 1px 5px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  white-space: nowrap;
+  text-shadow: none;
+}
+.base-slider-container .marker-outer.min-max .marker-text {
+  color: #555;
+  background-color: rgb(209, 214, 224);
+  border: 1px solid rgb(175, 179, 187);
+  border-radius: 4px;
+}
+.base-slider-container .marker-outer.single-from-to .marker-text {
+  color: #111;
+}
+.base-slider-container .marker-outer.single-from-to.frame .marker-text {
+  background: white;
+  border: 1px solid black;
+}
 
 .grid-canvas {
   position: absolute;
   bottom: 0;
   z-index: 3;
-  cursor: default; }
+  cursor: default;
+}
 
 .grid {
   position: absolute;
@@ -846,37 +888,42 @@ COMMON STYLE
   z-index: 2;
   width: 100%;
   height: 25px;
-  cursor: default; }
-  .grid.label-between-ticks {
-    height: 10px; }
-  .grid .grid-color {
-    position: absolute;
-    z-index: 1;
-    top: 0;
-    height: 9px;
-    font-size: 18px;
-    text-align: center;
-    line-height: 9px;
-    overflow: hidden; }
-    .grid .grid-color.gt-max {
-      left: 100%;
-      width: 0;
-      height: 0;
-      border: 0 solid transparent;
-      border-bottom-width: 4.5px;
-      border-top-width: 4.5px;
-      border-left: 9px solid black; }
-    .grid .grid-color.lt-min {
-      left: -9px;
-      width: 0;
-      height: 0;
-      border: 0 solid transparent;
-      border-top-width: 4.5px;
-      border-bottom-width: 4.5px;
-      border-right: 9px solid black; }
-
+  cursor: default;
+}
+.grid.label-between-ticks {
+  height: 10px;
+}
+.grid .grid-color {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  height: 9px;
+  font-size: 18px;
+  text-align: center;
+  line-height: 9px;
+  overflow: hidden;
+}
+.grid .grid-color.gt-max {
+  left: 100%;
+  width: 0;
+  height: 0;
+  border: 0 solid transparent;
+  border-bottom-width: 4.5px;
+  border-top-width: 4.5px;
+  border-left: 9px solid black;
+}
+.grid .grid-color.lt-min {
+  left: -9px;
+  width: 0;
+  height: 0;
+  border: 0 solid transparent;
+  border-top-width: 4.5px;
+  border-bottom-width: 4.5px;
+  border-right: 9px solid black;
+}
 .disabled {
-  opacity: 0.4; }
+  opacity: 0.4;
+}
 
 .hidden-input {
   position: absolute !important;
@@ -893,330 +940,466 @@ COMMON STYLE
   z-index: -9999 !important;
   background: none !important;
   border-style: solid !important;
-  border-color: transparent !important; }
+  border-color: transparent !important;
+}
 
 /***************************************************************
 STYLE FOR SPECIFIC TYPE
 ***************************************************************/
 .base-slider-container.horizontal {
+  /* REMOVED
+  .line-background {
+      height: $handle-top + $handle-height;
+  }
+  */
   /****************************************************
-        Special case for no marker and pin:
-        Adjust all top-position by adding top-margin if the pin is heigher than the handle
-        ****************************************************/ }
-  .base-slider-container.horizontal .line-background {
-    height: 44.33px; }
-  .base-slider-container.horizontal .line {
-    top: 29.33px; }
-  .base-slider-container.horizontal .handle {
-    box-sizing: border-box;
-    width: 16px;
-    height: 24px;
-    margin-left: -8px;
-    background-image: url("images/handle.horizontal.svg"); }
-  html.mouse-hover .base-slider-container.horizontal.active .handle:hover, html.mouse-hover .base-slider-container.horizontal.active .handle.hover {
-    background-image: url("images/handle.horizontal.hover.svg"); }
-  .base-slider-container.horizontal .pin {
-    top: 29.33px; }
-  .base-slider-container.horizontal .grid {
-    top: 44.33px; }
-  .base-slider-container.horizontal.ticks-on-line .grid {
-    top: 29.33px; }
-  .base-slider-container.horizontal.ticks-on-line.no-marker .grid {
-    top: 9px; }
-  .base-slider-container.horizontal.no-marker .line,
-  .base-slider-container.horizontal.no-marker .pin {
-    top: 9px !important; }
-  .base-slider-container.horizontal.no-marker .handle {
-    top: 0px; }
-  .base-slider-container.horizontal.no-marker .grid {
-    top: 24px; }
-  .base-slider-container.horizontal.no-marker.has-pin {
-    margin-top: 0; }
+  Special case for no marker and pin:
+  Adjust all top-position by adding top-margin if the pin is heigher than the handle
+  ****************************************************/
+}
+.base-slider-container.horizontal .line {
+  top: 29.33px;
+}
+.base-slider-container.horizontal .handle {
+  box-sizing: border-box;
+  width: 16px;
+  height: 24px;
+  margin-left: -8px;
+  background-image: url("images/handle.horizontal.svg");
+}
+html.mouse-hover .base-slider-container.horizontal.active .handle:hover, html.mouse-hover .base-slider-container.horizontal.active .handle.hover {
+  background-image: url("images/handle.horizontal.hover.svg");
+}
+.base-slider-container.horizontal .pin {
+  top: 29.33px;
+}
+.base-slider-container.horizontal .grid {
+  top: 44.33px;
+}
+.base-slider-container.horizontal.ticks-on-line .grid {
+  top: 29.33px;
+}
+.base-slider-container.horizontal.ticks-on-line.no-marker .grid {
+  top: 9px;
+}
+.base-slider-container.horizontal.no-marker .line,
+.base-slider-container.horizontal.no-marker .pin {
+  top: 9px !important;
+}
+.base-slider-container.horizontal.no-marker .handle {
+  top: 0px;
+}
+.base-slider-container.horizontal.no-marker .grid {
+  top: 24px;
+}
+.base-slider-container.horizontal.no-marker.has-pin {
+  margin-top: 0;
+}
 
 .base-slider-container.vertical {
+  /* REMOVED
+  .line-background {
+      height: $handle-top + $handle-height;
+  }
+  */
   /****************************************************
-        Special case for no marker and pin:
-        Adjust all top-position by adding top-margin if the pin is heigher than the handle
-        ****************************************************/ }
-  .base-slider-container.vertical .line-background {
-    height: 36.33px; }
-  .base-slider-container.vertical .line {
-    top: 25.33px; }
-  .base-slider-container.vertical .handle {
-    box-sizing: border-box;
-    width: 24px;
-    height: 16px;
-    margin-left: -12px;
-    background-image: url("images/handle.vertical.svg"); }
-  html.mouse-hover .base-slider-container.vertical.active .handle:hover, html.mouse-hover .base-slider-container.vertical.active .handle.hover {
-    background-image: url("images/handle.vertical.hover.svg"); }
-  .base-slider-container.vertical .pin {
-    top: 25.33px; }
-  .base-slider-container.vertical .grid {
-    top: 36.33px; }
-  .base-slider-container.vertical.ticks-on-line .grid {
-    top: 25.33px; }
-  .base-slider-container.vertical.ticks-on-line.no-marker .grid {
-    top: 5px; }
-  .base-slider-container.vertical.no-marker .line,
-  .base-slider-container.vertical.no-marker .pin {
-    top: 5px !important; }
-  .base-slider-container.vertical.no-marker .handle {
-    top: 0px; }
-  .base-slider-container.vertical.no-marker .grid {
-    top: 16px; }
-  .base-slider-container.vertical.no-marker.has-pin {
-    margin-top: 3.2285714286px; }
+  Special case for no marker and pin:
+  Adjust all top-position by adding top-margin if the pin is heigher than the handle
+  ****************************************************/
+}
+.base-slider-container.vertical .line {
+  top: 25.33px;
+}
+.base-slider-container.vertical .handle {
+  box-sizing: border-box;
+  width: 24px;
+  height: 16px;
+  margin-left: -12px;
+  background-image: url("images/handle.vertical.svg");
+}
+html.mouse-hover .base-slider-container.vertical.active .handle:hover, html.mouse-hover .base-slider-container.vertical.active .handle.hover {
+  background-image: url("images/handle.vertical.hover.svg");
+}
+.base-slider-container.vertical .pin {
+  top: 25.33px;
+}
+.base-slider-container.vertical .grid {
+  top: 36.33px;
+}
+.base-slider-container.vertical.ticks-on-line .grid {
+  top: 25.33px;
+}
+.base-slider-container.vertical.ticks-on-line.no-marker .grid {
+  top: 5px;
+}
+.base-slider-container.vertical.no-marker .line,
+.base-slider-container.vertical.no-marker .pin {
+  top: 5px !important;
+}
+.base-slider-container.vertical.no-marker .handle {
+  top: 0px;
+}
+.base-slider-container.vertical.no-marker .grid {
+  top: 16px;
+}
+.base-slider-container.vertical.no-marker.has-pin {
+  margin-top: 3.2285714286px;
+}
 
 .base-slider-container.down {
+  /* REMOVED
+  .line-background {
+      height: $handle-top + $handle-height;
+  }
+  */
   /****************************************************
-        Special case for no marker and pin:
-        Adjust all top-position by adding top-margin if the pin is heigher than the handle
-        ****************************************************/ }
-  .base-slider-container.down .line-background {
-    height: 44.33px; }
-  .base-slider-container.down .line {
-    top: 29.33px; }
-  .base-slider-container.down .handle {
-    box-sizing: border-box;
-    width: 16px;
-    height: 24px;
-    margin-left: -8px;
-    background-image: url("images/handle.down.svg"); }
-  html.mouse-hover .base-slider-container.down.active .handle:hover, html.mouse-hover .base-slider-container.down.active .handle.hover {
-    background-image: url("images/handle.down.hover.svg"); }
-  .base-slider-container.down .pin {
-    top: 29.33px; }
-  .base-slider-container.down .grid {
-    top: 44.33px; }
-  .base-slider-container.down.ticks-on-line .grid {
-    top: 29.33px; }
-  .base-slider-container.down.ticks-on-line.no-marker .grid {
-    top: 9px; }
-  .base-slider-container.down.no-marker .line,
-  .base-slider-container.down.no-marker .pin {
-    top: 9px !important; }
-  .base-slider-container.down.no-marker .handle {
-    top: 0px; }
-  .base-slider-container.down.no-marker .grid {
-    top: 24px; }
-  .base-slider-container.down.no-marker.has-pin {
-    margin-top: 0; }
+  Special case for no marker and pin:
+  Adjust all top-position by adding top-margin if the pin is heigher than the handle
+  ****************************************************/
+}
+.base-slider-container.down .line {
+  top: 29.33px;
+}
+.base-slider-container.down .handle {
+  box-sizing: border-box;
+  width: 16px;
+  height: 24px;
+  margin-left: -8px;
+  background-image: url("images/handle.down.svg");
+}
+html.mouse-hover .base-slider-container.down.active .handle:hover, html.mouse-hover .base-slider-container.down.active .handle.hover {
+  background-image: url("images/handle.down.hover.svg");
+}
+.base-slider-container.down .pin {
+  top: 29.33px;
+}
+.base-slider-container.down .grid {
+  top: 44.33px;
+}
+.base-slider-container.down.ticks-on-line .grid {
+  top: 29.33px;
+}
+.base-slider-container.down.ticks-on-line.no-marker .grid {
+  top: 9px;
+}
+.base-slider-container.down.no-marker .line,
+.base-slider-container.down.no-marker .pin {
+  top: 9px !important;
+}
+.base-slider-container.down.no-marker .handle {
+  top: 0px;
+}
+.base-slider-container.down.no-marker .grid {
+  top: 24px;
+}
+.base-slider-container.down.no-marker.has-pin {
+  margin-top: 0;
+}
 
 .base-slider-container.up {
+  /* REMOVED
+  .line-background {
+      height: $handle-top + $handle-height;
+  }
+  */
   /****************************************************
-        Special case for no marker and pin:
-        Adjust all top-position by adding top-margin if the pin is heigher than the handle
-        ****************************************************/ }
-  .base-slider-container.up .line-background {
-    height: 44.33px; }
-  .base-slider-container.up .line {
-    top: 29.33px; }
-  .base-slider-container.up .handle {
-    box-sizing: border-box;
-    width: 16px;
-    height: 24px;
-    margin-left: -8px;
-    background-image: url("images/handle.up.svg"); }
-  html.mouse-hover .base-slider-container.up.active .handle:hover, html.mouse-hover .base-slider-container.up.active .handle.hover {
-    background-image: url("images/handle.up.hover.svg"); }
-  .base-slider-container.up .pin {
-    top: 29.33px; }
-  .base-slider-container.up .grid {
-    top: 44.33px; }
-  .base-slider-container.up.ticks-on-line .grid {
-    top: 29.33px; }
-  .base-slider-container.up.ticks-on-line.no-marker .grid {
-    top: 9px; }
-  .base-slider-container.up.no-marker .line,
-  .base-slider-container.up.no-marker .pin {
-    top: 9px !important; }
-  .base-slider-container.up.no-marker .handle {
-    top: 0px; }
-  .base-slider-container.up.no-marker .grid {
-    top: 24px; }
-  .base-slider-container.up.no-marker.has-pin {
-    margin-top: 0; }
+  Special case for no marker and pin:
+  Adjust all top-position by adding top-margin if the pin is heigher than the handle
+  ****************************************************/
+}
+.base-slider-container.up .line {
+  top: 29.33px;
+}
+.base-slider-container.up .handle {
+  box-sizing: border-box;
+  width: 16px;
+  height: 24px;
+  margin-left: -8px;
+  background-image: url("images/handle.up.svg");
+}
+html.mouse-hover .base-slider-container.up.active .handle:hover, html.mouse-hover .base-slider-container.up.active .handle.hover {
+  background-image: url("images/handle.up.hover.svg");
+}
+.base-slider-container.up .pin {
+  top: 29.33px;
+}
+.base-slider-container.up .grid {
+  top: 44.33px;
+}
+.base-slider-container.up.ticks-on-line .grid {
+  top: 29.33px;
+}
+.base-slider-container.up.ticks-on-line.no-marker .grid {
+  top: 9px;
+}
+.base-slider-container.up.no-marker .line,
+.base-slider-container.up.no-marker .pin {
+  top: 9px !important;
+}
+.base-slider-container.up.no-marker .handle {
+  top: 0px;
+}
+.base-slider-container.up.no-marker .grid {
+  top: 24px;
+}
+.base-slider-container.up.no-marker.has-pin {
+  margin-top: 0;
+}
 
 .base-slider-container.right {
+  /* REMOVED
+  .line-background {
+      height: $handle-top + $handle-height;
+  }
+  */
   /****************************************************
-        Special case for no marker and pin:
-        Adjust all top-position by adding top-margin if the pin is heigher than the handle
-        ****************************************************/ }
-  .base-slider-container.right .line-background {
-    height: 36.33px; }
-  .base-slider-container.right .line {
-    top: 25.33px; }
-  .base-slider-container.right .handle {
-    box-sizing: border-box;
-    width: 24px;
-    height: 16px;
-    margin-left: -12px;
-    background-image: url("images/handle.right.svg"); }
-  html.mouse-hover .base-slider-container.right.active .handle:hover, html.mouse-hover .base-slider-container.right.active .handle.hover {
-    background-image: url("images/handle.right.hover.svg"); }
-  .base-slider-container.right .pin {
-    top: 25.33px; }
-  .base-slider-container.right .grid {
-    top: 36.33px; }
-  .base-slider-container.right.ticks-on-line .grid {
-    top: 25.33px; }
-  .base-slider-container.right.ticks-on-line.no-marker .grid {
-    top: 5px; }
-  .base-slider-container.right.no-marker .line,
-  .base-slider-container.right.no-marker .pin {
-    top: 5px !important; }
-  .base-slider-container.right.no-marker .handle {
-    top: 0px; }
-  .base-slider-container.right.no-marker .grid {
-    top: 16px; }
-  .base-slider-container.right.no-marker.has-pin {
-    margin-top: 3.2285714286px; }
+  Special case for no marker and pin:
+  Adjust all top-position by adding top-margin if the pin is heigher than the handle
+  ****************************************************/
+}
+.base-slider-container.right .line {
+  top: 25.33px;
+}
+.base-slider-container.right .handle {
+  box-sizing: border-box;
+  width: 24px;
+  height: 16px;
+  margin-left: -12px;
+  background-image: url("images/handle.right.svg");
+}
+html.mouse-hover .base-slider-container.right.active .handle:hover, html.mouse-hover .base-slider-container.right.active .handle.hover {
+  background-image: url("images/handle.right.hover.svg");
+}
+.base-slider-container.right .pin {
+  top: 25.33px;
+}
+.base-slider-container.right .grid {
+  top: 36.33px;
+}
+.base-slider-container.right.ticks-on-line .grid {
+  top: 25.33px;
+}
+.base-slider-container.right.ticks-on-line.no-marker .grid {
+  top: 5px;
+}
+.base-slider-container.right.no-marker .line,
+.base-slider-container.right.no-marker .pin {
+  top: 5px !important;
+}
+.base-slider-container.right.no-marker .handle {
+  top: 0px;
+}
+.base-slider-container.right.no-marker .grid {
+  top: 16px;
+}
+.base-slider-container.right.no-marker.has-pin {
+  margin-top: 3.2285714286px;
+}
 
 .base-slider-container.left {
+  /* REMOVED
+  .line-background {
+      height: $handle-top + $handle-height;
+  }
+  */
   /****************************************************
-        Special case for no marker and pin:
-        Adjust all top-position by adding top-margin if the pin is heigher than the handle
-        ****************************************************/ }
-  .base-slider-container.left .line-background {
-    height: 36.33px; }
-  .base-slider-container.left .line {
-    top: 25.33px; }
-  .base-slider-container.left .handle {
-    box-sizing: border-box;
-    width: 24px;
-    height: 16px;
-    margin-left: -12px;
-    background-image: url("images/handle.left.svg"); }
-  html.mouse-hover .base-slider-container.left.active .handle:hover, html.mouse-hover .base-slider-container.left.active .handle.hover {
-    background-image: url("images/handle.left.hover.svg"); }
-  .base-slider-container.left .pin {
-    top: 25.33px; }
-  .base-slider-container.left .grid {
-    top: 36.33px; }
-  .base-slider-container.left.ticks-on-line .grid {
-    top: 25.33px; }
-  .base-slider-container.left.ticks-on-line.no-marker .grid {
-    top: 5px; }
-  .base-slider-container.left.no-marker .line,
-  .base-slider-container.left.no-marker .pin {
-    top: 5px !important; }
-  .base-slider-container.left.no-marker .handle {
-    top: 0px; }
-  .base-slider-container.left.no-marker .grid {
-    top: 16px; }
-  .base-slider-container.left.no-marker.has-pin {
-    margin-top: 3.2285714286px; }
+  Special case for no marker and pin:
+  Adjust all top-position by adding top-margin if the pin is heigher than the handle
+  ****************************************************/
+}
+.base-slider-container.left .line {
+  top: 25.33px;
+}
+.base-slider-container.left .handle {
+  box-sizing: border-box;
+  width: 24px;
+  height: 16px;
+  margin-left: -12px;
+  background-image: url("images/handle.left.svg");
+}
+html.mouse-hover .base-slider-container.left.active .handle:hover, html.mouse-hover .base-slider-container.left.active .handle.hover {
+  background-image: url("images/handle.left.hover.svg");
+}
+.base-slider-container.left .pin {
+  top: 25.33px;
+}
+.base-slider-container.left .grid {
+  top: 36.33px;
+}
+.base-slider-container.left.ticks-on-line .grid {
+  top: 25.33px;
+}
+.base-slider-container.left.ticks-on-line.no-marker .grid {
+  top: 5px;
+}
+.base-slider-container.left.no-marker .line,
+.base-slider-container.left.no-marker .pin {
+  top: 5px !important;
+}
+.base-slider-container.left.no-marker .handle {
+  top: 0px;
+}
+.base-slider-container.left.no-marker .grid {
+  top: 16px;
+}
+.base-slider-container.left.no-marker.has-pin {
+  margin-top: 3.2285714286px;
+}
 
 .base-slider-container.round {
+  /* REMOVED
+  .line-background {
+      height: $handle-top + $handle-height;
+  }
+  */
   /****************************************************
-        Special case for no marker and pin:
-        Adjust all top-position by adding top-margin if the pin is heigher than the handle
-        ****************************************************/ }
-  .base-slider-container.round .line-background {
-    height: 40.33px; }
-  .base-slider-container.round .line {
-    top: 27.33px; }
-  .base-slider-container.round .handle {
-    box-sizing: border-box;
-    width: 20px;
-    height: 20px;
-    margin-left: -10px;
-    background-image: url("images/handle.round.svg"); }
-  html.mouse-hover .base-slider-container.round.active .handle:hover, html.mouse-hover .base-slider-container.round.active .handle.hover {
-    background-image: url("images/handle.round.hover.svg"); }
-  .base-slider-container.round .pin {
-    top: 27.33px; }
-  .base-slider-container.round .grid {
-    top: 40.33px; }
-  .base-slider-container.round.ticks-on-line .grid {
-    top: 27.33px; }
-  .base-slider-container.round.ticks-on-line.no-marker .grid {
-    top: 7px; }
-  .base-slider-container.round.no-marker .line,
-  .base-slider-container.round.no-marker .pin {
-    top: 7px !important; }
-  .base-slider-container.round.no-marker .handle {
-    top: 0px; }
-  .base-slider-container.round.no-marker .grid {
-    top: 20px; }
-  .base-slider-container.round.no-marker.has-pin {
-    margin-top: 1.2285714286px; }
+  Special case for no marker and pin:
+  Adjust all top-position by adding top-margin if the pin is heigher than the handle
+  ****************************************************/
+}
+.base-slider-container.round .line {
+  top: 27.33px;
+}
+.base-slider-container.round .handle {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  background-image: url("images/handle.round.svg");
+}
+html.mouse-hover .base-slider-container.round.active .handle:hover, html.mouse-hover .base-slider-container.round.active .handle.hover {
+  background-image: url("images/handle.round.hover.svg");
+}
+.base-slider-container.round .pin {
+  top: 27.33px;
+}
+.base-slider-container.round .grid {
+  top: 40.33px;
+}
+.base-slider-container.round.ticks-on-line .grid {
+  top: 27.33px;
+}
+.base-slider-container.round.ticks-on-line.no-marker .grid {
+  top: 7px;
+}
+.base-slider-container.round.no-marker .line,
+.base-slider-container.round.no-marker .pin {
+  top: 7px !important;
+}
+.base-slider-container.round.no-marker .handle {
+  top: 0px;
+}
+.base-slider-container.round.no-marker .grid {
+  top: 20px;
+}
+.base-slider-container.round.no-marker.has-pin {
+  margin-top: 1.2285714286px;
+}
 
 .base-slider-container.fixed {
+  /* REMOVED
+  .line-background {
+      height: $handle-top + $handle-height;
+  }
+  */
   /****************************************************
-        Special case for no marker and pin:
-        Adjust all top-position by adding top-margin if the pin is heigher than the handle
-        ****************************************************/ }
-  .base-slider-container.fixed .line-background {
-    height: 40.33px; }
-  .base-slider-container.fixed .line {
-    top: 22.33px; }
-  .base-slider-container.fixed .handle {
-    box-sizing: border-box;
-    width: 13.3333333333px;
-    height: 20px;
-    margin-left: -6.6666666667px;
-    background-image: url("images/handle.fixed.svg"); }
-  .base-slider-container.fixed .pin {
-    top: 22.33px; }
-  .base-slider-container.fixed .grid {
-    top: 28.33px; }
-  .base-slider-container.fixed.ticks-on-line .grid {
-    top: 22.33px; }
-  .base-slider-container.fixed.ticks-on-line.no-marker .grid {
-    top: 2px; }
-  .base-slider-container.fixed.no-marker .line,
-  .base-slider-container.fixed.no-marker .pin {
-    top: 2px !important; }
-  .base-slider-container.fixed.no-marker .handle {
-    top: 0px; }
-  .base-slider-container.fixed.no-marker .grid {
-    top: 20px; }
-  .base-slider-container.fixed.no-marker.has-pin {
-    margin-top: 6.2285714286px; }
+  Special case for no marker and pin:
+  Adjust all top-position by adding top-margin if the pin is heigher than the handle
+  ****************************************************/
+}
+.base-slider-container.fixed .line {
+  top: 22.33px;
+}
+.base-slider-container.fixed .handle {
+  box-sizing: border-box;
+  width: 13.3333333333px;
+  height: 20px;
+  margin-left: -6.6666666667px;
+  background-image: url("images/handle.fixed.svg");
+}
+.base-slider-container.fixed .pin {
+  top: 22.33px;
+}
+.base-slider-container.fixed .grid {
+  top: 28.33px;
+}
+.base-slider-container.fixed.ticks-on-line .grid {
+  top: 22.33px;
+}
+.base-slider-container.fixed.ticks-on-line.no-marker .grid {
+  top: 2px;
+}
+.base-slider-container.fixed.no-marker .line,
+.base-slider-container.fixed.no-marker .pin {
+  top: 2px !important;
+}
+.base-slider-container.fixed.no-marker .handle {
+  top: 0px;
+}
+.base-slider-container.fixed.no-marker .grid {
+  top: 20px;
+}
+.base-slider-container.fixed.no-marker.has-pin {
+  margin-top: 6.2285714286px;
+}
 
 .base-slider-container.range {
+  /* REMOVED
+  .line-background {
+      height: $handle-top + $handle-height;
+  }
+  */
   /****************************************************
-        Special case for no marker and pin:
-        Adjust all top-position by adding top-margin if the pin is heigher than the handle
-        ****************************************************/ }
-  .base-slider-container.range .line-background {
-    height: 26.33px; }
-  .base-slider-container.range .line {
-    top: 20.33px; }
-  .base-slider-container.range .handle {
-    box-sizing: border-box;
-    width: 6px;
-    height: 6px;
-    margin-left: -3px; }
-    .base-slider-container.range .handle.from {
-      background-image: url("images/handle.range.from.svg"); }
-    .base-slider-container.range .handle.to {
-      background-image: url("images/handle.range.to.svg"); }
-  .base-slider-container.range .pin {
-    top: 20.33px; }
-  .base-slider-container.range .grid {
-    top: 26.33px; }
-  .base-slider-container.range.ticks-on-line .grid {
-    top: 20.33px; }
-  .base-slider-container.range.ticks-on-line.no-marker .grid {
-    top: 0px; }
-  .base-slider-container.range.no-marker .line,
-  .base-slider-container.range.no-marker .pin {
-    top: 0px !important; }
-  .base-slider-container.range.no-marker .handle {
-    top: 0px; }
-  .base-slider-container.range.no-marker .grid {
-    top: 6px; }
-  .base-slider-container.range.no-marker.has-pin {
-    margin-top: 8.2285714286px; }
+  Special case for no marker and pin:
+  Adjust all top-position by adding top-margin if the pin is heigher than the handle
+  ****************************************************/
+}
+.base-slider-container.range .line {
+  top: 20.33px;
+}
+.base-slider-container.range .handle {
+  box-sizing: border-box;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+}
+.base-slider-container.range .handle.from {
+  background-image: url("images/handle.range.from.svg");
+}
+.base-slider-container.range .handle.to {
+  background-image: url("images/handle.range.to.svg");
+}
+.base-slider-container.range .pin {
+  top: 20.33px;
+}
+.base-slider-container.range .grid {
+  top: 26.33px;
+}
+.base-slider-container.range.ticks-on-line .grid {
+  top: 20.33px;
+}
+.base-slider-container.range.ticks-on-line.no-marker .grid {
+  top: 0px;
+}
+.base-slider-container.range.no-marker .line,
+.base-slider-container.range.no-marker .pin {
+  top: 0px !important;
+}
+.base-slider-container.range.no-marker .handle {
+  top: 0px;
+}
+.base-slider-container.range.no-marker .grid {
+  top: 6px;
+}
+.base-slider-container.range.no-marker.has-pin {
+  margin-top: 8.2285714286px;
+}
 
 .base-slider-container {
   width: calc(100% - 24px);
   margin-left: 12px;
-  margin-right: 12px; }
-
+  margin-right: 12px;
+}
 @charset "UTF-8";
 /***********************************************
     jquery-scroll-container.scss,
@@ -1546,7 +1729,7 @@ Modal
 ************************************************/
 /***********************************************
 Button And Modal
-Opacity for semi-transparent and transparent content
+Opacity for semi-transparent and transparent content using color-mix
 ************************************************/
 :root,
 [data-bs-theme=light] {
@@ -1643,6 +1826,7 @@ Opacity for semi-transparent and transparent content
   --bs-link-hover-color: #1a1e21;
   --bs-link-hover-color-rgb: 26, 30, 33;
   --bs-code-color: #d63384;
+  --bs-highlight-color: #212529;
   --bs-highlight-bg: #fff3cd;
   --bs-border-width: 1px;
   --bs-border-style: solid;
@@ -1670,18 +1854,18 @@ Opacity for semi-transparent and transparent content
 
 [data-bs-theme=dark] {
   color-scheme: dark;
-  --bs-body-color: #adb5bd;
-  --bs-body-color-rgb: 173, 181, 189;
+  --bs-body-color: #dee2e6;
+  --bs-body-color-rgb: 222, 226, 230;
   --bs-body-bg: #212529;
   --bs-body-bg-rgb: 33, 37, 41;
   --bs-emphasis-color: #fff;
   --bs-emphasis-color-rgb: 255, 255, 255;
-  --bs-secondary-color: rgba(173, 181, 189, 0.75);
-  --bs-secondary-color-rgb: 173, 181, 189;
+  --bs-secondary-color: rgba(222, 226, 230, 0.75);
+  --bs-secondary-color-rgb: 222, 226, 230;
   --bs-secondary-bg: #343a40;
   --bs-secondary-bg-rgb: 52, 58, 64;
-  --bs-tertiary-color: rgba(173, 181, 189, 0.5);
-  --bs-tertiary-color-rgb: 173, 181, 189;
+  --bs-tertiary-color: rgba(222, 226, 230, 0.5);
+  --bs-tertiary-color-rgb: 222, 226, 230;
   --bs-tertiary-bg: #2b3035;
   --bs-tertiary-bg-rgb: 43, 48, 53;
   --bs-primary-text-emphasis: #6ea8fe;
@@ -1714,6 +1898,8 @@ Opacity for semi-transparent and transparent content
   --bs-link-color-rgb: 110, 168, 254;
   --bs-link-hover-color-rgb: 139, 185, 254;
   --bs-code-color: #e685b5;
+  --bs-highlight-color: #dee2e6;
+  --bs-highlight-bg: #664d03;
   --bs-border-color: #495057;
   --bs-border-color-translucent: rgba(255, 255, 255, 0.15);
   --bs-form-valid-color: #75b798;
@@ -1847,6 +2033,7 @@ small, .small {
 
 mark, .mark {
   padding: 0.1875em;
+  color: var(--bs-highlight-color);
   background-color: var(--bs-highlight-bg);
 }
 
@@ -2057,8 +2244,8 @@ legend + * {
 }
 
 [type=search] {
-  outline-offset: -2px;
   -webkit-appearance: textfield;
+  outline-offset: -2px;
 }
 
 /* rtl:raw:
@@ -2301,7 +2488,7 @@ progress {
 
 .row-cols-3 > * {
   flex: 0 0 auto;
-  width: 33.3333333333%;
+  width: 33.33333333%;
 }
 
 .row-cols-4 > * {
@@ -2316,7 +2503,7 @@ progress {
 
 .row-cols-6 > * {
   flex: 0 0 auto;
-  width: 16.6666666667%;
+  width: 16.66666667%;
 }
 
 .col-auto {
@@ -2506,7 +2693,7 @@ progress {
   }
   .row-cols-sm-3 > * {
     flex: 0 0 auto;
-    width: 33.3333333333%;
+    width: 33.33333333%;
   }
   .row-cols-sm-4 > * {
     flex: 0 0 auto;
@@ -2518,7 +2705,7 @@ progress {
   }
   .row-cols-sm-6 > * {
     flex: 0 0 auto;
-    width: 16.6666666667%;
+    width: 16.66666667%;
   }
   .col-sm-auto {
     flex: 0 0 auto;
@@ -2675,7 +2862,7 @@ progress {
   }
   .row-cols-md-3 > * {
     flex: 0 0 auto;
-    width: 33.3333333333%;
+    width: 33.33333333%;
   }
   .row-cols-md-4 > * {
     flex: 0 0 auto;
@@ -2687,7 +2874,7 @@ progress {
   }
   .row-cols-md-6 > * {
     flex: 0 0 auto;
-    width: 16.6666666667%;
+    width: 16.66666667%;
   }
   .col-md-auto {
     flex: 0 0 auto;
@@ -2844,7 +3031,7 @@ progress {
   }
   .row-cols-lg-3 > * {
     flex: 0 0 auto;
-    width: 33.3333333333%;
+    width: 33.33333333%;
   }
   .row-cols-lg-4 > * {
     flex: 0 0 auto;
@@ -2856,7 +3043,7 @@ progress {
   }
   .row-cols-lg-6 > * {
     flex: 0 0 auto;
-    width: 16.6666666667%;
+    width: 16.66666667%;
   }
   .col-lg-auto {
     flex: 0 0 auto;
@@ -3013,7 +3200,7 @@ progress {
   }
   .row-cols-xl-3 > * {
     flex: 0 0 auto;
-    width: 33.3333333333%;
+    width: 33.33333333%;
   }
   .row-cols-xl-4 > * {
     flex: 0 0 auto;
@@ -3025,7 +3212,7 @@ progress {
   }
   .row-cols-xl-6 > * {
     flex: 0 0 auto;
-    width: 16.6666666667%;
+    width: 16.66666667%;
   }
   .col-xl-auto {
     flex: 0 0 auto;
@@ -3182,7 +3369,7 @@ progress {
   }
   .row-cols-xxl-3 > * {
     flex: 0 0 auto;
-    width: 33.3333333333%;
+    width: 33.33333333%;
   }
   .row-cols-xxl-4 > * {
     flex: 0 0 auto;
@@ -3194,7 +3381,7 @@ progress {
   }
   .row-cols-xxl-6 > * {
     flex: 0 0 auto;
-    width: 16.6666666667%;
+    width: 16.66666667%;
   }
   .col-xxl-auto {
     flex: 0 0 auto;
@@ -3338,16 +3525,16 @@ progress {
   --bs-table-bg-type: initial;
   --bs-table-color-state: initial;
   --bs-table-bg-state: initial;
-  --bs-table-color: var(--bs-body-color);
+  --bs-table-color: var(--bs-emphasis-color);
   --bs-table-bg: var(--bs-body-bg);
   --bs-table-border-color: var(--bs-border-color);
   --bs-table-accent-bg: transparent;
-  --bs-table-striped-color: var(--bs-body-color);
-  --bs-table-striped-bg: rgba(0, 0, 0, 0.05);
-  --bs-table-active-color: var(--bs-body-color);
-  --bs-table-active-bg: rgba(0, 0, 0, 0.1);
-  --bs-table-hover-color: var(--bs-body-color);
-  --bs-table-hover-bg: rgba(0, 0, 0, 0.075);
+  --bs-table-striped-color: var(--bs-emphasis-color);
+  --bs-table-striped-bg: rgba(var(--bs-emphasis-color-rgb), 0.05);
+  --bs-table-active-color: var(--bs-emphasis-color);
+  --bs-table-active-bg: rgba(var(--bs-emphasis-color-rgb), 0.1);
+  --bs-table-hover-color: var(--bs-emphasis-color);
+  --bs-table-hover-bg: rgba(var(--bs-emphasis-color-rgb), 0.075);
   width: 100%;
   margin-bottom: 1rem;
   vertical-align: top;
@@ -3416,7 +3603,7 @@ progress {
 .table-primary {
   --bs-table-color: #000;
   --bs-table-bg: #cfe2ff;
-  --bs-table-border-color: #bacbe6;
+  --bs-table-border-color: #a6b5cc;
   --bs-table-striped-bg: #c5d7f2;
   --bs-table-striped-color: #000;
   --bs-table-active-bg: #bacbe6;
@@ -3430,7 +3617,7 @@ progress {
 .table-secondary {
   --bs-table-color: #000;
   --bs-table-bg: #e2e3e5;
-  --bs-table-border-color: #cbccce;
+  --bs-table-border-color: #b5b6b7;
   --bs-table-striped-bg: #d7d8da;
   --bs-table-striped-color: #000;
   --bs-table-active-bg: #cbccce;
@@ -3444,7 +3631,7 @@ progress {
 .table-success {
   --bs-table-color: #000;
   --bs-table-bg: #d1e7dd;
-  --bs-table-border-color: #bcd0c7;
+  --bs-table-border-color: #a7b9b1;
   --bs-table-striped-bg: #c7dbd2;
   --bs-table-striped-color: #000;
   --bs-table-active-bg: #bcd0c7;
@@ -3458,7 +3645,7 @@ progress {
 .table-info {
   --bs-table-color: #000;
   --bs-table-bg: #cff4fc;
-  --bs-table-border-color: #badce3;
+  --bs-table-border-color: #a6c3ca;
   --bs-table-striped-bg: #c5e8ef;
   --bs-table-striped-color: #000;
   --bs-table-active-bg: #badce3;
@@ -3472,7 +3659,7 @@ progress {
 .table-warning {
   --bs-table-color: #000;
   --bs-table-bg: #fff3cd;
-  --bs-table-border-color: #e6dbb9;
+  --bs-table-border-color: #ccc2a4;
   --bs-table-striped-bg: #f2e7c3;
   --bs-table-striped-color: #000;
   --bs-table-active-bg: #e6dbb9;
@@ -3486,7 +3673,7 @@ progress {
 .table-danger {
   --bs-table-color: #000;
   --bs-table-bg: #f8d7da;
-  --bs-table-border-color: #dfc2c4;
+  --bs-table-border-color: #c6acae;
   --bs-table-striped-bg: #eccccf;
   --bs-table-striped-color: #000;
   --bs-table-active-bg: #dfc2c4;
@@ -3500,7 +3687,7 @@ progress {
 .table-light {
   --bs-table-color: #000;
   --bs-table-bg: #f8f9fa;
-  --bs-table-border-color: #dfe0e1;
+  --bs-table-border-color: #c6c7c8;
   --bs-table-striped-bg: #ecedee;
   --bs-table-striped-color: #000;
   --bs-table-active-bg: #dfe0e1;
@@ -3514,7 +3701,7 @@ progress {
 .table-dark {
   --bs-table-color: #fff;
   --bs-table-bg: #212529;
-  --bs-table-border-color: #373b3e;
+  --bs-table-border-color: #4d5154;
   --bs-table-striped-bg: #2c3034;
   --bs-table-striped-color: #fff;
   --bs-table-active-bg: #373b3e;
@@ -3598,10 +3785,10 @@ progress {
   font-weight: 400;
   line-height: 1.5;
   color: var(--bs-body-color);
+  appearance: none;
   background-color: var(--bs-body-bg);
   background-clip: padding-box;
   border: var(--bs-border-width) solid #adb5bd;
-  appearance: none;
   border-radius: var(--bs-border-radius);
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
@@ -3748,6 +3935,7 @@ textarea.form-control-lg {
   font-weight: 400;
   line-height: 1.5;
   color: var(--bs-body-color);
+  appearance: none;
   background-color: var(--bs-body-bg);
   background-image: var(--bs-form-select-bg-img), var(--bs-form-select-bg-icon, none);
   background-repeat: no-repeat;
@@ -3756,7 +3944,6 @@ textarea.form-control-lg {
   border: var(--bs-border-width) solid #adb5bd;
   border-radius: var(--bs-border-radius);
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  appearance: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .form-select {
@@ -3797,7 +3984,7 @@ textarea.form-control-lg {
 }
 
 [data-bs-theme=dark] .form-select {
-  --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23adb5bd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23dee2e6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
 }
 
 .form-check {
@@ -3824,17 +4011,18 @@ textarea.form-control-lg {
 
 .form-check-input {
   --bs-form-check-bg: var(--bs-body-bg);
+  flex-shrink: 0;
   width: 1em;
   height: 1em;
   margin-top: 0.25em;
   vertical-align: top;
+  appearance: none;
   background-color: var(--bs-form-check-bg);
   background-image: var(--bs-form-check-bg-image);
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
   border: 1px solid #adb5bd;
-  appearance: none;
   print-color-adjust: exact;
 }
 .form-check-input[type=checkbox] {
@@ -3933,8 +4121,8 @@ textarea.form-control-lg {
   width: 100%;
   height: calc(1rem + 2px);
   padding: 0;
-  background-color: transparent;
   appearance: none;
+  background-color: transparent;
 }
 .form-range:focus {
   outline: 0;
@@ -3952,11 +4140,11 @@ textarea.form-control-lg {
   width: 1rem;
   height: 1rem;
   margin-top: -0.25rem;
+  appearance: none;
   background-color: #0d6efd;
   border: 0;
   border-radius: 1rem;
   transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  appearance: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .form-range::-webkit-slider-thumb {
@@ -3971,18 +4159,18 @@ textarea.form-control-lg {
   height: 0.5rem;
   color: transparent;
   cursor: pointer;
-  background-color: var(--bs-tertiary-bg);
+  background-color: var(--bs-secondary-bg);
   border-color: transparent;
   border-radius: 1rem;
 }
 .form-range::-moz-range-thumb {
   width: 1rem;
   height: 1rem;
+  appearance: none;
   background-color: #0d6efd;
   border: 0;
   border-radius: 1rem;
   transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  appearance: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .form-range::-moz-range-thumb {
@@ -3997,7 +4185,7 @@ textarea.form-control-lg {
   height: 0.5rem;
   color: transparent;
   cursor: pointer;
-  background-color: var(--bs-tertiary-bg);
+  background-color: var(--bs-secondary-bg);
   border-color: transparent;
   border-radius: 1rem;
 }
@@ -4091,10 +4279,12 @@ textarea.form-control-lg {
 .form-floating > .form-control-plaintext ~ label {
   border-width: var(--bs-border-width) 0;
 }
-.form-floating > :disabled ~ label {
+.form-floating > :disabled ~ label,
+.form-floating > .form-control:disabled ~ label {
   color: #6c757d;
 }
-.form-floating > :disabled ~ label::after {
+.form-floating > :disabled ~ label::after,
+.form-floating > .form-control:disabled ~ label::after {
   background-color: var(--bs-secondary-bg);
 }
 
@@ -4831,7 +5021,7 @@ textarea.form-control-lg {
   --bs-dropdown-inner-border-radius: calc(var(--bs-border-radius) - var(--bs-border-width));
   --bs-dropdown-divider-bg: var(--bs-border-color-translucent);
   --bs-dropdown-divider-margin-y: 0.5rem;
-  --bs-dropdown-box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --bs-dropdown-box-shadow: var(--bs-box-shadow);
   --bs-dropdown-link-color: var(--bs-body-color);
   --bs-dropdown-link-hover-color: var(--bs-body-color);
   --bs-dropdown-link-hover-bg: var(--bs-tertiary-bg);
@@ -5255,7 +5445,7 @@ textarea.form-control-lg {
   outline: 0;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
-.nav-link.disabled {
+.nav-link.disabled, .nav-link:disabled {
   color: var(--bs-nav-link-disabled-color);
   pointer-events: none;
   cursor: default;
@@ -5281,11 +5471,6 @@ textarea.form-control-lg {
   isolation: isolate;
   border-color: var(--bs-nav-tabs-link-hover-border-color);
 }
-.nav-tabs .nav-link.disabled, .nav-tabs .nav-link:disabled {
-  color: var(--bs-nav-link-disabled-color);
-  background-color: transparent;
-  border-color: transparent;
-}
 .nav-tabs .nav-link.active,
 .nav-tabs .nav-item.show .nav-link {
   color: var(--bs-nav-tabs-link-active-color);
@@ -5305,11 +5490,6 @@ textarea.form-control-lg {
 }
 .nav-pills .nav-link {
   border-radius: var(--bs-nav-pills-border-radius);
-}
-.nav-pills .nav-link:disabled {
-  color: var(--bs-nav-link-disabled-color);
-  background-color: transparent;
-  border-color: transparent;
 }
 .nav-pills .nav-link.active,
 .nav-pills .show > .nav-link {
@@ -6739,7 +6919,7 @@ textarea.form-control-lg {
   --bs-modal-border-color: var(--jb-container-border-color);
   --bs-modal-border-width: 1px;
   --bs-modal-border-radius: 0.375rem;
-  --bs-modal-box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --bs-modal-box-shadow: var(--bs-box-shadow-sm);
   --bs-modal-inner-border-radius: calc(0.375rem - 1px);
   --bs-modal-header-padding-x: 0.375rem;
   --bs-modal-header-padding-y: 0.375rem;
@@ -6880,7 +7060,7 @@ textarea.form-control-lg {
 @media (min-width: 576px) {
   .modal {
     --bs-modal-margin: 1.75rem;
-    --bs-modal-box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    --bs-modal-box-shadow: var(--bs-box-shadow);
   }
   .modal-dialog {
     max-width: var(--bs-modal-width);
@@ -7132,7 +7312,7 @@ textarea.form-control-lg {
   --bs-popover-border-color: var(--jb-container-border-color);
   --bs-popover-border-radius: 0.375rem;
   --bs-popover-inner-border-radius: calc(0.375rem - 1px);
-  --bs-popover-box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --bs-popover-box-shadow: var(--bs-box-shadow);
   --bs-popover-header-padding-x: 0.375rem;
   --bs-popover-header-padding-y: 0.375rem;
   --bs-popover-header-font-size: 1rem;
@@ -7502,42 +7682,42 @@ textarea.form-control-lg {
 
 .text-bg-primary {
   color: #fff !important;
-  background-color: RGBA(13, 110, 253, var(--bs-bg-opacity, 1)) !important;
+  background-color: RGBA(var(--bs-primary-rgb), var(--bs-bg-opacity, 1)) !important;
 }
 
 .text-bg-secondary {
   color: #fff !important;
-  background-color: RGBA(108, 117, 125, var(--bs-bg-opacity, 1)) !important;
+  background-color: RGBA(var(--bs-secondary-rgb), var(--bs-bg-opacity, 1)) !important;
 }
 
 .text-bg-success {
   color: #fff !important;
-  background-color: RGBA(25, 135, 84, var(--bs-bg-opacity, 1)) !important;
+  background-color: RGBA(var(--bs-success-rgb), var(--bs-bg-opacity, 1)) !important;
 }
 
 .text-bg-info {
   color: #000 !important;
-  background-color: RGBA(13, 202, 240, var(--bs-bg-opacity, 1)) !important;
+  background-color: RGBA(var(--bs-info-rgb), var(--bs-bg-opacity, 1)) !important;
 }
 
 .text-bg-warning {
   color: #000 !important;
-  background-color: RGBA(255, 193, 7, var(--bs-bg-opacity, 1)) !important;
+  background-color: RGBA(var(--bs-warning-rgb), var(--bs-bg-opacity, 1)) !important;
 }
 
 .text-bg-danger {
   color: #fff !important;
-  background-color: RGBA(220, 53, 69, var(--bs-bg-opacity, 1)) !important;
+  background-color: RGBA(var(--bs-danger-rgb), var(--bs-bg-opacity, 1)) !important;
 }
 
 .text-bg-light {
   color: #000 !important;
-  background-color: RGBA(248, 249, 250, var(--bs-bg-opacity, 1)) !important;
+  background-color: RGBA(var(--bs-light-rgb), var(--bs-bg-opacity, 1)) !important;
 }
 
 .text-bg-dark {
   color: #fff !important;
-  background-color: RGBA(33, 37, 41, var(--bs-bg-opacity, 1)) !important;
+  background-color: RGBA(var(--bs-dark-rgb), var(--bs-bg-opacity, 1)) !important;
 }
 
 .link-primary {
@@ -7821,7 +8001,7 @@ textarea.form-control-lg {
 .vr {
   display: inline-block;
   align-self: stretch;
-  width: 1px;
+  width: var(--bs-border-width);
   min-height: 1em;
   background-color: currentcolor;
   opacity: 0.25;
@@ -7996,15 +8176,15 @@ textarea.form-control-lg {
 }
 
 .shadow {
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  box-shadow: var(--bs-box-shadow) !important;
 }
 
 .shadow-sm {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+  box-shadow: var(--bs-box-shadow-sm) !important;
 }
 
 .shadow-lg {
-  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
+  box-shadow: var(--bs-box-shadow-lg) !important;
 }
 
 .shadow-none {
@@ -13353,7 +13533,7 @@ Contains global scss- and css-variable
   --bs-modal-border-color: var(--jb-container-border-color);
   --bs-modal-border-width: 1px;
   --bs-modal-border-radius: 0.375rem;
-  --bs-modal-box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --bs-modal-box-shadow: var(--bs-box-shadow-sm);
   --bs-modal-inner-border-radius: calc(0.375rem - 1px);
   --bs-modal-header-padding-x: 0.375rem;
   --bs-modal-header-padding-y: 0.375rem;
@@ -14026,6 +14206,10 @@ Bootstrap allready have the following classes
   font-size: 0.75em !important;
 }
 
+.font-size-0-9em {
+  font-size: 0.9em !important;
+}
+
 .font-size-1-1em {
   font-size: 1.1em !important;
 }
@@ -14081,6 +14265,26 @@ Bootstrap allready have the following classes
   display: inline-block;
   flex-shrink: 0;
   line-height: 1;
+}
+.container-stacked-icons.width-1-1em:not(:last-child) {
+  width: 1.1em;
+  text-align: left;
+}
+.container-stacked-icons.width-1-2em:not(:last-child) {
+  width: 1.2em;
+  text-align: left;
+}
+.container-stacked-icons.width-1-3em:not(:last-child) {
+  width: 1.3em;
+  text-align: left;
+}
+.container-stacked-icons.width-1-4em:not(:last-child) {
+  width: 1.4em;
+  text-align: left;
+}
+.container-stacked-icons.width-1-5em:not(:last-child) {
+  width: 1.5em;
+  text-align: left;
 }
 .container-stacked-icons .stacked-icon {
   width: 1em;
@@ -14163,6 +14367,9 @@ Also overwrite default bootstrap behaviour
 
 */
 .btn-jb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   --bs-btn-border-color: #adb5bd;
   --bs-btn-hover-border-color: #b5bcc4;
   --bs-btn-active-border-color: #b5bcc4;
@@ -14207,6 +14414,13 @@ Also overwrite default bootstrap behaviour
 }
 .btn-jb.standard-checkbox .standard-checkbox-checked-color {
   color: rgb(30, 144, 255);
+}
+.btn-jb.standard-checkbox.checkbox-at-left {
+  position: relative;
+}
+.btn-jb.standard-checkbox.checkbox-at-left > .container-stacked-icons:first-child {
+  position: absolute;
+  left: var(--bs-btn-padding-x);
 }
 .btn-jb.standard-checkbox.semi-selected .standard-checkbox-checked-color {
   color: #fd7e14;
@@ -14265,9 +14479,6 @@ Also overwrite default bootstrap behaviour
   vertical-align: top;
 }
 .btn-jb.square {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   --bs-btn-padding-y: 0;
   --bs-btn-padding-x: 0;
   height: var(--bs-btn-square-dimention);
@@ -14910,12 +15121,25 @@ div.modal-dialog.modal-flex-width.modal-extra-width {
 div.modal-dialog.modal-flex-width.modal-mega-width {
   width: var(--jb-modal-xl-rem);
 }
+div.modal-dialog.modal-max-width:not(.modal-full-screen) {
+  width: calc(100% - 20px);
+}
+div.modal-dialog.modal-full-width:not(.modal-full-screen) {
+  width: 100%;
+}
+div.modal-dialog.modal-full-screen {
+  width: 100%;
+}
+div.modal-dialog.modal-full-screen:not(.modal-full-screen-with-border) .modal-content {
+  border: none;
+  border-radius: 0px;
+}
 div.modal-dialog.modal-dialog-inline .modal-content {
   box-shadow: none;
   max-height: inherit;
 }
 div.modal-dialog:not(.modal-flex-width) .modal-content .modal-body > .jquery-scroll-container {
-  width: calc( 100% - 2*1px - 2*var(--jsc-scroll-padding) );
+  width: calc(100% - 2 * 1px - 2 * var(--jsc-scroll-padding));
   margin-left: auto;
   margin-right: auto;
 }
@@ -15158,7 +15382,7 @@ div.modal-dialog .modal-content.modal-minimized.modal-minimized-semi-transparent
   background: none;
 }
 div.modal-dialog .modal-content.modal-minimized.modal-minimized-semi-transparent .modal-body, div.modal-dialog .modal-content.modal-minimized.modal-minimized-semi-transparent .modal-body-fixed, div.modal-dialog .modal-content.modal-minimized.modal-minimized-semi-transparent .modal-footer, div.modal-dialog .modal-content.modal-normal.modal-normal-semi-transparent .modal-body, div.modal-dialog .modal-content.modal-normal.modal-normal-semi-transparent .modal-body-fixed, div.modal-dialog .modal-content.modal-normal.modal-normal-semi-transparent .modal-footer, div.modal-dialog .modal-content.modal-extended.modal-extended-semi-transparent .modal-body, div.modal-dialog .modal-content.modal-extended.modal-extended-semi-transparent .modal-body-fixed, div.modal-dialog .modal-content.modal-extended.modal-extended-semi-transparent .modal-footer {
-  background: rgba(var(--bs-body-bg), 0.5);
+  background: color-mix(in srgb, var(--bs-body-bg), transparent 50%);
 }
 div.modal-dialog .modal-content.modal-minimized.modal-minimized-clickable .modal-body, div.modal-dialog .modal-content.modal-minimized.modal-minimized-clickable .modal-body-fixed, div.modal-dialog .modal-content.modal-normal.modal-normal-clickable .modal-body, div.modal-dialog .modal-content.modal-normal.modal-normal-clickable .modal-body-fixed, div.modal-dialog .modal-content.modal-extended.modal-extended-clickable .modal-body, div.modal-dialog .modal-content.modal-extended.modal-extended-clickable .modal-body-fixed {
   cursor: pointer;
@@ -15336,7 +15560,7 @@ form.form-xs, .input-group-container-xs, .input-group-xs {
   border-top: var(--bs-border-width) solid var(--jb-structure-border-color);
 }
 .input-group-container.child-with-label {
-  padding-top: calc( 0.75 * var(--bs-input-label-font-size) + var(--bs-input-padding-y) );
+  padding-top: calc(0.75 * var(--bs-input-label-font-size) + var(--bs-input-padding-y));
 }
 .input-group-container.small-bottom-padding + .input-group-container {
   padding-top: var(--bs-input-padding-y);
@@ -15811,13 +16035,13 @@ Is a modification to Bootstrap modal-class
   right: 20px;
 }
 .modal.noty-container.noty-container-topCenter, .modal.noty-container.noty-container-bottomCenter {
-  transform: translate(calc(-50% - 1px/2)) translateZ(0) scale(1, 1);
+  transform: translate(calc(-50% - 1px / 2)) translateZ(0) scale(1, 1);
 }
 .modal.noty-container.noty-container-center {
-  transform: translate(calc(-50% - 1px/2), calc(-50% - 1px/2)) translateZ(0) scale(1, 1);
+  transform: translate(calc(-50% - 1px / 2), calc(-50% - 1px / 2)) translateZ(0) scale(1, 1);
 }
 .modal.noty-container.noty-container-centerLeft, .modal.noty-container.noty-container-centerRight {
-  transform: translate(0, calc(-50% - 1px/2)) translateZ(0) scale(1, 1);
+  transform: translate(0, calc(-50% - 1px / 2)) translateZ(0) scale(1, 1);
 }
 
 @keyframes noty_anim_height {
@@ -15915,6 +16139,8 @@ CAROUSEL
   max-width: -moz-fit-content;
   max-height: fit-content;
   max-height: -moz-fit-content;
+  width: initial !important;
+  height: initial !important;
   margin: auto;
 }
 .carousel .carousel-indicators {
@@ -15938,10 +16164,16 @@ CAROUSEL
   white-space: nowrap;
 }
 .carousel .carousel-caption .carousel-caption-inner .caption {
+  max-width: 100%;
+  display: flex;
+  flex-direction: row;
   font-size: var(--bs-footer-font-size);
   --bs-footer-font-size: 0.75rem;
   --bs-footer-padding-y: 0.25rem;
   --bs-footer-padding-x: 0.25rem;
+}
+.carousel .carousel-caption .carousel-caption-inner .caption span {
+  flex-shrink: 1;
 }
 .carousel .carousel-caption .carousel-caption-inner .caption.caption-sm {
   --bs-footer-font-size: 0.6875rem;
@@ -15949,8 +16181,20 @@ CAROUSEL
   --bs-footer-padding-x: 0.125rem;
 }
 
-/*# sourceMappingURL=jquery-bootstrap.css.map */
+/************************************************************
+MODAL-IMAGE
 
+Style for elements used to display any image in a modal-window
+
+************************************************************/
+.c-zoom__wrapper {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
 /***********************************************
 	jquery-bootstrap-niord.scss,
 
@@ -15962,64 +16206,71 @@ CAROUSEL
 
 ************************************************/
 .niord-modal-content p, .niord-modal-content ul {
-  margin: 0; }
-
+  margin: 0;
+}
 .niord-modal-content table {
-  word-break: normal; }
-  .niord-modal-content table tr th {
-    vertical-align: bottom; }
-  .niord-modal-content table tr td {
-    vertical-align: top; }
-  .niord-modal-content table:not([class]) td {
-    border: 1px solid #999;
-    padding: 3px; }
-
+  word-break: normal;
+}
+.niord-modal-content table tr th {
+  vertical-align: bottom;
+}
+.niord-modal-content table tr td {
+  vertical-align: top;
+}
+.niord-modal-content table:not([class]) td {
+  border: 1px solid #999;
+  padding: 3px;
+}
 .niord-modal-content hr {
   margin-top: 3px;
   margin-bottom: 3px;
-  border-color: #afb4ba; }
-
+  border-color: #afb4ba;
+}
 .niord-modal-content .display-anchor-as-block a {
-  display: block; }
+  display: block;
+}
 
 .parent-list-container {
-  padding-top: 3px; }
+  padding-top: 3px;
+}
 
 .table.time-period thead tr th:first-child {
   padding-left: 7px;
-  box-shadow: inset 4px 0px 0px 0px var(--bs-border-color); }
-
+  box-shadow: inset 4px 0px 0px 0px var(--bs-border-color);
+}
 .table.time-period thead tr th:last-child {
   padding-right: 7px;
-  box-shadow: inset -4px 0px 0px 0px var(--bs-border-color); }
-
+  box-shadow: inset -4px 0px 0px 0px var(--bs-border-color);
+}
 .table.time-period tbody tr.start-before-now.end-after-now td {
-  background-color: var(--jbn-time-now-bg-color, lightgreen); }
-
+  background-color: var(--jbn-time-now-color, darkgreen);
+  color: var(--jbn-time-now-text-color, white);
+}
 .table.time-period tbody tr.first-after-now {
-  border-top: 4px solid var(--jbn-time-now-color, darkgreen); }
-
+  border-top: 4px solid var(--jbn-time-now-color, darkgreen);
+}
 .table.time-period tbody tr td:first-child:not(:empty) {
-  padding-left: 7px; }
-
+  padding-left: 7px;
+}
 .table.time-period tbody tr td:last-child:not(:empty) {
-  padding-right: 7px; }
-
+  padding-right: 7px;
+}
 .table.time-period tbody tr.start-before-now td:first-child {
-  box-shadow: inset 4px 0px 0px 0px var(--jbn-time-past-color, #7ABAE1); }
-
+  box-shadow: inset 4px 0px 0px 0px var(--jbn-time-past-color, #7ABAE1);
+}
 .table.time-period tbody tr.start-after-now td:first-child {
-  box-shadow: inset 4px 0px 0px 0px var(--jbn-time-future-color, #4D72B8); }
-
+  box-shadow: inset 4px 0px 0px 0px var(--jbn-time-future-color, #4D72B8);
+}
 .table.time-period tbody tr.end-before-now td:last-child {
-  box-shadow: inset -4px 0px 0px 0px var(--jbn-time-past-color, #7ABAE1); }
-
+  box-shadow: inset -4px 0px 0px 0px var(--jbn-time-past-color, #7ABAE1);
+}
 .table.time-period tbody tr.end-after-now td:last-child {
-  box-shadow: inset -4px 0px 0px 0px var(--jbn-time-future-color, #4D72B8); }
+  box-shadow: inset -4px 0px 0px 0px var(--jbn-time-future-color, #4D72B8);
+}
 
 table.hide-first-column tr td:first-child {
-  display: none; }
-
+  display: none;
+}
 /***********************************************
 leaflet-bootstrap-marker.scss
 
@@ -17817,7 +18068,8 @@ jquery-scroll-container-variables.scss
 :root {
   --jsc-scroll-size: 10px;
   --jsc-scroll-padding: 10px;
-  --jsc-scroll-auto-padding: 10px; }
+  --jsc-scroll-auto-padding: 10px;
+}
 
 /************************************************************
 VARIABLES
@@ -17836,7 +18088,7 @@ Modal
 ************************************************/
 /***********************************************
 Button And Modal
-Opacity for semi-transparent and transparent content
+Opacity for semi-transparent and transparent content using color-mix
 ************************************************/
 /************************************************************
 MIXIN
@@ -17867,22 +18119,23 @@ leaflet-bootstrap-fonts.scss
 Use same font-family as Bootstrap via fcoo/jqury-bootstrap
 ************************************************/
 .leaflet-container {
-  font: inherit !important; }
+  font: inherit !important;
+}
 
 /***********************************************
 Font-family for four icons used in leaflet-bootstrap
 ************************************************/
 @font-face {
-  font-family: 'leaflet-bootstrap';
+  font-family: "leaflet-bootstrap";
   src: url("fonts/leaflet-bootstrap.eot?jxmi9r");
   src: url("fonts/leaflet-bootstrap.eot?jxmi9r#iefix") format("embedded-opentype"), url("fonts/leaflet-bootstrap.ttf?jxmi9r") format("truetype"), url("fonts/leaflet-bootstrap.woff?jxmi9r") format("woff"), url("fonts/leaflet-bootstrap.svg?jxmi9r#icomoon") format("svg");
   font-weight: normal;
   font-style: normal;
-  font-display: block; }
-
-[class^="fa-lb-"], [class*=" fa-lb-"] {
+  font-display: block;
+}
+[class^=fa-lb-], [class*=" fa-lb-"] {
   /* use !important to prevent issues with browser extensions that change fonts */
-  font-family: 'leaflet-bootstrap' !important;
+  font-family: "leaflet-bootstrap" !important;
   speak: none;
   font-style: normal;
   font-weight: normal;
@@ -17891,161 +18144,191 @@ Font-family for four icons used in leaflet-bootstrap
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale; }
+  -moz-osx-font-smoothing: grayscale;
+}
 
 .fa-lb-center-marker:before {
-  content: "\e900"; }
+  content: "\e900";
+}
 
 .fa-lb-mouse-left:before {
-  content: "\ea6e"; }
+  content: "\ea6e";
+}
 
 .fa-lb-mouse-right:before {
-  content: "\ea6f"; }
+  content: "\ea6f";
+}
 
 [class*=" fa-lb-mouse-"] {
   font-size: 1.2em;
   line-height: 0.8333333333em !important;
-  vertical-align: -.0667em;
-  margin-right: 0 !important; }
+  vertical-align: -0.0667em;
+  margin-right: 0 !important;
+}
 
 .fa-lb-contextmenu:before {
-  content: "\ead6"; }
+  content: "\ead6";
+}
 
 /***********************************************
 Scale icons
 ************************************************/
 .fa-scale-x-08 {
-  transform: scaleX(0.8); }
+  transform: scaleX(0.8);
+}
 
 /***********************************************
 leaflet-bootstrap-popup.scss,
 ************************************************/
 .leaflet-popup-content {
-  width: 100px; }
+  width: 100px;
+}
 
 .modal-wrapper.leaflet-popup-content-wrapper {
   background: transparent;
   padding: 0;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); }
-  .modal-wrapper.leaflet-popup-content-wrapper .leaflet-popup-content {
-    margin: 0;
-    display: flex; }
-  .modal-wrapper.leaflet-popup-content-wrapper + .leaflet-popup-tip-container {
-    margin-top: -1px; }
-    .modal-wrapper.leaflet-popup-content-wrapper + .leaflet-popup-tip-container .leaflet-popup-tip {
-      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-      width: 13px;
-      height: 13px;
-      margin: -6px auto 0;
-      border: 2px solid var(--jb-container-border-color); }
+  box-shadow: var(--bs-box-shadow);
+}
+.modal-wrapper.leaflet-popup-content-wrapper .leaflet-popup-content {
+  margin: 0;
+  display: flex;
+}
+.modal-wrapper.leaflet-popup-content-wrapper + .leaflet-popup-tip-container {
+  margin-top: -1px;
+}
+.modal-wrapper.leaflet-popup-content-wrapper + .leaflet-popup-tip-container .leaflet-popup-tip {
+  box-shadow: var(--bs-box-shadow);
+  width: 13px;
+  height: 13px;
+  margin: -6px auto 0;
+  border: 2px solid var(--jb-container-border-color);
+}
 
 /***********************************************
 leaflet-bootstrap-tooltip.scss,
 ************************************************/
 .leaflet-tooltip {
   padding: 0.125rem 0.125rem;
-  background-color: #fff;
-  border: 1px solid var(--jb-container-border-color);
-  border-radius: 0.375rem;
-  color: #212529;
+  background-color: var(--bs-body-bg);
+  border: var(--bs-border-width) solid var(--jb-container-border-color);
+  border-radius: var(--bs-border-radius);
+  color: var(--bs-body-color);
   white-space: nowrap;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
   pointer-events: none;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  box-shadow: var(--bs-box-shadow);
   font-size: 0.6875rem;
-  opacity: 0.9; }
+  opacity: 0.9;
+}
 
 .leaflet-tooltip-top:before,
 .leaflet-tooltip-bottom:before,
 .leaflet-tooltip-left:before,
 .leaflet-tooltip-right:before {
-  display: none; }
+  display: none;
+}
 
 .leaflet-tooltip-bottom {
-  margin-top: 10px; }
+  margin-top: 10px;
+}
 
 .leaflet-tooltip-top {
-  margin-top: -10px; }
+  margin-top: -10px;
+}
 
 .leaflet-tooltip-left {
-  margin-left: -10px; }
+  margin-left: -10px;
+}
 
 .leaflet-tooltip-right {
-  margin-left: 10px; }
+  margin-left: 10px;
+}
 
 .leaflet-tooltip-icon-0.leaflet-tooltip-bottom {
-  margin-top: 10px; }
-
+  margin-top: 10px;
+}
 .leaflet-tooltip-icon-0.leaflet-tooltip-top {
-  margin-top: -10px; }
-
+  margin-top: -10px;
+}
 .leaflet-tooltip-icon-0.leaflet-tooltip-left {
-  margin-left: -10px; }
-
+  margin-left: -10px;
+}
 .leaflet-tooltip-icon-0.leaflet-tooltip-right {
-  margin-left: 10px; }
+  margin-left: 10px;
+}
 
 .leaflet-tooltip-icon-1.leaflet-tooltip-bottom {
-  margin-top: 13px; }
-
+  margin-top: 13px;
+}
 .leaflet-tooltip-icon-1.leaflet-tooltip-top {
-  margin-top: -13px; }
-
+  margin-top: -13px;
+}
 .leaflet-tooltip-icon-1.leaflet-tooltip-left {
-  margin-left: -13px; }
-
+  margin-left: -13px;
+}
 .leaflet-tooltip-icon-1.leaflet-tooltip-right {
-  margin-left: 13px; }
+  margin-left: 13px;
+}
 
 .leaflet-tooltip-icon-2.leaflet-tooltip-bottom {
-  margin-top: 15px; }
-
+  margin-top: 15px;
+}
 .leaflet-tooltip-icon-2.leaflet-tooltip-top {
-  margin-top: -15px; }
-
+  margin-top: -15px;
+}
 .leaflet-tooltip-icon-2.leaflet-tooltip-left {
-  margin-left: -15px; }
-
+  margin-left: -15px;
+}
 .leaflet-tooltip-icon-2.leaflet-tooltip-right {
-  margin-left: 15px; }
+  margin-left: 15px;
+}
 
 .no-mouse-hover .leaflet-tooltip:not(.leaflet-tooltip-permanent) {
-  display: none; }
+  display: none;
+}
 
 .leaflet-dragging .leaflet-tooltip.leaflet-tooltip-hide-when-dragging:not(.leaflet-tooltip-permanent) {
-  display: none; }
+  display: none;
+}
 
 .leaflet-control-container .leaflet-pane {
-  z-index: 1000; }
+  z-index: 1000;
+}
 
 /***********************************************
 	leaflet-bootstrap-modal.scss
 ************************************************/
 .leaflet-control .modal-dialog {
-  margin: 0; }
+  margin: 0;
+}
 
 /***********************************************
 leaflet-bootstrap-control.scss
 ************************************************/
 .leaflet-container a {
-  color: var(--bs-btn-color); }
+  color: var(--bs-btn-color);
+}
 
 .leaflet-container:not(.has-control-attribution-bs) .leaflet-control-container .leaflet-bottom .leaflet-control {
-  margin-bottom: 10px; }
+  margin-bottom: 10px;
+}
 
 .leaflet-container.has-control-attribution-bs .leaflet-control-container .leaflet-bottom.has-control-attribution-bs .leaflet-control:nth-last-child(2) {
-  margin-bottom: 2px; }
-
+  margin-bottom: 2px;
+}
 .leaflet-container.has-control-attribution-bs .leaflet-control-container .leaflet-bottom:not(.has-control-attribution-bs) .leaflet-control:last-child {
-  margin-bottom: 13px; }
+  margin-bottom: 13px;
+}
 
 div.leaflet-control.leaflet-control-hidden {
-  margin-top: 0; }
-  div.leaflet-control.leaflet-control-hidden * {
-    display: none !important; }
+  margin-top: 0;
+}
+div.leaflet-control.leaflet-control-hidden * {
+  display: none !important;
+}
 
 /***********************************************
 leaflet-bootstrap-control-attribution.scss
@@ -18056,18 +18339,25 @@ leaflet-bootstrap-control-attribution.scss
   height: 11px;
   margin: 0 !important;
   cursor: default;
-  background: rgba(255, 255, 255, 0.5); }
-  .mouse-hover .leaflet-control-container .leaflet-control-attribution.leaflet-control-attribution-bs:hover {
-    background: rgba(255, 255, 255, 0.75); }
+  background: color-mix(in srgb, var(--bs-body-bg), transparent 50%);
+}
+.mouse-hover .leaflet-control-container .leaflet-control-attribution.leaflet-control-attribution-bs:hover {
+  background: color-mix(in srgb, var(--bs-body-bg), transparent 75%);
+}
+.leaflet-control-container .leaflet-control-attribution.leaflet-control-attribution-bs:empty {
+  vissibility: hidden;
+}
 
 /***********************************************
 leaflet-bootstrap-control-button.scss
 ************************************************/
 .leaflet-control.leaflet-button-box.extended .hide-for-extended {
-  display: none !important; }
+  display: none !important;
+}
 
 .leaflet-control.leaflet-button-box.no-extended .show-for-extended {
-  display: none !important; }
+  display: none !important;
+}
 
 /***********************************************
 leaflet-bootstrap-control-scale.scss
@@ -18084,92 +18374,118 @@ leaflet-bootstrap-control-scale.scss
 
 */
 .leaflet-button-box-scale {
-  margin-bottom: 0 !important; }
+  margin-bottom: 0 !important;
+}
 
 .leaflet-bottom:not(.has-control-attribution-bs) .leaflet-button-box-scale {
-  min-height: calc(2.375rem + 10px); }
-
+  min-height: calc(2.375rem + 10px);
+}
 .leaflet-bottom:not(.has-control-attribution-bs) .leaflet-button-box-scale-sm {
-  min-height: calc(1.9375rem + 10px); }
+  min-height: calc(1.9375rem + 10px);
+}
 
 .leaflet-bottom.has-control-attribution-bs .leaflet-button-box-scale {
-  min-height: calc(2.375rem + 13px); }
-
+  min-height: calc(2.375rem + 13px);
+}
 .leaflet-bottom.has-control-attribution-bs .leaflet-button-box-scale-sm {
-  min-height: calc(1.9375rem + 13px); }
+  min-height: calc(1.9375rem + 13px);
+}
 
 .leaflet-bootstrap-control-scale {
-  overflow: hidden; }
-  .leaflet-bootstrap-control-scale .modal-body {
-    padding: 2px !important; }
+  overflow: hidden;
+}
+.leaflet-bootstrap-control-scale .modal-body {
+  padding: 2px !important;
+}
 
 .leaflet-control-singlescale {
   position: relative;
-  z-index: 1; }
-  .leaflet-control-singlescale.hidden {
-    display: none; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner {
-    font-size: 6px;
-    line-height: 1;
-    margin-top: 0;
-    margin-bottom: 0;
-    margin-left: 5px;
-    margin-right: 0; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner .units {
-    display: inline-block; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner .label {
-    width: 80px;
-    text-align: center;
-    position: absolute;
-    opacity: 1;
-    font-size: 10px;
-    line-height: 1;
-    transition: opacity .4s linear; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner.labelPlacement-top {
-    margin-top: 10px; }
-    .leaflet-control-singlescale .leaflet-control-singlescale-inner.labelPlacement-top .label {
-      bottom: 6px; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner.labelPlacement-bottom {
-    margin-bottom: 10px; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner .divisionLabel {
-    right: 0;
-    margin-right: -40px; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner .zeroLabel {
-    left: 0;
-    margin-left: -40px; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner .division {
-    display: inline-block;
-    position: relative;
-    width: 40px;
-    transition: width 0.4s ease-in-out; }
-    .leaflet-control-singlescale .leaflet-control-singlescale-inner .division .line, .leaflet-control-singlescale .leaflet-control-singlescale-inner .division .line2 {
-      border-style: solid;
-      position: relative; }
-    .leaflet-control-singlescale .leaflet-control-singlescale-inner .division .line2 {
-      height: 0;
-      border-width: 0; }
-    .leaflet-control-singlescale .leaflet-control-singlescale-inner .division .line {
-      height: 6px;
-      border-width: 1px 1px 1px 0; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner .units .division:first-child .line {
-    border-left-width: 1px; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner .fill, .leaflet-control-singlescale .leaflet-control-singlescale-inner .fill2 {
-    position: absolute;
-    top: 1px;
-    left: 1px;
-    right: 1px;
-    bottom: 1px; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner .fill {
-    background-color: #000; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner .fill2 {
-    background-color: #fff; }
-  .leaflet-control-singlescale .leaflet-control-singlescale-inner .division.hidden {
-    width: 0; }
-    .leaflet-control-singlescale .leaflet-control-singlescale-inner .division.hidden .line, .leaflet-control-singlescale .leaflet-control-singlescale-inner .division.hidden .line2 {
-      height: 0;
-      border-width: 0; }
-    .leaflet-control-singlescale .leaflet-control-singlescale-inner .division.hidden .label {
-      opacity: 0; }
+  z-index: 1;
+}
+.leaflet-control-singlescale.hidden {
+  display: none;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner {
+  font-size: 8px;
+  line-height: 1;
+  margin-top: 0;
+  margin-bottom: 0;
+  margin-left: 6px;
+  margin-right: 0;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .units {
+  display: inline-block;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .label {
+  width: 80px;
+  text-align: center;
+  position: absolute;
+  opacity: 1;
+  font-size: 12px;
+  line-height: 1;
+  transition: opacity 0.4s linear;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner.labelPlacement-top {
+  margin-top: 12px;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner.labelPlacement-top .label {
+  bottom: 8px;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner.labelPlacement-bottom {
+  margin-bottom: 12px;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .divisionLabel {
+  right: 0;
+  margin-right: -40px;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .zeroLabel {
+  left: 0;
+  margin-left: -40px;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .division {
+  display: inline-block;
+  position: relative;
+  width: 40px;
+  transition: width 0.4s ease-in-out;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .division .line, .leaflet-control-singlescale .leaflet-control-singlescale-inner .division .line2 {
+  border-style: solid;
+  position: relative;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .division .line2 {
+  height: 0;
+  border-width: 0;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .division .line {
+  height: 8px;
+  border-width: 1px 1px 1px 0;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .units .division:first-child .line {
+  border-left-width: 1px;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .fill, .leaflet-control-singlescale .leaflet-control-singlescale-inner .fill2 {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .fill {
+  background-color: #000;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .fill2 {
+  background-color: #fff;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .division.hidden {
+  width: 0;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .division.hidden .line, .leaflet-control-singlescale .leaflet-control-singlescale-inner .division.hidden .line2 {
+  height: 0;
+  border-width: 0;
+}
+.leaflet-control-singlescale .leaflet-control-singlescale-inner .division.hidden .label {
+  opacity: 0;
+}
 
 /********************************************************************************
 L.Control.Reticle
@@ -18179,7 +18495,8 @@ Modified version of leaflet-reticle
 https://github.com/rwev/leaflet-reticle by https://github.com/rwev
 ********************************************************************************/
 .leaflet-zoom-anim .icon-reticle {
-  display: none !important; }
+  display: none !important;
+}
 
 /***********************************************
 leaflet-bootstrap-control-zoom.scss
@@ -18191,99 +18508,131 @@ Overwrite style for bootstrap-slider
   width: 100%;
   height: 120px;
   margin-top: 10px;
-  margin-bottom: 10px; }
-  .slider.slider-vertical .slider-track {
-    width: 6px;
-    height: calc(100% + 20px);
-    top: -10px;
-    left: calc(50% - 3px);
-    border-left: 1px solid var(--jb-structure-border-color);
-    border-right: 1px solid var(--jb-structure-border-color);
-    border-radius: 0 !important; }
-    .slider.slider-vertical .slider-track * {
-      border-radius: 0 !important; }
-  .slider.slider-vertical .slider-handle {
-    position: absolute !important;
-    margin-top: -10px;
-    width: 100%;
-    height: 20px !important; }
-    .slider.slider-vertical .slider-handle hr {
-      border: none;
-      border-bottom: 6px double #6c757d;
-      height: 25%;
-      width: 50%; }
+  margin-bottom: 10px;
+}
+.slider.slider-vertical .slider-track {
+  width: 6px;
+  height: calc(100% + 20px);
+  top: -10px;
+  left: calc(50% - 3px);
+  border-left: 1px solid var(--jb-structure-border-color);
+  border-right: 1px solid var(--jb-structure-border-color);
+  border-radius: 0 !important;
+}
+.slider.slider-vertical .slider-track * {
+  border-radius: 0 !important;
+}
+.slider.slider-vertical .slider-handle {
+  position: absolute !important;
+  margin-top: -10px;
+  width: 100%;
+  height: 20px !important;
+}
+.slider.slider-vertical .slider-handle hr {
+  border: none;
+  border-bottom: 6px double #6c757d;
+  height: 25%;
+  width: 50%;
+}
 
 .history .hide-for-history {
-  display: none !important; }
+  display: none !important;
+}
 
 .no-history .show-for-history {
-  display: none !important; }
+  display: none !important;
+}
 
 /***********************************************
 leaflet-bootstrap-control-legend.scss
 ************************************************/
 .modal-header.bsl-working .hide-for-bsl-working {
-  display: none !important; }
+  display: none !important;
+}
 
 .modal-header.no-bsl-working .show-for-bsl-working {
-  display: none !important; }
+  display: none !important;
+}
 
 .fa-map-margin-right {
-  margin-right: 0.4rem; }
+  margin-right: 0.4rem;
+}
 
 /***********************************************
 leaflet-bootstrap-control-compass.scss
 ************************************************/
 @media screen and (orientation: landscape) {
   .lb-compass-btn .compass-device-portrait {
-    visibility: hidden !important; }
+    visibility: hidden !important;
+  }
   .lb-compass-btn .compass-device-landscape {
-    transform: rotate(90deg) translateX(-0.1em) scale(0.7) !important; }
-    html.orientation-secondary .lb-compass-btn .compass-device-landscape {
-      transform: rotate(-90deg) translateX(0.1em) scale(0.7) !important; }
+    transform: rotate(90deg) translateX(-0.1em) scale(0.7) !important;
+  }
+  html.orientation-secondary .lb-compass-btn .compass-device-landscape {
+    transform: rotate(-90deg) translateX(0.1em) scale(0.7) !important;
+  }
   .lb-compass-btn .compass-arrow {
-    transform: rotate(90deg) translateY(-0.5em) scale(0.7) !important; }
-    html.orientation-secondary .lb-compass-btn .compass-arrow {
-      transform: rotate(-90deg) translateY(-0.5em) scale(0.7) !important; }
+    transform: rotate(90deg) translateY(-0.5em) scale(0.7) !important;
+  }
+  html.orientation-secondary .lb-compass-btn .compass-arrow {
+    transform: rotate(-90deg) translateY(-0.5em) scale(0.7) !important;
+  }
   .lb-compass-btn .compass-device {
-    transform: rotate(0deg); }
+    transform: rotate(0deg);
+  }
   .lb-compass-btn.fixed {
-    transform: rotate(-90deg) !important; }
-    html.orientation-secondary .lb-compass-btn.fixed {
-      transform: rotate(90deg) !important; }
+    transform: rotate(-90deg) !important;
+  }
+  html.orientation-secondary .lb-compass-btn.fixed {
+    transform: rotate(90deg) !important;
+  }
   .rotate-compass .the-compass {
-    transform: rotate(270deg) !important; }
-    html.orientation-secondary .rotate-compass .the-compass {
-      transform: rotate(90deg) !important; } }
-
+    transform: rotate(270deg) !important;
+  }
+  html.orientation-secondary .rotate-compass .the-compass {
+    transform: rotate(90deg) !important;
+  }
+}
 @media screen and (orientation: portrait) {
   .lb-compass-btn .compass-device-landscape {
-    visibility: hidden !important; }
+    visibility: hidden !important;
+  }
   .lb-compass-btn .compass-device-portrait {
-    transform: rotate(0deg) translateY(0em) scale(0.7) !important; }
-    html.orientation-secondary .lb-compass-btn .compass-device-portrait {
-      transform: rotate(180deg) translateY(0.2em) scale(0.7) !important; }
+    transform: rotate(0deg) translateY(0em) scale(0.7) !important;
+  }
+  html.orientation-secondary .lb-compass-btn .compass-device-portrait {
+    transform: rotate(180deg) translateY(0.2em) scale(0.7) !important;
+  }
   .lb-compass-btn .compass-arrow {
-    transform: rotate(0deg) translateY(-0.6em) scale(0.7) !important; }
-    html.orientation-secondary .lb-compass-btn .compass-arrow {
-      transform: rotate(180deg) translateY(-0.6em) scale(0.7) !important; }
+    transform: rotate(0deg) translateY(-0.6em) scale(0.7) !important;
+  }
+  html.orientation-secondary .lb-compass-btn .compass-arrow {
+    transform: rotate(180deg) translateY(-0.6em) scale(0.7) !important;
+  }
   .lb-compass-btn .compass-device {
-    transform: translateY(0.1em); }
-    html.orientation-secondary .lb-compass-btn .compass-device {
-      transform: translateY(-0.1em); }
+    transform: translateY(0.1em);
+  }
+  html.orientation-secondary .lb-compass-btn .compass-device {
+    transform: translateY(-0.1em);
+  }
   html.orientation-secondary .lb-compass-btn.fixed {
-    transform: rotate(180deg) !important; }
+    transform: rotate(180deg) !important;
+  }
   .rotate-compass .the-compass {
-    transform: rotate(0deg) !important; }
-    html.orientation-secondary .rotate-compass .the-compass {
-      transform: rotate(180deg) !important; } }
-
+    transform: rotate(0deg) !important;
+  }
+  html.orientation-secondary .rotate-compass .the-compass {
+    transform: rotate(180deg) !important;
+  }
+}
 .no-device-orientation-slash {
   visibility: hidden;
-  transform: rotate(0deg); }
+  transform: rotate(0deg);
+}
 
 .lb-compass-adjust {
-  transform: rotate(-45deg); }
+  transform: rotate(-45deg);
+}
 
 .lb-conpass-content > div {
   width: 2.96875rem;
@@ -18291,86 +18640,106 @@ leaflet-bootstrap-control-compass.scss
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center; }
-  .lb-conpass-content > div:nth-child(2), .lb-conpass-content > div:nth-child(5) {
-    border-left: 1px solid var(--jb-structure-border-color);
-    border-right: 1px solid var(--jb-structure-border-color); }
+  text-align: center;
+}
+.lb-conpass-content > div:nth-child(2), .lb-conpass-content > div:nth-child(5) {
+  border-left: 1px solid var(--jb-structure-border-color);
+  border-right: 1px solid var(--jb-structure-border-color);
+}
 
 .no-device-orientation .lb-compass-btn {
-  transform: rotate(0deg) !important; }
-  .no-device-orientation .lb-compass-btn .no-device-orientation-slash {
-    visibility: inherit; }
-  .no-device-orientation .lb-compass-btn .compass-device {
-    transform: none; }
-  .no-device-orientation .lb-compass-btn .compass-arrow, .no-device-orientation .lb-compass-btn .compass-device-landscape, .no-device-orientation .lb-compass-btn .compass-device-portrait {
-    visibility: hidden; }
-  .no-device-orientation .lb-compass-btn * i:not(.no-device-orientation-slash) {
-    opacity: .5; }
-
+  transform: rotate(0deg) !important;
+}
+.no-device-orientation .lb-compass-btn .no-device-orientation-slash {
+  visibility: inherit;
+}
+.no-device-orientation .lb-compass-btn .compass-device {
+  transform: none;
+}
+.no-device-orientation .lb-compass-btn .compass-arrow, .no-device-orientation .lb-compass-btn .compass-device-landscape, .no-device-orientation .lb-compass-btn .compass-device-portrait {
+  visibility: hidden;
+}
+.no-device-orientation .lb-compass-btn * i:not(.no-device-orientation-slash) {
+  opacity: 0.5;
+}
 .no-device-orientation .lb-conpass-content {
-  display: none !important; }
-
+  display: none !important;
+}
 .no-device-orientation .lb-conpass-content-error {
-  display: block !important; }
+  display: block !important;
+}
 
 /***********************************************
 leaflet-bootstrap-contextmenu.scss
 ************************************************/
 .leaflet-popup-contextmenu .modal-content {
-  padding: 0 !important; }
-  .leaflet-popup-contextmenu .modal-content .modal-body {
-    padding: 1px !important; }
-  .leaflet-popup-contextmenu .modal-content .modal-footer:empty {
-    display: none !important; }
+  padding: 0 !important;
+}
+.leaflet-popup-contextmenu .modal-content .modal-body {
+  padding: 1px !important;
+}
+.leaflet-popup-contextmenu .modal-content .modal-footer:empty {
+  display: none !important;
+}
 
 /***********************************************
 leaflet-bootstrap-control-position.scss
 ************************************************/
 .leaflet-position-marker {
   background: url(images/leaflet-position-marker.svg) 50% 50% no-repeat;
-  content: ''; }
-  .leaflet-position-marker.inside-other-map {
-    opacity: .5; }
-  .leaflet-zoom-anim .leaflet-position-marker, .hide-control-position-map-center .leaflet-position-marker {
-    display: none !important; }
+  content: "";
+}
+.leaflet-position-marker.inside-other-map {
+  opacity: 0.5;
+}
+.leaflet-zoom-anim .leaflet-position-marker, .hide-control-position-map-center .leaflet-position-marker {
+  display: none !important;
+}
 
 .leaflet-control-container .input-group div.bsPosition-content {
   text-align: center;
   line-height: 1;
   padding: 0 0.25rem;
-  padding-top: 1px; }
-  .leaflet-control-container .input-group div.bsPosition-content > * {
-    font-size: 13px; }
+  padding-top: 1px;
+}
+.leaflet-control-container .input-group div.bsPosition-content > * {
+  font-size: 13px;
+}
 
 .control-position-cursor .hide-for-control-position-cursor {
-  display: none !important; }
-
+  display: none !important;
+}
 .control-position-cursor .show-for-no-control-position-cursor {
-  display: none !important; }
+  display: none !important;
+}
 
 .no-control-position-cursor .show-for-control-position-cursor {
-  display: none !important; }
-
+  display: none !important;
+}
 .no-control-position-cursor .hide-for-no-control-position-cursor {
-  display: none !important; }
+  display: none !important;
+}
 
 .control-position-map-center .hide-for-control-position-map-center {
-  display: none !important; }
-
+  display: none !important;
+}
 .control-position-map-center .show-for-no-control-position-map-center {
-  display: none !important; }
+  display: none !important;
+}
 
 .no-control-position-map-center .show-for-control-position-map-center {
-  display: none !important; }
-
+  display: none !important;
+}
 .no-control-position-map-center .hide-for-no-control-position-map-center {
-  display: none !important; }
+  display: none !important;
+}
 
 .control-position-cursor .no-cursor-on-map .hide-for-no-cursor-on-map {
-  color: transparent; }
-  .control-position-cursor .no-cursor-on-map .hide-for-no-cursor-on-map > *:not(.show-for-no-cursor-on-map) {
-    visibility: hidden !important; }
-
+  color: transparent;
+}
+.control-position-cursor .no-cursor-on-map .hide-for-no-cursor-on-map > *:not(.show-for-no-cursor-on-map) {
+  visibility: hidden !important;
+}
 /***********************************************
     leaflet-polyline.scss
 
