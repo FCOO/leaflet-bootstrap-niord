@@ -535,7 +535,7 @@
 
             if (messages.asModal)
                 messages.addContextmenuItems([
-                    {icon: 'fa-th-list', _lineBefore: true, text: {da:'Vis alle...', en:'Show all...'}, onClick: $.proxy(messages.asModal, messages) },
+                    {icon: 'fa-th-list', lineBefore: true, text: {da:'Vis alle...', en:'Show all...'}, onClick: $.proxy(messages.asModal, messages) },
                 ]);
 
             return messages;

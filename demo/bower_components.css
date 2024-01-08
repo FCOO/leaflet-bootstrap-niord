@@ -14143,6 +14143,59 @@ NOTE: remove ".css" from file in @import to include code
 @import 'sliding_exits/slideOutRight.css';
 @import 'sliding_exits/slideOutUp.css';
 */
+/************************************************************
+COMMON
+
+Common classes for differnet elements
+************************************************************/
+.min-width-1em {
+  min-width: 1em;
+}
+
+.min-width-2em {
+  min-width: 2em;
+}
+
+.min-width-3em {
+  min-width: 3em;
+}
+
+.min-width-4em {
+  min-width: 4em;
+}
+
+.min-width-5em {
+  min-width: 5em;
+}
+
+.min-width-6em {
+  min-width: 6em;
+}
+
+.min-width-7em {
+  min-width: 7em;
+}
+
+.min-width-8em {
+  min-width: 8em;
+}
+
+.min-width-9em {
+  min-width: 9em;
+}
+
+.min-width-10em {
+  min-width: 10em;
+}
+
+.min-width-11em {
+  min-width: 11em;
+}
+
+.min-width-12em {
+  min-width: 12em;
+}
+
 /************************************************
 STYLE FOR DIFFERENT ELEMENTS
 *************************************************/
@@ -18680,6 +18733,10 @@ leaflet-bootstrap-contextmenu.scss
 }
 .leaflet-popup-contextmenu .modal-content .modal-footer:empty {
   display: none !important;
+}
+
+.leaflet-popup-content .modal-body > .contextmenu-item-group:not(:first-child) {
+  margin-top: 4px;
 }
 
 /***********************************************

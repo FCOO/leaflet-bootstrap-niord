@@ -74789,7 +74789,6 @@ module.exports = g;
             $._bsAdjustOptions( options, {}, {
                 baseClass   : 'accordion',
                 styleClass  : '',
-                class       : '',
                 content     : ''
             });
 
@@ -77988,16 +77987,19 @@ jquery-bootstrap-modal-promise.js
     In some cases an application need to adjust the default modal-options
     given by an external packages. Eg. on mobil devices - it is better to have
     modal width = max-width or full screen
-    To allow this a global function is defined and called to
+    To allow this a global function and variable are defined and called/checked to
     allow modifications of the modal-options
 
-    $.MODEL_ADJUST_OPTIONS = function(modalOptions, modal) return modal-options
+    $.MODAL_ADJUST_OPTIONS = function(modalOptions, modal) return modal-options
+
+    $.MODAL_NO_VERTICAL_MARGIN = false  If true all modal have vertical margin = 0
 
     By default it return the original options but they can be overwriten by applications/packages
     **********************************************************/
-    $.MODEL_ADJUST_OPTIONS = function(modalOptions/*, modal*/){
+    $.MODAL_ADJUST_OPTIONS = function(modalOptions/*, modal*/){
         return modalOptions;
     };
+    $.MODAL_NO_VERTICAL_MARGIN = false;
 
     /**********************************************************
     MAX-HEIGHT ISSUES ON SAFARI (AND OTHER BROWSER ON IOS)
@@ -78057,7 +78059,7 @@ jquery-bootstrap-modal-promise.js
     options.maxWidth  : If true the width of the modal will always be 100% minus some margin
     options.fullWidth : If true the width of the modal will always be 100%
     options.fullScreen: If true the modal will fill the hole screen without border. width = height = 100%
-
+    options.fullScreenWithBorder: As fullScreen but with borders
     options.width     : Set if different from 300
 
     ******************************************************/
@@ -78960,18 +78962,13 @@ jquery-bootstrap-modal-promise.js
             });
 
         //Adjust options by MODEL_ADJUST_OPTIONS
-        options = $.MODEL_ADJUST_OPTIONS(options, this);
+        options = $.MODAL_ADJUST_OPTIONS(options, this);
 
         //Set default removeOnClose
         if ( (options.defaultRemoveOnClose || options.defaultRemove) &&
              (options.remove === undefined) &&
              (options.removeOnClose === undefined) )
             options.remove = !!options.defaultRemoveOnClose || !!options.defaultRemove;
-
-        //Set options for full width
-        if (options.fullWidth){
-            options.relativeHeightOffset = 0;
-        }
 
         //Set options for full screen with border
         if (options.fullScreenWithBorder)
@@ -78982,6 +78979,13 @@ jquery-bootstrap-modal-promise.js
             options.maxWidth             = true;
             options.alwaysMaxHeight      = true;
             options.relativeHeightOffset = 0;
+        }
+
+        //Check $.MODAL_NO_VERTICAL_MARGIN
+        if ($.MODAL_NO_VERTICAL_MARGIN){
+            options.relativeHeightOffset = 0;
+            if (options.extended)
+                options.extended.relativeHeightOffset = 0;
         }
 
 
@@ -102362,6 +102366,10 @@ https://github.com/nerik/leaflet-graphicscale
             return this;
         },
 
+        setContextmenuSimpleMode: function( on ){
+            return this.setContextmenuOptions( {simpleMode: !!on} );
+        },
+
         setContextmenuHeader: function(header){
             this.setContextmenuOptions( {header: header} );
             this._updatePopupWithContentmenuItems();
@@ -102470,29 +102478,54 @@ https://github.com/nerik/leaflet-graphicscale
     ns._popupContent = function(options){
         var o = options,
             objectList = [], //List of objects with iterms for the contextmenu
-            nextObj = o.object;
+            nextObj = o.object,
+            totalNrOfItems = 0,
+            mainNrOfItems = 0;
 
         while (nextObj){
             if (nextObj.contextmenuOptions){
                 objectList.push(nextObj);
+
+                //Include header in non-first object
+                if (totalNrOfItems && nextObj.contextmenuOptions.header)
+                    totalNrOfItems++;
+
+                if (nextObj.contextmenuOptions.items){
+                    var items = nextObj.contextmenuOptions.items.length;
+                    totalNrOfItems += items;
+                    mainNrOfItems = mainNrOfItems || items;
+                }
+
                 nextObj = nextObj.contextmenuOptions.parent;
             }
             else
                 nextObj = null;
         }
 
-        if (o.includeMap && o.map)
+        if (o.includeMap && o.map){
             objectList.push(o.map);
 
+            //The map is always a accordion and therefore count as one
+            o.map.contextmenuOptions.simpleMode = false;
+            totalNrOfItems++;
+        }
 
-        var isContextmenuPopup = !o.isNormalPopup,
-            header = objectList[0].contextmenuOptions.header,
+        if (!objectList.length)
+            return;
+
+        /*
+        Set the default mode as simple (menu) or accordion
+        Default: If the number of other items is > 3 => default mode is accordion (simpleMode = false)
+        If getDefaultSimpleMode: function(mainNrOfItems, totalNrOfItems) return BOOLEAN is given in context-menu-options use this
+        setContextmenuOptions({ getDefaultSimpleMode: function(mainNrOfItems, totalNrOfItems){return...} });
+        */
+        var mainObjContextmenuOptions = objectList[0].contextmenuOptions,
+            defaultSimpleMode = mainObjContextmenuOptions.getDefaultSimpleMode ? mainObjContextmenuOptions.getDefaultSimpleMode(mainNrOfItems, totalNrOfItems) : totalNrOfItems - mainNrOfItems <= 3,
+            isContextmenuPopup = !o.isNormalPopup,
             result = {
-                header : o.isNormalPopup ? header : null,
-                content: [],
+                header : o.header && o.isNormalPopup ? o.header : null,
+                content: []
             },
-            menuList,
-            accordion,
             maxWidth   = 0,
             widthToUse = undefined,
             nextId     = 0;
@@ -102506,38 +102539,38 @@ https://github.com/nerik/leaflet-graphicscale
 
         $.each( objectList, function(index, obj){
             var contextmenuOptions = obj.contextmenuOptions,
-                firstObject        = !index;
+                firstObject        = !index,
+                simpleMode = firstObject || (contextmenuOptions.items.length == 1) || (typeof contextmenuOptions.simpleMode == 'boolean' ? contextmenuOptions.simpleMode : defaultSimpleMode),
+
+                //Create the main content = menu for simple-mode, accordion for no-simple-mode
+                nextContent = {
+                    type        : simpleMode ? 'menu' : 'accordion',
+                    fullWidth   : true,
+                    list        : [],
+                    small       : true,
+                    class       : 'contextmenu-item-group', //For accordion
+                    styleClass  : 'contextmenu-item-group'  //For menu
+                },
+                itemList;
 
             checkWidth( contextmenuOptions.width );
 
-            if (firstObject){
-                //First is added as menu
-                result.content.push({
-                    type     : 'menu',
-                    fullWidth: true,
-                    list     : [],
-                    small    : true
-                });
-                menuList = result.content[0].list;
+            result.content.push(nextContent);
 
-                if (isContextmenuPopup && header){
+            if (simpleMode){
+                itemList = nextContent.list;
+
+                //In simple-mode: If no header is given and there are more than one object => add header (if any)
+                if ((!firstObject || !o.header) && (objectList.length > 1) && contextmenuOptions.items.length && !!contextmenuOptions.header) {
                     var headerOptions = $._bsAdjustIconAndText(contextmenuOptions.header);
-                    headerOptions.mainHeader = true;
-                    menuList.push(headerOptions);
+                    headerOptions.spaceBefore = !firstObject;
+                    headerOptions.mainHeader = firstObject;
+                    itemList.push(headerOptions);
                 }
             }
             else {
-                //The rest is added inside a accordion
-                if (!accordion){
-                    accordion = {
-                        type : 'accordion',
-                        list : [],
-                        small: true,
-                    };
-                    result.content.push( accordion );
-                }
-
-                var accordionItem = $._bsAdjustIconAndText(contextmenuOptions.header);
+                //Add items inside a accordionItem. First get accordion-header or use default
+                var accordionItem = $._bsAdjustIconAndText(contextmenuOptions.header || {da:'Mere...', en:'More...'} );
                 accordionItem.noVerticalPadding   = true;
                 accordionItem.noHorizontalPadding = true;
                 accordionItem.content = {
@@ -102546,14 +102579,15 @@ https://github.com/nerik/leaflet-graphicscale
                     fullWidth    : true,
                     list         : []
                 };
-                accordion.list.push(accordionItem);
-                menuList = accordionItem.content.list;
+                nextContent.list.push(accordionItem);
+                itemList = accordionItem.content.list;
             }
 
+            //Add all items to itemList
             $.each( contextmenuOptions.items, function(index, item){
                 //Set default options
                 item = $.extend(
-                    isContextmenuPopup ? {closeOnClick: true} : {},
+                    isContextmenuPopup ? {closeOnClick: true} : simpleMode ? {spaceBefore: !index} : {},
                     item
                 );
 
@@ -102571,11 +102605,10 @@ https://github.com/nerik/leaflet-graphicscale
                         item.latlng = o.latlng;
                 }
 
-                menuList.push(item);
+                itemList.push(item);
             });
 
-            firstObject = false;
-        });
+        }); //end of $.each( objectList, function(index, obj){
 
         result.width = widthToUse;
 
@@ -102667,12 +102700,16 @@ https://github.com/nerik/leaflet-graphicscale
             var popupContent = ns._popupContent({
                     object       : source,
                     isNormalPopup: false,
+                    header       : null,
                     map          : this._map,
                     includeMap   : !firedOnMap && !source.contextmenuOptions.excludeMapContextmenu && this._map.contextmenuOptions,
                     latlng       : latlng
-                }),
+                });
 
-                itemExists = popupContent.content[0].list.length > 0;
+            if (!popupContent)
+                return;
+
+            var itemExists = popupContent.content[0].list.length > 0;
 
             this.contextmenuMarker = this.contextmenuMarker || L.bsMarkerRedCross(this._map.getCenter(), {pane: 'overlayPane'}).addTo( this._map );
             this.contextmenuMarker.setLatLng(latlng);
