@@ -67,15 +67,9 @@
         var message = featureMessage( feature );
 
         element
-            .addContextmenuItems([
-                message.bsHeaderOptions('SMALL'),
-                {
-                    icon : 'fa-window-maximize',
-                    text : {da:'Vis...', en:'Show...'},
-                    width: 120,
-                    onClick: $.proxy(message.asModal, message)
-                }
-            ])
+            .setContextmenuHeader(message.bsHeaderOptions('SMALL'), true)
+            .addContextmenuItems([ message.buttonShow() ])
+            .setContextmenuWidth('7em')
             .setContextmenuParent(message.messages);
     }
 
@@ -181,16 +175,10 @@
                 const message = featureMessage(feature),
                       messages = message.messages;
 
-                //Create button-list fotr popup = "Show more" and "Show all"
+                //Create button-list for popup = "Show" and "Show all"
                 message._popupButtons = message._popupButtons || [
-                    {
-                        id     : 'showMore',
-                        icon   : 'fal fa-window-maximize',
-                        text   : {da: 'Vis mere', en:'Show more'},
-                        class  : 'min-width-8em',
-                        onClick: message.asModal.bind(message)
-                    },
-                    $.extend(true, messages._showAllButtonOptions(), {class  : 'min-width-8em'})
+                    message.buttonShow('min-width-5em'),
+                    messages._showAllButtonOptions('min-width-5em')
                 ];
 
                 return $.extend(true,
@@ -534,14 +522,23 @@
             var messages = new _Messages(options);
 
             if (messages.asModal)
-                messages.addContextmenuItems([
-                    {icon: 'fa-th-list', lineBefore: true, text: {da:'Vis alle...', en:'Show all...'}, onClick: $.proxy(messages.asModal, messages) },
-                ]);
+                messages.addContextmenuItems([ messages._showAllButtonOptions() ]);
 
             return messages;
         };
     }(ns.Messages);
 
+
+    //Extend Niord.Message with method for "Show"-button
+    ns.Message.prototype.buttonShow = function(className){
+        return {
+            id     : 'showMore',
+            icon   : 'fa-window-maximize',
+            text   : {da: 'Vis', en:'Show'},
+            class  : className,
+            onClick: this.asModal.bind(this)
+        };
+    },
 
     //Extend Niord.Message with function to sync different maps
     ns.Message.prototype.maps_update_center_and_zoom = function(event){

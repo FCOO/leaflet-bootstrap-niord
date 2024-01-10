@@ -86265,7 +86265,7 @@ Set methodes and options for format utm
 
         //First modal => add list-button
         if (!_messages.bsModalMessage)
-            options.buttons = [ _messages._showAllButtonOptions() ];
+            options.buttons = [ _messages._showAllButtonOptions('min-width-5em') ];
 
         _messages.bsModalMessage =
             _messages.bsModalMessage ?
@@ -86496,10 +86496,11 @@ Set methodes and options for format utm
     /******************************************************
     Messages._showAllButtonOptions
     ******************************************************/
-    ns.Messages.prototype._showAllButtonOptions = function(){
+    ns.Messages.prototype._showAllButtonOptions = function(className){
         return {
             icon   : 'fa-th-list',
             text   : {da:'Vis alle', en:'Show all'},
+            class  : className,
             onClick: this.asModal.bind( this )
         };
     };
@@ -102370,8 +102371,8 @@ https://github.com/nerik/leaflet-graphicscale
             return this.setContextmenuOptions( {simpleMode: !!on} );
         },
 
-        setContextmenuHeader: function(header){
-            this.setContextmenuOptions( {header: header} );
+        setContextmenuHeader: function(header, force){
+            this.setContextmenuOptions( {header: header, headerForce: force} );
             this._updatePopupWithContentmenuItems();
             return this;
         },
@@ -102561,7 +102562,8 @@ https://github.com/nerik/leaflet-graphicscale
                 itemList = nextContent.list;
 
                 //In simple-mode: If no header is given and there are more than one object => add header (if any)
-                if ((!firstObject || !o.header) && (objectList.length > 1) && contextmenuOptions.items.length && !!contextmenuOptions.header) {
+                if (contextmenuOptions.items.length && !!contextmenuOptions.header && (!o.header || !firstObject || contextmenuOptions.forceHeader)) {
+// HER>                 if ((!firstObject || !o.header) && (objectList.length > 1) && contextmenuOptions.items.length && !!contextmenuOptions.header) {
                     var headerOptions = $._bsAdjustIconAndText(contextmenuOptions.header);
                     headerOptions.spaceBefore = !firstObject;
                     headerOptions.mainHeader = firstObject;

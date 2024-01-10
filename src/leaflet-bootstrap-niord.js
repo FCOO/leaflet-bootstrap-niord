@@ -90,14 +90,23 @@
             var messages = new _Messages(options);
 
             if (messages.asModal)
-                messages.addContextmenuItems([
-                    {icon: 'fa-th-list', lineBefore: true, text: {da:'Vis alle...', en:'Show all...'}, onClick: $.proxy(messages.asModal, messages) },
-                ]);
+                messages.addContextmenuItems([ messages._showAllButtonOptions() ]);
 
             return messages;
         };
     }(ns.Messages);
 
+
+    //Extend Niord.Message with method for "Show"-button
+    ns.Message.prototype.buttonShow = function(className){
+        return {
+            id     : 'showMore',
+            icon   : 'fa-window-maximize',
+            text   : {da: 'Vis', en:'Show'},
+            class  : className,
+            onClick: this.asModal.bind(this)
+        };
+    },
 
     //Extend Niord.Message with function to sync different maps
     ns.Message.prototype.maps_update_center_and_zoom = function(event){
