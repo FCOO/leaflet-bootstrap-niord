@@ -15767,6 +15767,11 @@ Adjustmernt to Bootstrap table
 ************************************************************/
 .table.jb-table {
   /*******************************************************
+  For some (unknown) reason the height of the table needs
+  to be 1px to allow height=100% of elements inside td
+  ********************************************************/
+  height: 1px;
+  /*******************************************************
   For some (unknown) reason the padding and font-size of
   table cells are not set using var(...)
   This is iomplemented here.

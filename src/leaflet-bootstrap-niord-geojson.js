@@ -22,7 +22,7 @@
         width    : 260,
         clickable: true,
         extended : {
-            maxHeight: 600,
+            maxHeight: 375,
             width    : 320,
             footer   : true
         }
@@ -69,7 +69,7 @@
         element
             .setContextmenuHeader(message.bsHeaderOptions('SMALL'), true)
             .addContextmenuItems([ message.buttonShow() ])
-            .setContextmenuWidth('7em')
+            .setContextmenuWidth('8em')
             .setContextmenuParent(message.messages);
     }
 
@@ -93,9 +93,9 @@
         //initialize
         initialize: function(options) {
             $.extend(options, {
-                style       : $.proxy(this.style, this),
-                filter      : $.proxy(this.filter, this),
-                pointToLayer: $.proxy(this.pointToLayer, this),
+                style        : $.proxy(this.style, this),
+                filter       : $.proxy(this.filter, this),
+                pointToLayer : $.proxy(this.pointToLayer, this),
                 onEachFeature: $.proxy(this.onEachFeature, this),
 
                 addInteractive: true,
@@ -177,8 +177,8 @@
 
                 //Create button-list for popup = "Show" and "Show all"
                 message._popupButtons = message._popupButtons || [
-                    message.buttonShow('min-width-5em'),
-                    messages._showAllButtonOptions('min-width-5em')
+                    message.buttonShow(),
+                    messages._showAllButtonOptions()
                 ];
 
                 return $.extend(true,

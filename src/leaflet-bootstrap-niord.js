@@ -57,6 +57,9 @@
         ns.options.domainIcon[id] = L.bsMarkerAsIcon('niord-'+id, 'niord-'+id);
     });
 
+    //Icon for show-on-map in list of messages
+    ns.options.showonMapIcon = 'fa-map';
+
 
     /*
     On the map inside a modal window, the single points and the points in a (poly)line can be displayed in up to tree different mode with different levels of details.
@@ -84,6 +87,7 @@
     //Extend Niord.Messages to include contextmenu
     $.extend(ns.Messages.prototype, L.BsContextmenu.contextmenuInclude);
 
+    var save_prototype = ns.Messages.prototype;
     //Add default contextmenu-items to global constructor ns.Messages
     ns.Messages = function( _Messages ){
         return function(options){
@@ -95,20 +99,134 @@
             return messages;
         };
     }(ns.Messages);
+    ns.Messages.prototype = save_prototype;
 
 
-    //Extend Niord.Message with method for "Show"-button
-    ns.Message.prototype.buttonShow = function(className){
+    /******************************************************
+    Extend Message and Messages to include buttons and
+    metholds to show a Message on a map
+    ******************************************************/
+
+    //Extend Niord.options with method to get a default map (default null)
+    ns.options.getDefaultMap = null; //function(){ ... }  Returns a default map (if any)
+
+    //Messages.getMap
+    ns.Messages.prototype.getMap = function(map){
+        this.currentMap = map || this.currentMap || (ns.options.getDefaultMap ? ns.options.getDefaultMap() : null);
+        return this.currentMap;
+    },
+
+
+    //Extend Niord.Messages.asModal with call to getMap
+    ns.Messages.prototype.asModal = function(asModal){
+        return function(id, latlng, element, map){
+            this.getMap( map );
+            return asModal.call(this);
+        };
+    }(ns.Messages.prototype.asModal);
+
+
+    //Extend Niord.Messages.tableColumns with show-on-map
+    ns.Messages.prototype.tableColumns = function(tableColumns){
+        return function(small){
+            var result = tableColumns.call(this, small);
+            if (!small && this.getMap())
+                result.push( {id: 'centerOnMap', header: {icon: 'fa-map'},  align: 'center', noWrap: false, width: '2em', noHorizontalPadding: true, noVerticalPadding: true} );
+
+            return result;
+        };
+    }(ns.Messages.prototype.tableColumns);
+
+    //Extend Niord.Message.asTableRow with button to show on map
+    ns.Message.prototype.asTableRow = function(asTableRow){
+        return function(){
+            var result = asTableRow.call(this);
+
+            if (this.coordinatesList.length)
+                result.centerOnMap = {type:'button', icon:ns.options.showonMapIcon, fullWidth: true, fullHeight: true, square: true, noBorder: true, onClick: this.centerOnMap.bind(this) };
+            return result;
+        };
+    }(ns.Message.prototype.asTableRow);
+
+
+    //Add centerOnMap to Message
+    ns.Message.prototype.centerOnMap = function(){
+        if (this.bsModal)
+            this.bsModal.close();
+
+        if (this.messages.bsModal)
+            this.messages.bsModal.close();
+
+        var map = this.messages.getMap();
+
+        if (!map) return;
+
+        //Center the map on the elements. First convert this.coordinatesList to []latLng
+        var latlngList = [];
+        this.coordinatesList.forEach( coor => {
+            latlngList.push([coor[1], coor[0]]);
+        });
+        var latLngBounds = L.latLngBounds(latlngList);
+        map.fitBounds(latLngBounds, {
+            animate : false,
+            reset   : true,
+            maxZoom : Math.max(9, map.getZoom())
+        });
+
+        //Find elemnt to open popup on (if any)
+        var layers = [];
+        map.eachLayer( (item) => {
+            if (item.feature && (item.feature.properties.niordMessage === this))
+                layers.push(item);
+        }, this);
+
+        //First try: Find a marker nearest to center of latLngBounds
+        var center = latLngBounds.getCenter(),
+            elem = null,
+            distance = Number.MAX_SAFE_INTEGER;
+
+        layers.forEach( layer => {
+            if (layer._popup && layer._latlng){
+                var newDistance = layer._latlng.distanceTo(center);
+                if (newDistance < distance){
+                    distance = newDistance;
+                    elem = layer;
+                }
+            }
+        });
+
+        if (!elem)
+            //Find poly(line) with popup
+            layers.forEach( layer => {
+                //The polyline is created with leaflet-polyline => contains four poylines
+                if (layer.polylineList)
+                    layer.polylineList.forEach( poly => {
+                        if (poly._popup)
+                            elem = elem || poly;
+                    });
+            });
+
+        if (elem)
+            elem.openPopup();
+    };
+
+
+    /******************************************************
+    Extend Niord.Message with method for "Show"-button
+    ******************************************************/
+    ns.Message.prototype.buttonShow = function(){
         return {
             id     : 'showMore',
             icon   : 'fa-window-maximize',
             text   : {da: 'Vis', en:'Show'},
-            class  : className,
+            class  : 'min-width-5em',
             onClick: this.asModal.bind(this)
         };
     },
 
-    //Extend Niord.Message with function to sync different maps
+    /******************************************************
+    Extend Niord.Message with function to sync different maps
+    ******************************************************/
     ns.Message.prototype.maps_update_center_and_zoom = function(event){
         if (this.doNotUpdate) return;
         this.doNotUpdate = true;
