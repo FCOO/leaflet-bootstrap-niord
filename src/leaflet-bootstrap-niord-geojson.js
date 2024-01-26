@@ -64,11 +64,16 @@
     function lbn_onClickCoordinate(){ ns.__onClickCoordinate__(this); }
 
     function featureAddContextmenu(element, feature){
-        var message = featureMessage( feature );
+        //Add contextmenu: Show self plus Show all but only same domain af self
+        var message = featureMessage( feature ),
+            showAllButtonOptions = message._messages_showAllButtonOptions();
+
+        showAllButtonOptions.spaceBefore = true;
 
         element
             .setContextmenuHeader(message.bsHeaderOptions('SMALL'), true)
             .addContextmenuItems([ message.buttonShow() ])
+            .addContextmenuItems([ showAllButtonOptions ])
             .setContextmenuWidth('8em')
             .setContextmenuParent(message.messages);
     }
@@ -172,13 +177,12 @@
                 };
             }
             else {
-                const message = featureMessage(feature),
-                      messages = message.messages;
+                const message = featureMessage(feature);
 
                 //Create button-list for popup = "Show" and "Show all"
                 message._popupButtons = message._popupButtons || [
                     message.buttonShow(),
-                    messages._showAllButtonOptions()
+                    message._messages_showAllButtonOptions()
                 ];
 
                 return $.extend(true,

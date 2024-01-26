@@ -130,7 +130,18 @@
 
         window.Niord.options.domainOnlyHover['fa'] = true;
 
+        window.Niord.options.fa_fe_combined = true;
+
+        window.Niord.options.smallTableWithAllMessages = window.bsIsTouch;
+
         window.Niord.options.getDefaultMap = function(){ return map };
+        window.Niord.options.onCenterOnMap = function(message, map, elem){ 
+            console.log('onCenterOnMap:');
+            console.log('message:', message);
+            console.log('map:', map);
+        };
+
+        window.Niord.load();
 
         var niord = new L.GeoJSON.Niord({
                 _domain: 'fa nm fe nw',

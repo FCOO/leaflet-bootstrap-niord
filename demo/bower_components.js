@@ -32982,7 +32982,8 @@ return L.GeometryUtil;
         const defaultValueSuffixOrdinalFallback = options.ordinal && needsPluralHandling ? this.pluralResolver.getSuffix(lng, options.count, {
           ordinal: false
         }) : '';
-        const defaultValue = options[`defaultValue${defaultValueSuffix}`] || options[`defaultValue${defaultValueSuffixOrdinalFallback}`] || options.defaultValue;
+        const needsZeroSuffixLookup = needsPluralHandling && !options.ordinal && options.count === 0 && this.pluralResolver.shouldUseIntlApi();
+        const defaultValue = needsZeroSuffixLookup && options[`defaultValue${this.options.pluralSeparator}zero`] || options[`defaultValue${defaultValueSuffix}`] || options[`defaultValue${defaultValueSuffixOrdinalFallback}`] || options.defaultValue;
         if (!this.isValidLookup(res) && hasDefaultValue) {
           usedDefault = true;
           res = defaultValue;
@@ -85242,14 +85243,16 @@ Set methodes and options for format utm
             return !!value && ($.isFunction(value) ? value() : !!value);
         },
 
+
+        //Option to set if domain "fa" (firing areas) and "fe" (actual firing exercises) are combined
+        fa_fe_combined: false,
+
         //Icons for filter and reset-buttons
         filterIcon     : 'fa-filter',
         resetFilterIcon: null,
 
-
         //Type of table with list of all messages
         smallTableWithAllMessages: false,    //Boolean or function. If true the table with all messages is single column
-
 
         //function to be called when a coordinate in the modal is clicked
         onClickCoordinate: null //function(coordinate, text, messageId)
@@ -85269,14 +85272,21 @@ Set methodes and options for format utm
 
     //Translate the different domains and part headers
     i18next.addPhrases('niord', {
-        'nw'         : {da:'Navigationsadvarsel',            en:'Navigational Warning'   }, //domain = niord-nw: All Danish navigational warnings are produced in the "niord-nw" domain.
-        'nw_plural'  : {da:'Navigationsadvarsler',           en:'Navigational Warnings'  },
-        'nm'         : {da:'Efterretning for Søfarende',     en:'Notice to Mariners'     }, //domain = niord-nm: All Danish Notices to Mariners are produced in the "niord-nm" domain.
-        'nm_plural'  : {da:'Efterretninger for Søfarende',   en:'Notices to Mariners'    },
-        'fa'         : {da:'Skydeområde',                    en:'Firing Area'            }, //domain = niord-fa: All Danish firing areas are defined as miscellaneous Notices to Mariners in the "niord-fa" domain.
-        'fa_plural'  : {da:'Skydeområder',                   en:'Firing Areas'           },
-        'fe'         : {da:'Skydeøvelse',                    en:'Firing Exercise'        }, //domain = niord-fe: The actual firing exercises are maintained as local navigational warnings in the "niord-fe" domain.
-        'fe_plural'  : {da:'Skydeøvelser',                   en:'Firing Exercises'       },
+        'nw'          : {da:'Navigationsadvarsel',            en:'Navigational Warning'   }, //domain = niord-nw: All Danish navigational warnings are produced in the "niord-nw" domain.
+        'nw_plural'   : {da:'Navigationsadvarsler',           en:'Navigational Warnings'  },
+        'nm'          : {da:'Efterretning for Søfarende',     en:'Notice to Mariners'     }, //domain = niord-nm: All Danish Notices to Mariners are produced in the "niord-nm" domain.
+        'nm_plural'   : {da:'Efterretninger for Søfarende',   en:'Notices to Mariners'    },
+        'fa'          : {da:'Skydeområde',                    en:'Firing Area'            }, //domain = niord-fa: All Danish firing areas are defined as miscellaneous Notices to Mariners in the "niord-fa" domain.
+        'fa_plural'   : {da:'Skydeområder',                   en:'Firing Areas'           },
+        'fe'          : {da:'Skydeøvelse',                    en:'Firing Exercise'        }, //domain = niord-fe: The actual firing exercises are maintained as local navigational warnings in the "niord-fe" domain.
+        'fe_plural'   : {da:'Skydeøvelser',                   en:'Firing Exercises'       },
+
+        //Combined fa and fe
+        'fa-fe'       : {da:'Skydeområde/øvelse',             en:'Firing Area/Exercise'      },
+        'fa-fe_plural': {da:'Skydeområder og -øvelser',       en:'Firing Areas and Exercises'},
+
+
+
 
         'MAP'        : {da: 'Kort',          en:'Map'          },
         'REFERENCE'  : {da: 'Referencer',    en:'References'   },
@@ -85335,20 +85345,25 @@ Set methodes and options for format utm
     //Link to list of message = Messages.asModal: Create and open a modal-window with all messages, filtered and sorted,
     //OR
     //Link to a message = Message.asModal: Check, load and add message to history-list
-    function messagesAsModal(){
+    function messagesAsModal_viaLink(){
 
         var $this        = $(this),
             messages     = $this.data('niord-link-messages'),
             linkId       = $this.data('niord-link-id'),
-            linkValue    = $this.data('niord-link-value'),
-            modalOptions;
+            linkValue    = $this.data('niord-link-value');
 
         if (linkId == 'message')
                 messages.messageAsModal(linkValue);
         else {
-            modalOptions = {filterOptions:{}};
-            modalOptions.filterOptions[linkId] = linkValue;
-            messages.asModal(modalOptions);
+            messages.forceFilterDomain = null;
+            messages.forceFilter = {
+                domainId: 'ALL',
+                area    : 'ALL',
+                chart   : 'ALL',
+                category: 'ALL'
+            };
+            messages.forceFilter[linkId] = linkValue;
+            messages.asModal();
         }
     }
 
@@ -85436,7 +85451,7 @@ Set methodes and options for format utm
             };
 
         if (linkId && linkValue && currentMessages){
-            result.link = messagesAsModal;
+            result.link = messagesAsModal_viaLink;
             result.textData = {
                 'niord-link-id'      : linkId,
                 'niord-link-value'   : linkValue,
@@ -86147,7 +86162,7 @@ Set methodes and options for format utm
             return false;
 
         //type vs this.domainId
-        if (filterOptions.domainId && (filterOptions.domainId != 'ALL') && (this.domainId.toUpperCase() != filterOptions.domainId.toUpperCase()))
+        if (filterOptions.domainId && (filterOptions.domainId != 'ALL') && !filterOptions.domainId.toUpperCase().includes(this.domainId.toUpperCase()) )
             result = false;
 
         if (result)
@@ -86208,6 +86223,8 @@ Set methodes and options for format utm
                 flexWidth   : true,
                 extraWidth  : true,
 
+                onClose     : this.bsModalOnClose.bind(this),
+
                 static               : false,
                 modalContentClassName: 'niord-modal-content',
 
@@ -86230,6 +86247,10 @@ Set methodes and options for format utm
         return $.extend(true, result, modalOptions || {} );
     },
 
+    ns.Message.prototype.bsModalOnClose = function(){
+        this.messages.forceFilterDomain = null;
+        return true;
+    },
 
     /******************************************************
     Message.asModalSmall
@@ -86270,9 +86291,17 @@ Set methodes and options for format utm
         historyList._callOnUpdate();
 
         //First modal => add list-button
-        if (!_messages.bsModalMessage)
-            options.buttons = [ _messages._showAllButtonOptions() ];
+        if (!_messages.bsModalMessage){
+            options.buttons = [];
+            if (ns.publications)
+                options.buttons.push( ns.publications._showAllButtonOptions() );
+            options.buttons.push( _messages._showAllButtonOptions() );
+        }
 
+        //Set messages to only show message of same domain in show-all-modal
+        _messages.forceFilterDomain = this.domainId;
+
+        //Create or update the modal
         _messages.bsModalMessage =
             _messages.bsModalMessage ?
                 _messages.bsModalMessage.update(options) :
@@ -86293,6 +86322,30 @@ Set methodes and options for format utm
 
         return this.messages.bsModalMessage;
     };
+
+
+    /******************************************************
+    Message._asModal
+    Open messages-modal filtered by this' domain
+    ******************************************************/
+    ns.Message.prototype.messagesAsModal = function(){
+        var _messages = this.messages;
+        _messages.forceFilterDomain = this.domainId;
+        _messages.asModal();
+        return this;
+    };
+
+
+    /******************************************************
+    Message._messages_showAllButtonOptions
+    Options for a button that opens messages-modal filtered by this' domain
+    ******************************************************/
+    ns.Message.prototype._messages_showAllButtonOptions = function(){
+        var result = this.messages._showAllButtonOptions();
+        result.onClick = this.messagesAsModal.bind(this);
+        return result;
+    };
+
 
 } (jQuery, this.i18next, this, document));
 ;
@@ -86425,7 +86478,12 @@ Set methodes and options for format utm
     2: Four columns with id, date, area, and title
     ******************************************************/
     ns.Messages.prototype.asModal = function(){
-        var _this = this;
+        var _this = this,
+            forceFilterDomain = this.forceFilterDomain,
+            forceFilter       = this.forceFilter || {};
+
+        this.forceFilterDomain = null;
+        this.forceFilter       = null;
 
         //Close any message-modal
         if (this.bsModalMessage)
@@ -86450,12 +86508,17 @@ Set methodes and options for format utm
                 _this.bsTable.addRow( message.asTableRow() );
             });
 
+            var buttons = [];
+            if (ns.publications)
+                buttons.push( ns.publications._showAllButtonOptions() );
+            buttons.push(
+                {icon: ns.options.resetFilterIcon, text:{da:'Nulstil', en:'Reset'}, onClick: $.proxy(this.resetFilter, this)},
+                {icon: ns.options.filterIcon,      text:{da:'Filter', en:'Filter'}, onClick: $.proxy(this.filterAsModalForm, this)}
+            );
+
             var bsModalOptions = {
                 header     : '',
-                buttons    : [
-                    {icon: ns.options.resetFilterIcon, text:{da:'Nulstil', en:'Reset'}, onClick: $.proxy(this.resetFilter, this)},
-                    {icon: ns.options.filterIcon,      text:{da:'Filter', en:'Filter'}, onClick: $.proxy(this.filterAsModalForm, this)}
-                ],
+                buttons    : buttons,
                 flexWidth  : true,
                 megaWidth  : true,
 
@@ -86474,12 +86537,13 @@ Set methodes and options for format utm
 
             //Create the modal
             this.bsModal = this.bsTable.asModal( bsModalOptions );
-
+            this.$bsModalHeader = this.bsModal.bsModal.$header;
             this.$bsModalFooter = this.bsModal.bsModal.$footer;
 
             //In small-mode: Hide first column and hide table header and add selectbox with sorting options
             if (displayInSmallTable){
-                this.bsTable.$theadClone.parent().hide();
+                this.bsTable.$thead.hide();
+                this.bsTable.$theadClone.hide();
                 $.bsSelectBox({
                     fullWidth : true,
                     selectedId: this.sortBsTableBy || 'sort_date_desc',
@@ -86494,13 +86558,26 @@ Set methodes and options for format utm
             }
         }
 
-        //Filter and display the modal with the table
-// HER>         this.filter(modalOptions ? modalOptions.filterOptions : null);
+        //If forceFilterDomain is set => Filter by domain
+        if (forceFilterDomain){
+            var filterDomainId = 'ALL';
+            getDomainIdList().forEach( id => {
+                if ( id.toUpperCase().includes(forceFilterDomain.toUpperCase()) )
+                    filterDomainId = id;
+            });
+            forceFilter = {
+                domainId: filterDomainId,
+                area    : 'ALL',
+                chart   : 'ALL',
+                category: 'ALL'
+            };
+        }
 
+        this.filter(forceFilter);
+
+        //Display the modal with the table
         this.bsModal.show();
-
-
-
+        return this;
     };
 
     /******************************************************
@@ -86574,6 +86651,10 @@ Set methodes and options for format utm
     Messages.filterAsModalForm
     Edit a filter-record = {domainId, area, chart, category}
     ******************************************************/
+    function getDomainIdList(){
+        return ns.options.fa_fe_combined ? ['nw', 'nm', 'fa-fe'] : ['nw', 'nm', 'fe', 'fa'];
+    }
+
     ns.Messages.prototype.filterAsModalForm = function(){
 
         if (!this.filterBsModalForm){
@@ -86613,11 +86694,10 @@ Set methodes and options for format utm
                 items    : [defaultSelectItem()]
             };
 
-            $.each(['nw', 'fe', 'nm', 'fa'], function(index, id){
+            getDomainIdList().forEach( id => {
                 domainOptions.items.push({
-                    id     : id,
-                    text   : 'niord:'+id,
-                    i18next: {count: 2}
+                    id  : id,
+                    text: 'niord:'+id+'_plural'
                 });
             });
             modalEditOptions.content.push(domainOptions);
@@ -86681,6 +86761,7 @@ Set methodes and options for format utm
         var _this         = this,
             textArray     = [{icon: ns.options.filterIcon}],
             filterOptions = this.filterOptions,
+            header        = null,
             filterExist   = false;
 
         $.each(this.filterOptions, function(id, value){
@@ -86691,7 +86772,8 @@ Set methodes and options for format utm
                     postfix  = null;
                 switch (id){
                     case 'domainId':
-                        valueObj = {text: 'niord:'+value, i18next:{count:2}};
+                        valueObj = {text: 'niord:'+value+'_plural'};
+                        header = valueObj;
                         if (hasValue(filterOptions.area) || hasValue(filterOptions.chart))
                             postfix = {da:'i', en:'in'};
 
@@ -86724,6 +86806,11 @@ Set methodes and options for format utm
                     textArray.push(postfix);
            }
         });
+
+        //Update header and footer with filter-info
+        $( this.$bsModalHeader.find('span:first-child') )
+            .empty()
+            .html(header ? i18next.t(header.text) : '&nbsp;');
 
         this.$bsModalFooter
             .empty()
@@ -86778,7 +86865,8 @@ Set methodes and options for format utm
 
     //Translate the title for the differnet publication-groups
     i18next.addPhrases('niord', {
-        'publications': {da: 'Aktive EfS og publikationer',    en:'Active NtM and Publications'   },
+        'publications': {da: 'Aktive EfS og publikationer', en:'Active NtM and Publications' },
+        'publ'        : {da: 'Publ.',                       en:'Publ.'                       },
     });
 
     /******************************************************
@@ -86797,6 +86885,7 @@ Set methodes and options for format utm
                     text: 'niord:publications'
                 },
                 flexWidth: true,
+                extraWidth: true,
                 content: {
                     type     : 'accordion',
                     multiOpen: true,
@@ -86814,7 +86903,7 @@ Set methodes and options for format utm
             if (category != lastCategory){
                 //Add new group of publications
                 var accordionOptions = {
-                    header : publication.category.name,
+                    header : {text: publication.category.name},
                     content: {
                         type     : 'list',
                         noBorder : false,
@@ -86829,6 +86918,15 @@ Set methodes and options for format utm
             list.push(publication._listItem());
         });
         $.bsModal( options );
+    };
+
+    ns.Publications.prototype._showAllButtonOptions = function(){
+        return {
+            icon   : ns.options.partIcon.PUBLICATION,
+            text   : 'niord:publ',
+            class  : 'min-width-5em',
+            onClick: this.asModal.bind( this )
+        };
     };
 
 
@@ -102598,6 +102696,14 @@ https://github.com/nerik/leaflet-graphicscale
 
             //Add all items to itemList
             $.each( contextmenuOptions.items, function(index, item){
+
+                //Allow item to be a function
+                item = $.isFunction(item) ? item() : item;
+
+                if (!item)
+                    return;
+
+
                 //Set default options
                 item = $.extend(
                     isContextmenuPopup ? {closeOnClick: true} : simpleMode ? {spaceBefore: !index} : {},
@@ -102761,7 +102867,7 @@ https://github.com/nerik/leaflet-graphicscale
         /***********************************************************
         _hide - hide the contextmenu
         ***********************************************************/
-        _hide: function(event){
+        _hide: function(event){ return;
             if (event && (event.type == 'movestart') && this.allowMovestart){
                 this.allowMovestart = false;
                 return;

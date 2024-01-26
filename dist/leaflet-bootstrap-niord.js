@@ -64,11 +64,16 @@
     function lbn_onClickCoordinate(){ ns.__onClickCoordinate__(this); }
 
     function featureAddContextmenu(element, feature){
-        var message = featureMessage( feature );
+        //Add contextmenu: Show self plus Show all but only same domain af self
+        var message = featureMessage( feature ),
+            showAllButtonOptions = message._messages_showAllButtonOptions();
+
+        showAllButtonOptions.spaceBefore = true;
 
         element
             .setContextmenuHeader(message.bsHeaderOptions('SMALL'), true)
             .addContextmenuItems([ message.buttonShow() ])
+            .addContextmenuItems([ showAllButtonOptions ])
             .setContextmenuWidth('8em')
             .setContextmenuParent(message.messages);
     }
@@ -172,13 +177,12 @@
                 };
             }
             else {
-                const message = featureMessage(feature),
-                      messages = message.messages;
+                const message = featureMessage(feature);
 
                 //Create button-list for popup = "Show" and "Show all"
                 message._popupButtons = message._popupButtons || [
                     message.buttonShow(),
-                    messages._showAllButtonOptions()
+                    message._messages_showAllButtonOptions()
                 ];
 
                 return $.extend(true,
@@ -525,14 +529,14 @@
         return function(options){
             var messages = new _Messages(options);
 
-            if (messages.asModal)
-                messages.addContextmenuItems([ messages._showAllButtonOptions() ]);
+            messages.addContextmenuItems(function(){
+                return ns.publications ? ns.publications._showAllButtonOptions() : null;
+            });
 
             return messages;
         };
     }(ns.Messages);
     ns.Messages.prototype = save_prototype;
-
 
     /******************************************************
     Extend Message and Messages to include buttons and
@@ -640,6 +644,15 @@
 
         if (elem)
             elem.openPopup();
+
+        //Call onCenterOnMap from generel options or from this' messages or from this onCenterOnMap = function(message, map, elem)
+        [   this.options          ? this.options.onCenterOnMap          : null,
+            this.messages.options ? this.messages.options.onCenterOnMap : null,
+            ns.options            ? ns.options.onCenterOnMap            : null
+        ].forEach( eventFunc => {
+            if (eventFunc)
+                eventFunc.apply(this, [this, map, elem]);
+        }, this);
     };
 
 

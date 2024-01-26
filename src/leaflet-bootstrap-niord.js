@@ -93,14 +93,14 @@
         return function(options){
             var messages = new _Messages(options);
 
-            if (messages.asModal)
-                messages.addContextmenuItems([ messages._showAllButtonOptions() ]);
+            messages.addContextmenuItems(function(){
+                return ns.publications ? ns.publications._showAllButtonOptions() : null;
+            });
 
             return messages;
         };
     }(ns.Messages);
     ns.Messages.prototype = save_prototype;
-
 
     /******************************************************
     Extend Message and Messages to include buttons and
@@ -208,6 +208,15 @@
 
         if (elem)
             elem.openPopup();
+
+        //Call onCenterOnMap from generel options or from this' messages or from this onCenterOnMap = function(message, map, elem)
+        [   this.options          ? this.options.onCenterOnMap          : null,
+            this.messages.options ? this.messages.options.onCenterOnMap : null,
+            ns.options            ? ns.options.onCenterOnMap            : null
+        ].forEach( eventFunc => {
+            if (eventFunc)
+                eventFunc.apply(this, [this, map, elem]);
+        }, this);
     };
 
 
