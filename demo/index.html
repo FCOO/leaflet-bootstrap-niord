@@ -29,11 +29,37 @@
             }
         }
 
+
+        html, body {
+            padding: 0; margin: 0; width:100%; height:100%; overflow: hidden;
+        }
+        #map {
+            _margin: 50px !important;
+            padding: 0; margin: 0; 
+            width:50%; _width:100%; 
+            height:99%;
+        }
+        #map2, #map3 {
+            margin: 2px !important;
+            padding: 0; margin: 0; 
+            width:50%; _width: 50%;
+            height:99%;
+        }
+
+  
+  
+  
+        .annotation {
+            color: red;
+            background-color: yellow;
+        }
+
     </style>
 </head>
 
-<body>
-	<div id="map"></div>
+<body style="display:flex">
+    <div id="map"></div>
+	<div id="map2"></div>
 
 
 
@@ -128,6 +154,14 @@
         }).addTo(map)
 
 
+        var map2 = L.map('map2').setView([56.2, 11.5], 6)
+        L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		    maxZoom: 18,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors</a>'
+        }).addTo(map2);
+
+
+
         window.Niord.options.domainOnlyHover['fa'] = true;
 
         window.Niord.options.fa_fe_combined = true;
@@ -153,6 +187,9 @@
                 _messageId: 'NM-734-18',
             });
         niord.addTo(map);
+
+        var niord2 = new L.GeoJSON.Niord({});
+        niord2.addTo(map2);
 
 //        window.Niord.messages.getMessage('NM-768-18', function( message ){
 //HER        window.Niord.messages.getMessage('NM-444-17', function( message ){

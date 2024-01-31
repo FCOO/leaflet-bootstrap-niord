@@ -14149,51 +14149,51 @@ COMMON
 Common classes for differnet elements
 ************************************************************/
 .min-width-1em {
-  min-width: 1em;
+  min-width: 1em !important;
 }
 
 .min-width-2em {
-  min-width: 2em;
+  min-width: 2em !important;
 }
 
 .min-width-3em {
-  min-width: 3em;
+  min-width: 3em !important;
 }
 
 .min-width-4em {
-  min-width: 4em;
+  min-width: 4em !important;
 }
 
 .min-width-5em {
-  min-width: 5em;
+  min-width: 5em !important;
 }
 
 .min-width-6em {
-  min-width: 6em;
+  min-width: 6em !important;
 }
 
 .min-width-7em {
-  min-width: 7em;
+  min-width: 7em !important;
 }
 
 .min-width-8em {
-  min-width: 8em;
+  min-width: 8em !important;
 }
 
 .min-width-9em {
-  min-width: 9em;
+  min-width: 9em !important;
 }
 
 .min-width-10em {
-  min-width: 10em;
+  min-width: 10em !important;
 }
 
 .min-width-11em {
-  min-width: 11em;
+  min-width: 11em !important;
 }
 
 .min-width-12em {
-  min-width: 12em;
+  min-width: 12em !important;
 }
 
 /************************************************

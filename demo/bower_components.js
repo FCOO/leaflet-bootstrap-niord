@@ -31795,7 +31795,7 @@ L.GeometryUtil = L.extend(L.GeometryUtil || {}, {
 
         return new L.LatLng(ty, tx);
     },
-
+    
 
     /**
         Returns the closest latlng on layer.
@@ -32149,7 +32149,7 @@ L.GeometryUtil = L.extend(L.GeometryUtil || {}, {
 			cumulativeDistanceToA = cumulativeDistanceToB;
 			cumulativeDistanceToB += pointA.distanceTo(pointB);
 		}
-
+		
 		if (pointA == undefined && pointB == undefined) { // Happens when line has no length
 			var pointA = pts[0], pointB = pts[1], i = 1;
 		}
@@ -32499,8 +32499,9 @@ return L.GeometryUtil;
     }
     on(events, listener) {
       events.split(' ').forEach(event => {
-        this.observers[event] = this.observers[event] || [];
-        this.observers[event].push(listener);
+        if (!this.observers[event]) this.observers[event] = new Map();
+        const numListeners = this.observers[event].get(listener) || 0;
+        this.observers[event].set(listener, numListeners + 1);
       });
       return this;
     }
@@ -32510,22 +32511,28 @@ return L.GeometryUtil;
         delete this.observers[event];
         return;
       }
-      this.observers[event] = this.observers[event].filter(l => l !== listener);
+      this.observers[event].delete(listener);
     }
     emit(event) {
       for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
         args[_key - 1] = arguments[_key];
       }
       if (this.observers[event]) {
-        const cloned = [].concat(this.observers[event]);
-        cloned.forEach(observer => {
-          observer(...args);
+        const cloned = Array.from(this.observers[event].entries());
+        cloned.forEach(_ref => {
+          let [observer, numTimesAdded] = _ref;
+          for (let i = 0; i < numTimesAdded; i++) {
+            observer(...args);
+          }
         });
       }
       if (this.observers['*']) {
-        const cloned = [].concat(this.observers['*']);
-        cloned.forEach(observer => {
-          observer.apply(observer, [event, ...args]);
+        const cloned = Array.from(this.observers['*'].entries());
+        cloned.forEach(_ref2 => {
+          let [observer, numTimesAdded] = _ref2;
+          for (let i = 0; i < numTimesAdded; i++) {
+            observer.apply(observer, [event, ...args]);
+          }
         });
       }
     }
@@ -32551,28 +32558,31 @@ return L.GeometryUtil;
       if (s[m]) t[m] = s[m];
     });
   }
+  const lastOfPathSeparatorRegExp = /###/g;
   function getLastOfPath(object, path, Empty) {
     function cleanKey(key) {
-      return key && key.indexOf('###') > -1 ? key.replace(/###/g, '.') : key;
+      return key && key.indexOf('###') > -1 ? key.replace(lastOfPathSeparatorRegExp, '.') : key;
     }
     function canNotTraverseDeeper() {
       return !object || typeof object === 'string';
     }
-    const stack = typeof path !== 'string' ? [].concat(path) : path.split('.');
-    while (stack.length > 1) {
+    const stack = typeof path !== 'string' ? path : path.split('.');
+    let stackIndex = 0;
+    while (stackIndex < stack.length - 1) {
       if (canNotTraverseDeeper()) return {};
-      const key = cleanKey(stack.shift());
+      const key = cleanKey(stack[stackIndex]);
       if (!object[key] && Empty) object[key] = new Empty();
       if (Object.prototype.hasOwnProperty.call(object, key)) {
         object = object[key];
       } else {
         object = {};
       }
+      ++stackIndex;
     }
     if (canNotTraverseDeeper()) return {};
     return {
       obj: object,
-      k: cleanKey(stack.shift())
+      k: cleanKey(stack[stackIndex])
     };
   }
   function setPath(object, path, newValue) {
@@ -32580,7 +32590,22 @@ return L.GeometryUtil;
       obj,
       k
     } = getLastOfPath(object, path, Object);
-    obj[k] = newValue;
+    if (obj !== undefined || path.length === 1) {
+      obj[k] = newValue;
+      return;
+    }
+    let e = path[path.length - 1];
+    let p = path.slice(0, path.length - 1);
+    let last = getLastOfPath(object, p, Object);
+    while (last.obj === undefined && p.length) {
+      e = `${p[p.length - 1]}.${e}`;
+      p = p.slice(0, p.length - 1);
+      last = getLastOfPath(object, p, Object);
+      if (last && last.obj && typeof last.obj[`${last.k}.${e}`] !== 'undefined') {
+        last.obj = undefined;
+      }
+    }
+    last.obj[`${last.k}.${e}`] = newValue;
   }
   function pushPath(object, path, newValue, concat) {
     const {
@@ -32639,13 +32664,34 @@ return L.GeometryUtil;
     }
     return data;
   }
+  class RegExpCache {
+    constructor(capacity) {
+      this.capacity = capacity;
+      this.regExpMap = new Map();
+      this.regExpQueue = [];
+    }
+    getRegExp(pattern) {
+      const regExpFromCache = this.regExpMap.get(pattern);
+      if (regExpFromCache !== undefined) {
+        return regExpFromCache;
+      }
+      const regExpNew = new RegExp(pattern);
+      if (this.regExpQueue.length === this.capacity) {
+        this.regExpMap.delete(this.regExpQueue.shift());
+      }
+      this.regExpMap.set(pattern, regExpNew);
+      this.regExpQueue.push(pattern);
+      return regExpNew;
+    }
+  }
   const chars = [' ', ',', '?', '!', ';'];
+  const looksLikeObjectPathRegExpCache = new RegExpCache(20);
   function looksLikeObjectPath(key, nsSeparator, keySeparator) {
     nsSeparator = nsSeparator || '';
     keySeparator = keySeparator || '';
     const possibleChars = chars.filter(c => nsSeparator.indexOf(c) < 0 && keySeparator.indexOf(c) < 0);
     if (possibleChars.length === 0) return true;
-    const r = new RegExp(`(${possibleChars.map(c => c === '?' ? '\\?' : c).join('|')})`);
+    const r = looksLikeObjectPathRegExpCache.getRegExp(`(${possibleChars.map(c => c === '?' ? '\\?' : c).join('|')})`);
     let matched = !r.test(key);
     if (!matched) {
       const ki = key.indexOf(keySeparator);
@@ -32659,33 +32705,29 @@ return L.GeometryUtil;
     let keySeparator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '.';
     if (!obj) return undefined;
     if (obj[path]) return obj[path];
-    const paths = path.split(keySeparator);
+    const tokens = path.split(keySeparator);
     let current = obj;
-    for (let i = 0; i < paths.length; ++i) {
-      if (!current) return undefined;
-      if (typeof current[paths[i]] === 'string' && i + 1 < paths.length) {
+    for (let i = 0; i < tokens.length;) {
+      if (!current || typeof current !== 'object') {
         return undefined;
       }
-      if (current[paths[i]] === undefined) {
-        let j = 2;
-        let p = paths.slice(i, i + j).join(keySeparator);
-        let mix = current[p];
-        while (mix === undefined && paths.length > i + j) {
-          j++;
-          p = paths.slice(i, i + j).join(keySeparator);
-          mix = current[p];
+      let next;
+      let nextPath = '';
+      for (let j = i; j < tokens.length; ++j) {
+        if (j !== i) {
+          nextPath += keySeparator;
         }
-        if (mix === undefined) return undefined;
-        if (mix === null) return null;
-        if (path.endsWith(p)) {
-          if (typeof mix === 'string') return mix;
-          if (p && typeof mix[p] === 'string') return mix[p];
+        nextPath += tokens[j];
+        next = current[nextPath];
+        if (next !== undefined) {
+          if (['string', 'number', 'boolean'].indexOf(typeof next) > -1 && j < tokens.length - 1) {
+            continue;
+          }
+          i += j - i + 1;
+          break;
         }
-        const joinedPath = paths.slice(i + j).join(keySeparator);
-        if (joinedPath) return deepFind(mix, joinedPath, keySeparator);
-        return undefined;
       }
-      current = current[paths[i]];
+      current = next;
     }
     return current;
   }
@@ -32725,13 +32767,27 @@ return L.GeometryUtil;
       let options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
       const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator;
       const ignoreJSONStructure = options.ignoreJSONStructure !== undefined ? options.ignoreJSONStructure : this.options.ignoreJSONStructure;
-      let path = [lng, ns];
-      if (key && typeof key !== 'string') path = path.concat(key);
-      if (key && typeof key === 'string') path = path.concat(keySeparator ? key.split(keySeparator) : key);
+      let path;
       if (lng.indexOf('.') > -1) {
         path = lng.split('.');
+      } else {
+        path = [lng, ns];
+        if (key) {
+          if (Array.isArray(key)) {
+            path.push(...key);
+          } else if (typeof key === 'string' && keySeparator) {
+            path.push(...key.split(keySeparator));
+          } else {
+            path.push(key);
+          }
+        }
       }
       const result = getPath(this.data, path);
+      if (!result && !ns && !key && lng.indexOf('.') > -1) {
+        lng = path[0];
+        ns = path[1];
+        key = path.slice(2).join('.');
+      }
       if (result || !ignoreJSONStructure || typeof key !== 'string') return result;
       return deepFind(this.data && this.data[lng] && this.data[lng][ns], key, keySeparator);
     }
@@ -33027,7 +33083,11 @@ return L.GeometryUtil;
           if (this.options.saveMissing) {
             if (this.options.saveMissingPlurals && needsPluralHandling) {
               lngs.forEach(language => {
-                this.pluralResolver.getSuffixes(language, options).forEach(suffix => {
+                const suffixes = this.pluralResolver.getSuffixes(language, options);
+                if (needsZeroSuffixLookup && options[`defaultValue${this.options.pluralSeparator}zero`] && suffixes.indexOf(`${this.options.pluralSeparator}zero`) < 0) {
+                  suffixes.push(`${this.options.pluralSeparator}zero`);
+                }
+                suffixes.forEach(suffix => {
                   send([language], key + suffix, options[`defaultValue${suffix}`] || defaultValue);
                 });
               });
@@ -33550,7 +33610,7 @@ return L.GeometryUtil;
       let options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
       if (this.shouldUseIntlApi()) {
         try {
-          return new Intl.PluralRules(getCleanedCode(code), {
+          return new Intl.PluralRules(getCleanedCode(code === 'dev' ? 'en' : code), {
             type: options.ordinal ? 'ordinal' : 'cardinal'
           });
         } catch (err) {
@@ -33664,12 +33724,16 @@ return L.GeometryUtil;
       if (this.options) this.init(this.options);
     }
     resetRegExp() {
-      const regexpStr = `${this.prefix}(.+?)${this.suffix}`;
-      this.regexp = new RegExp(regexpStr, 'g');
-      const regexpUnescapeStr = `${this.prefix}${this.unescapePrefix}(.+?)${this.unescapeSuffix}${this.suffix}`;
-      this.regexpUnescape = new RegExp(regexpUnescapeStr, 'g');
-      const nestingRegexpStr = `${this.nestingPrefix}(.+?)${this.nestingSuffix}`;
-      this.nestingRegexp = new RegExp(nestingRegexpStr, 'g');
+      const getOrResetRegExp = (existingRegExp, pattern) => {
+        if (existingRegExp && existingRegExp.source === pattern) {
+          existingRegExp.lastIndex = 0;
+          return existingRegExp;
+        }
+        return new RegExp(pattern, 'g');
+      };
+      this.regexp = getOrResetRegExp(this.regexp, `${this.prefix}(.+?)${this.suffix}`);
+      this.regexpUnescape = getOrResetRegExp(this.regexpUnescape, `${this.prefix}${this.unescapePrefix}(.+?)${this.unescapeSuffix}${this.suffix}`);
+      this.nestingRegexp = getOrResetRegExp(this.nestingRegexp, `${this.nestingPrefix}(.+?)${this.nestingSuffix}`);
     }
     interpolate(str, data, lng, options) {
       let match;
@@ -34717,19 +34781,19 @@ return L.GeometryUtil;
 ;
 /* @preserve
  * The MIT License (MIT)
- *
+ * 
  * Copyright (c) 2013-2018 Petka Antonov
- *
+ * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * 
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -34737,7 +34801,7 @@ return L.GeometryUtil;
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- *
+ * 
  */
 /**
  * bluebird build version 3.7.2
@@ -38329,28 +38393,28 @@ _dereq_('./using.js')(Promise, apiRejection, tryConvertToPromise, createContext,
 _dereq_('./any.js')(Promise);
 _dereq_('./each.js')(Promise, INTERNAL);
 _dereq_('./filter.js')(Promise, INTERNAL);
-
-    util.toFastProperties(Promise);
-    util.toFastProperties(Promise.prototype);
-    function fillTypes(value) {
-        var p = new Promise(INTERNAL);
-        p._fulfillmentHandler0 = value;
-        p._rejectionHandler0 = value;
-        p._promise0 = value;
-        p._receiver0 = value;
-    }
-    // Complete slack tracking, opt out of field-type tracking and
-    // stabilize map
-    fillTypes({a: 1});
-    fillTypes({b: 2});
-    fillTypes({c: 3});
-    fillTypes(1);
-    fillTypes(function(){});
-    fillTypes(undefined);
-    fillTypes(false);
-    fillTypes(new Promise(INTERNAL));
-    debug.setBounds(Async.firstLineError, util.lastLineError);
-    return Promise;
+                                                         
+    util.toFastProperties(Promise);                                          
+    util.toFastProperties(Promise.prototype);                                
+    function fillTypes(value) {                                              
+        var p = new Promise(INTERNAL);                                       
+        p._fulfillmentHandler0 = value;                                      
+        p._rejectionHandler0 = value;                                        
+        p._promise0 = value;                                                 
+        p._receiver0 = value;                                                
+    }                                                                        
+    // Complete slack tracking, opt out of field-type tracking and           
+    // stabilize map                                                         
+    fillTypes({a: 1});                                                       
+    fillTypes({b: 2});                                                       
+    fillTypes({c: 3});                                                       
+    fillTypes(1);                                                            
+    fillTypes(function(){});                                                 
+    fillTypes(undefined);                                                    
+    fillTypes(false);                                                        
+    fillTypes(new Promise(INTERNAL));                                        
+    debug.setBounds(Async.firstLineError, util.lastLineError);               
+    return Promise;                                                          
 
 };
 
@@ -43336,11 +43400,11 @@ module.exports = Yaml;
 	var minor = parseInt(splitVersion[1]);
 
 	var JQ_LT_17 = (major < 1) || (major == 1 && minor < 7);
-
+	
 	function eventsData($el) {
 		return JQ_LT_17 ? $el.data('events') : $._data($el[0]).events;
 	}
-
+	
 	function moveHandlerToTop($el, eventName, isDelegated) {
 		var data = eventsData($el);
 		var events = data[eventName];
@@ -43358,7 +43422,7 @@ module.exports = Yaml;
 			events.unshift(events.pop());
 		}
 	}
-
+	
 	function moveEventHandlers($elems, eventsString, isDelegate) {
 		var events = eventsString.split(/\s+/);
 		$elems.each(function() {
@@ -43368,7 +43432,7 @@ module.exports = Yaml;
 			}
 		});
 	}
-
+	
 	function makeMethod(methodName) {
 		$.fn[methodName + 'First'] = function() {
 			var args = $.makeArray(arguments);
@@ -43393,7 +43457,7 @@ module.exports = Yaml;
 	$.fn.delegateFirst = function() {
 		var args = $.makeArray(arguments);
 		var eventsString = args[1];
-
+		
 		if (eventsString) {
 			args.splice(0, 2);
 			$.fn.delegate.apply(this, arguments);
@@ -43413,7 +43477,7 @@ module.exports = Yaml;
 
 		return this;
 	};
-
+	
 	// on (jquery >= 1.7)
 	if (!JQ_LT_17) {
 		$.fn.onFirst = function(types, selector) {
@@ -49307,8 +49371,8 @@ module.exports = Yaml;
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory,
-            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory, 
+            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function(Inputmask) {
@@ -49402,8 +49466,8 @@ module.exports = Yaml;
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(3), __webpack_require__(5) ],
-            __WEBPACK_AMD_DEFINE_FACTORY__ = factory, __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(3), __webpack_require__(5) ], 
+            __WEBPACK_AMD_DEFINE_FACTORY__ = factory, __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function($, window, undefined) {
@@ -50916,7 +50980,7 @@ module.exports = Yaml;
             function seekPrevious(pos, newBlock) {
                 var position = pos, tests;
                 if (position <= 0) return 0;
-                while (--position > 0 && (newBlock === true && getTest(position).match.newBlockMarker !== true || newBlock !== true && !isMask(position) && (tests = getTests(position),
+                while (--position > 0 && (newBlock === true && getTest(position).match.newBlockMarker !== true || newBlock !== true && !isMask(position) && (tests = getTests(position), 
                 tests.length < 2 || tests.length === 2 && tests[1].match.def === ""))) {}
                 return position;
             }
@@ -52153,8 +52217,8 @@ module.exports = Yaml;
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(4) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory,
-            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(4) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory, 
+            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function($) {
@@ -52183,8 +52247,8 @@ module.exports = Yaml;
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory,
-            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory, 
+            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function(Inputmask) {
@@ -52435,8 +52499,8 @@ module.exports = Yaml;
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory,
-            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = factory, 
+            __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function(Inputmask) {
@@ -52986,8 +53050,8 @@ module.exports = Yaml;
     };
     (function(factory) {
         if (true) {
-            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(4), __webpack_require__(2) ],
-            __WEBPACK_AMD_DEFINE_FACTORY__ = factory, __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__,
+            !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(4), __webpack_require__(2) ], 
+            __WEBPACK_AMD_DEFINE_FACTORY__ = factory, __WEBPACK_AMD_DEFINE_RESULT__ = typeof __WEBPACK_AMD_DEFINE_FACTORY__ === "function" ? __WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__) : __WEBPACK_AMD_DEFINE_FACTORY__, 
             __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
         } else {}
     })(function($, Inputmask) {
@@ -56548,7 +56612,7 @@ if (typeof define === 'function' && define.amd) {
 
 ;
 /****************************************************************************
-	modernizr-javascript.js,
+	modernizr-javascript.js, 
 
 	(c) 2016, FCOO
 
@@ -56559,20 +56623,20 @@ if (typeof define === 'function' && define.amd) {
 
 (function ($, window, document, undefined) {
 	"use strict";
-
+	
 	var ns = window;
 
     //Extend the jQuery prototype
     $.fn.extend({
-        modernizrOn : function( test ){
-            return this.modernizrToggle( test, true );
+        modernizrOn : function( test ){ 
+            return this.modernizrToggle( test, true ); 
         },
 
-        modernizrOff: function( test ){
-            return this.modernizrToggle( test, false );
+        modernizrOff: function( test ){ 
+            return this.modernizrToggle( test, false ); 
         },
-
-        modernizrToggle: function( test, on ){
+        
+        modernizrToggle: function( test, on ){ 
 		if ( on === undefined )
             return this.modernizrToggle( test, !this.hasClass( test ) );
 
@@ -67592,7 +67656,7 @@ return index;
 
     var keys = ['Hours', 'Minutes', 'Seconds', 'Milliseconds'];
     var maxValues = [24, 60, 60, 1000];
-
+    
     // Capitalize first letter
     key = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
 
@@ -67798,10 +67862,10 @@ return index;
 		} else if (num >= arr[len - 1]) {
 			return -1;
 		}
-
+	
 		var mid;
 		var lo = 0;
-		var hi = len - 1;
+		var hi = len - 1;  
 		while (hi - lo > 1) {
 			mid = Math.floor((lo + hi) / 2);
 			if (arr[mid] <= num) {
@@ -67812,7 +67876,7 @@ return index;
 		}
 		return hi;
 	}
-
+	
 	Zone.prototype = {
 		_set : function (unpacked) {
 			this.name       = unpacked.name;
@@ -70353,12 +70417,12 @@ options:
 /*! @websanova/url - v2.6.3 - 2020-01-25 */
 !function(){function t(t,r){var a,o={};if("tld?"!==t){if(r=r||window.location.toString(),!t)return r;if(t=t.toString(),a=r.match(/^mailto:([^\/].+)/))o.protocol="mailto",o.email=a[1];else{if((a=r.match(/(.*?)\/#\!(.*)/))&&(r=a[1]+a[2]),(a=r.match(/(.*?)#(.*)/))&&(o.hash=a[2],r=a[1]),o.hash&&t.match(/^#/))return h(t,o.hash);if((a=r.match(/(.*?)\?(.*)/))&&(o.query=a[2],r=a[1]),o.query&&t.match(/^\?/))return h(t,o.query);if((a=r.match(/(.*?)\:?\/\/(.*)/))&&(o.protocol=a[1].toLowerCase(),r=a[2]),(a=r.match(/(.*?)(\/.*)/))&&(o.path=a[2],r=a[1]),o.path=(o.path||"").replace(/^([^\/])/,"/$1"),t.match(/^[\-0-9]+$/)&&(t=t.replace(/^([^\/])/,"/$1")),t.match(/^\//))return e(t,o.path.substring(1));if((a=(a=e("/-1",o.path.substring(1)))&&a.match(/(.*?)\.([^.]+)$/))&&(o.file=a[0],o.filename=a[1],o.fileext=a[2]),(a=r.match(/(.*)\:([0-9]+)$/))&&(o.port=a[2],r=a[1]),(a=r.match(/(.*?)@(.*)/))&&(o.auth=a[1],r=a[2]),o.auth&&(a=o.auth.match(/(.*)\:(.*)/),o.user=a?a[1]:o.auth,o.pass=a?a[2]:void 0),o.hostname=r.toLowerCase(),"."===t.charAt(0))return e(t,o.hostname);o.port=o.port||("https"===o.protocol?"443":"80"),o.protocol=o.protocol||("443"===o.port?"https":"http")}return t in o?o[t]:"{}"===t?o:void 0}}function e(t,r){var a=t.charAt(0),o=r.split(a);return a===t?o:o[(t=parseInt(t.substring(1),10))<0?o.length+t:t-1]}function h(t,r){for(var a,o=t.charAt(0),e=r.split("&"),h=[],n={},c=[],i=t.substring(1),p=0,u=e.length;p<u;p++)if(""!==(h=(h=e[p].match(/(.*?)=(.*)/))||[e[p],e[p],""])[1].replace(/\s/g,"")){if(h[2]=(a=h[2]||"",decodeURIComponent(a.replace(/\+/g," "))),i===h[1])return h[2];(c=h[1].match(/(.*)\[([0-9]+)\]/))?(n[c[1]]=n[c[1]]||[],n[c[1]][c[2]]=h[2]):n[h[1]]=h[2]}return o===t?n:n[i]}window.url=t}();
 ;
-/*
-  @package NOTY - Dependency-free notification library
-  @version version: 3.2.0-beta
-  @contributors https://github.com/needim/noty/graphs/contributors
-  @documentation Examples and Documentation - https://ned.im/noty
-  @license Licensed under the MIT licenses: http://www.opensource.org/licenses/mit-license.php
+/* 
+  @package NOTY - Dependency-free notification library 
+  @version version: 3.2.0-beta 
+  @contributors https://github.com/needim/noty/graphs/contributors 
+  @documentation Examples and Documentation - https://ned.im/noty 
+  @license Licensed under the MIT licenses: http://www.opensource.org/licenses/mit-license.php 
 */
 
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -72391,7 +72455,7 @@ Promise$2.prototype = {
     The primary way of interacting with a promise is through its `then` method,
     which registers callbacks to receive either a promise's eventual value or the
     reason why the promise cannot be fulfilled.
-
+  
     ```js
     findUser().then(function(user){
       // user is available
@@ -72399,14 +72463,14 @@ Promise$2.prototype = {
       // user is unavailable, and you are given the reason why
     });
     ```
-
+  
     Chaining
     --------
-
+  
     The return value of `then` is itself a promise.  This second, 'downstream'
     promise is resolved with the return value of the first promise's fulfillment
     or rejection handler, or rejected if the handler throws an exception.
-
+  
     ```js
     findUser().then(function (user) {
       return user.name;
@@ -72416,7 +72480,7 @@ Promise$2.prototype = {
       // If `findUser` fulfilled, `userName` will be the user's name, otherwise it
       // will be `'default name'`
     });
-
+  
     findUser().then(function (user) {
       throw new Error('Found user, but still unhappy');
     }, function (reason) {
@@ -72429,7 +72493,7 @@ Promise$2.prototype = {
     });
     ```
     If the downstream promise does not specify a rejection handler, rejection reasons will be propagated further downstream.
-
+  
     ```js
     findUser().then(function (user) {
       throw new PedagogicalException('Upstream error');
@@ -72441,15 +72505,15 @@ Promise$2.prototype = {
       // The `PedgagocialException` is propagated all the way down to here
     });
     ```
-
+  
     Assimilation
     ------------
-
+  
     Sometimes the value you want to propagate to a downstream promise can only be
     retrieved asynchronously. This can be achieved by returning a promise in the
     fulfillment or rejection handler. The downstream promise will then be pending
     until the returned promise is settled. This is called *assimilation*.
-
+  
     ```js
     findUser().then(function (user) {
       return findCommentsByAuthor(user);
@@ -72457,9 +72521,9 @@ Promise$2.prototype = {
       // The user's comments are now available
     });
     ```
-
+  
     If the assimliated promise rejects, then the downstream promise will also reject.
-
+  
     ```js
     findUser().then(function (user) {
       return findCommentsByAuthor(user);
@@ -72469,15 +72533,15 @@ Promise$2.prototype = {
       // If `findCommentsByAuthor` rejects, we'll have the reason here
     });
     ```
-
+  
     Simple Example
     --------------
-
+  
     Synchronous Example
-
+  
     ```javascript
     let result;
-
+  
     try {
       result = findResult();
       // success
@@ -72485,9 +72549,9 @@ Promise$2.prototype = {
       // failure
     }
     ```
-
+  
     Errback Example
-
+  
     ```js
     findResult(function(result, err){
       if (err) {
@@ -72497,9 +72561,9 @@ Promise$2.prototype = {
       }
     });
     ```
-
+  
     Promise Example;
-
+  
     ```javascript
     findResult().then(function(result){
       // success
@@ -72507,15 +72571,15 @@ Promise$2.prototype = {
       // failure
     });
     ```
-
+  
     Advanced Example
     --------------
-
+  
     Synchronous Example
-
+  
     ```javascript
     let author, books;
-
+  
     try {
       author = findAuthor();
       books  = findBooksByAuthor(author);
@@ -72524,19 +72588,19 @@ Promise$2.prototype = {
       // failure
     }
     ```
-
+  
     Errback Example
-
+  
     ```js
-
+  
     function foundBooks(books) {
-
+  
     }
-
+  
     function failure(reason) {
-
+  
     }
-
+  
     findAuthor(function(author, err){
       if (err) {
         failure(err);
@@ -72561,9 +72625,9 @@ Promise$2.prototype = {
       }
     });
     ```
-
+  
     Promise Example;
-
+  
     ```javascript
     findAuthor().
       then(findBooksByAuthor).
@@ -72573,7 +72637,7 @@ Promise$2.prototype = {
       // something went wrong
     });
     ```
-
+  
     @method then
     @param {Function} onFulfilled
     @param {Function} onRejected
@@ -72585,25 +72649,25 @@ Promise$2.prototype = {
   /**
     `catch` is simply sugar for `then(undefined, onRejection)` which makes it the same
     as the catch block of a try/catch statement.
-
+  
     ```js
     function findAuthor(){
       throw new Error('couldn't find that author');
     }
-
+  
     // synchronous
     try {
       findAuthor();
     } catch(reason) {
       // something went wrong
     }
-
+  
     // async with promises
     findAuthor().catch(function(reason){
       // something went wrong
     });
     ```
-
+  
     @method catch
     @param {Function} onRejection
     Useful for tooling.
@@ -81985,7 +82049,7 @@ var _0x2132=['(3(H,g){3 a(){}a.3A=3(){4 c=26.5H,n=c.6J(/(86|7q|7o|7n|7l|5P(?=\\/
         }
     });
 
-
+    
 
 (function() {
         numeral.register('format', 'bps', {
@@ -84250,7 +84314,11 @@ Set methodes and options for format utm
                 'nm',   //All Danish Notices to Mariners are produced in the "niord-nm" domain.
                 'fa',   //All Danish firing areas are defined as miscellaneous Notices to Mariners in the "niord-fa" domain.
                 'fe'    //The actual firing exercises are maintained as local navigational warnings in the "niord-fe" domain.
-            ]
+            ],
+
+            //loadingOn and loadingOff = functions to be called when single massage are loaded
+            loadingOn : function(){},
+            loadingOff: function(){},
         },
         baseUrl         = 'https://niord.dma.dk/rest/public/v1/',
         dateFormatParam = '?dateFormat=UNIX_EPOCH',
@@ -84292,7 +84360,7 @@ Set methodes and options for format utm
     messageUrl( id ) - Return the url to retrive info from a single message
     ********************************************/
     ns.messageUrl = function( id ){
-        return baseUrl + 'message/' + id + dateFormatParam;
+        return baseUrl + 'message/' + encodeURIComponent(id) + dateFormatParam;
     };
 
 
@@ -84928,6 +84996,8 @@ Set methodes and options for format utm
 
             if (!dontUpdateRef)
                 this._updateReferences();
+
+            return message;
         },
 
         /*************************************************
@@ -84963,14 +85033,19 @@ Set methodes and options for format utm
                 else
                     if (this.ready){
                         //The data are loaded and do not contain the message => Try to load the message via single-message request
+                        ns.options.loadingOn();
                         Promise.getJSON(
                             ns.messageUrl( id ),
                             promiseOptions || {},
                             function( data ){
                                 _this._addMessage( data );
+                                ns.options.loadingOff();
                                 return _this.getMessage(id, resolve);
                             },
-                            reject
+                            function() {
+                                ns.options.loadingOff();
+                                return reject.apply(this, arguments);
+                            }
                         );
                     }
                     else {
@@ -85190,6 +85265,9 @@ Set methodes and options for format utm
     //Extend Niord.options
     ns.options = $.extend( true, {
 
+
+        offLine: false, //If true the data are read from another source than niord.dma and no other message can be loaded
+
         //domainIcon = options for icon for popup and modal header for each domain
         domainIcon: {
 
@@ -85260,13 +85338,16 @@ Set methodes and options for format utm
     }, ns.options || {} );
 
     //__onClickCoordinate__ = internal function used if onClickCoordinate is given
-    ns.__onClickCoordinate__ = function(elem){
+    ns.__onClickCoordinate__ = function(elem, event){
         var $elem = $(elem),
             coordIdStr = $elem.data('coord_id'),
             list = coordIdStr.split(' '),
             coord = [parseFloat(list[0]), parseFloat(list[1])],
             messId = list.length >= 3 ? list[2] : null;
         ns.options.onClickCoordinate(coord, $elem.text(), messId);
+
+        event && event.stopPropagation ? event.stopPropagation() : null;
+        return false;
     };
 
 
@@ -85353,7 +85434,7 @@ Set methodes and options for format utm
             linkValue    = $this.data('niord-link-value');
 
         if (linkId == 'message')
-                messages.messageAsModal(linkValue);
+            messages.messageAsModal(linkValue);
         else {
             messages.forceFilterDomain = null;
             messages.forceFilter = {
@@ -85526,10 +85607,17 @@ Set methodes and options for format utm
     };
 
     ns.Reference.prototype.bsObject = function(){
+        //Ref to other Message. Only link to Message that already exsists if offline = true
+        var messageExists =
+                currentMessages &&
+                ( currentMessages.messages[this.messageId] ||
+                  currentMessages.messagesByShortId[this.messageId] );
+
+        //function linkToModal( text, linkId, linkValue, postText )
         return linkToModal(
             this.messageId,
             'message',
-            this.messageId,
+            messageExists || !ns.options.offLine ? this.messageId : null,
             this.type && (this.type != 'REFERENCE') ? {text:'niord:'+this.type} : null
        );
     };
@@ -85700,7 +85788,8 @@ Set methodes and options for format utm
                             text =
                                 text.replace(
                                     '>>>>>>>>'+index+'<<<<<<<<',
-                                    '<a data-coord_id="'+textAndCoord.coord[0]+' '+textAndCoord.coord[1]+' '+_this.id+'" href="javascript:undefined" onclick="window.Niord.__onClickCoordinate__(this)">'+textAndCoord.text+'</a>'
+                                    '<a data-coord_id="'+textAndCoord.coord[0]+' '+textAndCoord.coord[1]+' '+_this.id+'" href="javascript:undefined" onclick="window.Niord.__onClickCoordinate__(this, arguments[0])">'+textAndCoord.text+'</a>'
+
                                 );
                         });
                         _this.partList[partIndex][partId][lang] = text;
@@ -86107,7 +86196,10 @@ Set methodes and options for format utm
             return result;
         }
 
+        var icon = ns.options.domainIcon[this.domainId] || null;
+
         return {
+            icon    : icon ? {icon: icon} : '',
             id      : this.id,
             type    : this.mainType,
             shortId : this.shortId || this.domainId.toUpperCase(),
@@ -86445,7 +86537,8 @@ Set methodes and options for format utm
                 sortable: true, sortBy: $.proxy(this._sortMessage, this)
             }] :
             [
-                { id: 'shortId', noWrap: true,   header: 'Id', align: 'center' },
+                { id: 'icon',    noWrap: false,  header: '&nbsp;',                 align: 'center', width:'2em' },
+                { id: 'shortId', noWrap: true,   header: 'Id',                     align: 'center' },
                 { id: 'date',    noWrap: true,   header: {da:'Dato', en:'Date'},   align: 'center', vfFormat: ns.options.vfFormatId.date, sortable: true, sortBy:'moment_date', sortDefault: true/*'desc'*/},
                 { id: 'area',    noWrap: false,  header: {text:'niord:AREA'},      align: 'left',
                     //Options for sorting by area
@@ -86761,7 +86854,6 @@ Set methodes and options for format utm
         var _this         = this,
             textArray     = [{icon: ns.options.filterIcon}],
             filterOptions = this.filterOptions,
-            header        = null,
             filterExist   = false;
 
         $.each(this.filterOptions, function(id, value){
@@ -86773,7 +86865,6 @@ Set methodes and options for format utm
                 switch (id){
                     case 'domainId':
                         valueObj = {text: 'niord:'+value+'_plural'};
-                        header = valueObj;
                         if (hasValue(filterOptions.area) || hasValue(filterOptions.chart))
                             postfix = {da:'i', en:'in'};
 
@@ -86807,14 +86898,32 @@ Set methodes and options for format utm
            }
         });
 
-        //Update header and footer with filter-info
-        $( this.$bsModalHeader.find('span:first-child') )
-            .empty()
-            .html(header ? i18next.t(header.text) : '&nbsp;');
-
+        //Update footer and header with filter-info
         this.$bsModalFooter
             .empty()
             ._bsAddHtml(filterExist ? textArray : '&nbsp;');
+
+        //Find icon for header
+        var headerIcon = '';
+        $.each(this.filterOptions, function(id, value){
+            if (headerIcon || (value == 'ALL'))
+                return;
+            switch (id){
+                case 'domainId': headerIcon = ns.options.domainIcon[value] || '__TAKEN__'; break;
+                case 'area'    : headerIcon = ns.options.partIcon.AREA     || '__TAKEN__'; break;
+                case 'chart'   : headerIcon = ns.options.partIcon.CHART    || '__TAKEN__'; break;
+                case 'category': headerIcon = ns.options.partIcon.CATEGORY || '__TAKEN__'; break;
+            }
+        });
+
+        if (textArray.length)
+            textArray[0] = headerIcon && (headerIcon != '__TAKEN__') ? {icon: headerIcon} : '';
+
+        var $headerIconContainer = $( this.$bsModalHeader.find('.header-icon-container') ).detach();
+        this.$bsModalHeader
+            .empty()
+            ._bsAddHtml(filterExist ? textArray : '&nbsp;')
+            .append( $headerIconContainer );
     };
 
     /******************************************************
@@ -97588,7 +97697,7 @@ var SVG = (function () {
             //bottomcenter need an extra container to be placed at the bottom
             this._controlCorners['bottomcenter'] =
                 L.DomUtil.create(
-                    'div',
+                    'div', 
                     'leaflet-bottom leaflet-center',
                     L.DomUtil.create('div', 'leaflet-control-bottomcenter',    this._controlContainer)
                 );
@@ -98328,7 +98437,7 @@ if (Number.prototype.toDegrees === undefined) {
 
 ;
 /*! =======================================================
-                      VERSION  11.0.2
+                      VERSION  11.0.2              
 ========================================================= */
 "use strict";
 
@@ -102867,7 +102976,7 @@ https://github.com/nerik/leaflet-graphicscale
         /***********************************************************
         _hide - hide the contextmenu
         ***********************************************************/
-        _hide: function(event){ return;
+        _hide: function(event){
             if (event && (event.type == 'movestart') && this.allowMovestart){
                 this.allowMovestart = false;
                 return;

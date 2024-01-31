@@ -61,7 +61,9 @@
         return result;
     }
 
-    function lbn_onClickCoordinate(){ ns.__onClickCoordinate__(this); }
+    function lbn_onClickCoordinate(){
+        return ns.__onClickCoordinate__(this);
+    }
 
     function featureAddContextmenu(element, feature){
         //Add contextmenu: Show self plus Show all but only same domain af self
@@ -179,10 +181,11 @@
             else {
                 const message = featureMessage(feature);
 
-                //Create button-list for popup = "Show" and "Show all"
+                //Create button-list for popup = "Show" and "Show all" and "Publ"
                 message._popupButtons = message._popupButtons || [
                     message.buttonShow(),
-                    message._messages_showAllButtonOptions()
+                    message._messages_showAllButtonOptions(),
+                    ns.publications._showAllButtonOptions()
                 ];
 
                 return $.extend(true,
@@ -597,6 +600,17 @@
 
         if (!map) return;
 
+        //Call onCenterOnMap from generel options or from this' messages or from this onCenterOnMap = function(message, map)
+        [   this.options          ? this.options.onCenterOnMap          : null,
+            this.messages.options ? this.messages.options.onCenterOnMap : null,
+            ns.options            ? ns.options.onCenterOnMap            : null
+        ].forEach( eventFunc => {
+            if (eventFunc)
+                eventFunc.apply(this, [this, map, elem]);
+        }, this);
+
+
+
         //Center the map on the elements. First convert this.coordinatesList to []latLng
         var latlngList = [];
         this.coordinatesList.forEach( coor => {
@@ -644,15 +658,6 @@
 
         if (elem)
             elem.openPopup();
-
-        //Call onCenterOnMap from generel options or from this' messages or from this onCenterOnMap = function(message, map, elem)
-        [   this.options          ? this.options.onCenterOnMap          : null,
-            this.messages.options ? this.messages.options.onCenterOnMap : null,
-            ns.options            ? ns.options.onCenterOnMap            : null
-        ].forEach( eventFunc => {
-            if (eventFunc)
-                eventFunc.apply(this, [this, map, elem]);
-        }, this);
     };
 
 
