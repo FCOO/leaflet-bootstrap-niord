@@ -551,18 +551,27 @@
 
     //Messages.getMap
     ns.Messages.prototype.getMap = function(map){
-        this.currentMap = map || this.currentMap || (ns.options.getDefaultMap ? ns.options.getDefaultMap() : null);
+        this.currentMap = (map instanceof L.Map ? map : null) || this.currentMap || (ns.options.getDefaultMap ? ns.options.getDefaultMap() : null);
         return this.currentMap;
     },
 
 
-    //Extend Niord.Messages.asModal with call to getMap
+    //Extend Niord.Message.asModal and Niord.Messages.asModal with call to getMap
+    ns.Message.prototype.asModal = function(asModal){
+        return function(id, latlng, element, map){
+            this.messages.getMap( map );
+            return asModal.call(this);
+        };
+    }(ns.Message.prototype.asModal);
+
+
     ns.Messages.prototype.asModal = function(asModal){
         return function(id, latlng, element, map){
             this.getMap( map );
             return asModal.call(this);
         };
     }(ns.Messages.prototype.asModal);
+
 
 
     //Extend Niord.Messages.tableColumns with show-on-map
@@ -670,7 +679,7 @@
             icon   : 'fa-window-maximize',
             text   : {da: 'Vis', en:'Show'},
             class  : 'min-width-5em',
-            onClick: this.asModal.bind(this)
+            onClick: ns.asModal(this)
         };
     },
 
