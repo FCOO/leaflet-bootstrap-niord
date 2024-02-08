@@ -19,7 +19,7 @@
     niordOptions.leafletPopup = {
         fixable  : true,
         maxHeight: 260,
-        width    : 260,
+        width    : 265, //or 270
         clickable: true,
         extended : {
             maxHeight: 375,
@@ -184,8 +184,8 @@
                 //Create button-list for popup = "Show" and "Show all" and "Publ"
                 message._popupButtons = message._popupButtons || [
                     message.buttonShow(),
-                    message._messages_showAllButtonOptions(),
-                    ns.publications._showAllButtonOptions()
+                    ns.publications._showAllButtonOptions(),
+                    message._messages_showAllButtonOptions()
                 ];
 
                 return $.extend(true,
