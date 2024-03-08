@@ -10717,8 +10717,8 @@ return jQuery;
 
 ;
 /*!
-  * Bootstrap v5.3.2 (https://getbootstrap.com/)
-  * Copyright 2011-2023 The Bootstrap Authors (https://github.com/twbs/bootstrap/graphs/contributors)
+  * Bootstrap v5.3.3 (https://getbootstrap.com/)
+  * Copyright 2011-2024 The Bootstrap Authors (https://github.com/twbs/bootstrap/graphs/contributors)
   * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
   */
 (function (global, factory) {
@@ -10928,7 +10928,6 @@ return jQuery;
   const reflow = element => {
     element.offsetHeight; // eslint-disable-line no-unused-expressions
   };
-
   const getjQuery = () => {
     if (window.jQuery && !document.body.hasAttribute('data-bs-no-jquery')) {
       return window.jQuery;
@@ -11366,7 +11365,7 @@ return jQuery;
    * Constants
    */
 
-  const VERSION = '5.3.2';
+  const VERSION = '5.3.3';
 
   /**
    * Class definition
@@ -11447,9 +11446,9 @@ return jQuery;
       if (hrefAttribute.includes('#') && !hrefAttribute.startsWith('#')) {
         hrefAttribute = `#${hrefAttribute.split('#')[1]}`;
       }
-      selector = hrefAttribute && hrefAttribute !== '#' ? parseSelector(hrefAttribute.trim()) : null;
+      selector = hrefAttribute && hrefAttribute !== '#' ? hrefAttribute.trim() : null;
     }
-    return selector;
+    return selector ? selector.split(',').map(sel => parseSelector(sel)).join(',') : null;
   };
   const SelectorEngine = {
     find(selector, element = document.documentElement) {
@@ -14634,7 +14633,6 @@ return jQuery;
     // if false, we use the backdrop helper without adding any element to the dom
     rootElement: 'body' // give the choice to place backdrop under different elements
   };
-
   const DefaultType$8 = {
     className: 'string',
     clickCallback: '(function|null)',
@@ -14759,7 +14757,6 @@ return jQuery;
     autofocus: true,
     trapElement: null // The element to trap focus inside of
   };
-
   const DefaultType$7 = {
     autofocus: 'boolean',
     trapElement: 'element'
@@ -15486,7 +15483,10 @@ return jQuery;
     br: [],
     col: [],
     code: [],
+    dd: [],
     div: [],
+    dl: [],
+    dt: [],
     em: [],
     hr: [],
     h1: [],
@@ -17032,6 +17032,186 @@ return jQuery;
 //# sourceMappingURL=bootstrap.bundle.js.map
 
 ;
+/***************************************************************************
+    modernizr-device.js,
+
+    (c) 2015, FCOO
+
+    https://github.com/FCOO/modernizr-device
+    https://github.com/FCOO
+
+****************************************************************************/
+
+(function (Modernizr, $, window, document/*, undefined*/) {
+    "use strict";
+
+    var ns = window;
+
+    function ModernizrDevice( options ) {
+        this.VERSION = "4.0.0";
+
+        this.modernizr = Modernizr;
+
+        this.options = $.extend({
+            scale          : false, //When true: Calculate 'best' scaling of font-size
+            referenceScreen: {
+                width       : 1366,
+                height      : 768,
+                diagonal_inc: 20
+            },
+            modernizr: {
+                device: false,  //When true: Add Modernizr-tests desktop mobile phone tablet
+                os    : true,   //When true: Add Modernizr-tests windows ios android
+                ie    : false   //When true: Add Modernizr-tests ie7 ie8 ie9 ie10
+            }
+        }, options || {} );
+
+        //Extend ModernizrDevice with some of the methods from Device.js (c) 2014 Matthew Hudson http://matthewhudson.me/projects/device.js/
+
+        // The client user agent string.
+        // Lowercase, so we can use the more efficient indexOf(), instead of Regex
+        this.userAgent = window.navigator.userAgent.toLowerCase();
+
+        this.find = function(needle) { return this.userAgent.indexOf(needle) !== -1; };
+
+        // Main functions
+        this.ios                = function () { return this.iphone() || this.ipod() || this.ipad(); };
+        this.iphone             = function () { return !this.windows() && this.find('iphone'); };
+        this.ipod               = function () { return this.find('ipod'); };
+        this.ipad               = function () { return this.find('ipad'); };
+        this.android            = function () { return !this.windows() && this.find('android'); };
+        this.androidPhone       = function () { return this.android() && this.find('mobile'); };
+        this.androidTablet      = function () { return this.android() && !this.find('mobile'); };
+        this.blackberry         = function () { return this.find('blackberry') || this.find('bb10') || this.find('rim'); };
+        this.blackberryPhone    = function () { return this.blackberry() && !this.find('tablet'); };
+        this.blackberryTablet   = function () { return this.blackberry() && this.find('tablet'); };
+        this.windows            = function () { return this.find('windows'); };
+        this.windowsPhone       = function () { return this.windows() && this.find('phone'); };
+        this.windowsTablet      = function () { return this.windows() && (this.find('touch') && !this.windowsPhone()); };
+        this.fxos               = function () { return (this.find('(mobile;') || this.find('(tablet;')) && this.find('; rv:'); };
+        this.fxosPhone          = function () { return this.fxos() && this.find('mobile'); };
+        this.fxosTablet         = function () { return this.fxos() && this.find('tablet'); };
+        this.meego              = function () { return this.find('meego'); };
+        this.cordova            = function () { return window.cordova && location.protocol === 'file:'; };
+        this.nodeWebkit         = function () { return typeof window.process === 'object';  };
+        this.mobile             = function () { return this.androidPhone() || this.iphone() || this.ipod() || this.windowsPhone() || this.blackberryPhone() || this.fxosPhone() || this.meego(); };
+        this.tablet             = function () { return this.ipad() || this.androidTablet() || this.blackberryTablet() || this.windowsTablet() || this.fxosTablet(); };
+        this.desktop            = function () { return !this.tablet() && !this.mobile(); };
+
+
+        if (this.options.scale){
+            var docEl = document.documentElement;
+            //this.devicePixelRatio = ('devicePixelRatio' in window) ? window.devicePixelRatio : 'unsupported';
+            this.screen_width  = screen.width;
+            this.screen_height = screen.height;
+
+            this.client_width = docEl.clientWidth;
+            this.client_width = docEl.clientHeight;
+
+            this.screen_width_em  = this.screen_width/16;
+            this.screen_height_em = this.screen_height/16;
+
+            this.dpi = 96;
+            for (var dpi=1; dpi<400; dpi++ )
+                if ( window.Modernizr.mq('(resolution: '+dpi+'dpi)') ){
+                    this.dpi = dpi;
+                    break;
+                }
+
+            this.dpr = window.devicePixelRatio;
+            if (!this.dpr){
+                this.dpr = 1;
+                for (var dpr=1; dpr<4; dpr=dpr+0.1 )
+                    if (
+                        Modernizr.mq('(-webkit-device-pixel-ratio: '+dpr+')') ||
+                        Modernizr.mq('(min--moz-device-pixel-ratio: '+dpr+')') ||
+                        Modernizr.mq('(-o-min-device-pixel-ratio: '+dpr+'/1)')
+                    ){
+                        this.dpr = dpr;
+                        break;
+                    }
+            }
+
+            this.dpr = Math.round(100*this.dpr)/100;
+
+            this.screen_diagonal = Math.sqrt( Math.pow(this.screen_width, 2) + Math.pow(this.screen_height,2) );
+            this.screen_diagonal_inc = this.screen_diagonal/this.dpi; //Best guest !
+
+            //Calculate the diagonal and dpi for the reference screen
+            var ref_screen_diagonal = Math.sqrt( Math.pow(this.options.referenceScreen.width, 2) + Math.pow(this.options.referenceScreen.height, 2) );
+            this.ref_dpi = ref_screen_diagonal/this.options.referenceScreen.diagonal_inc;
+
+            //The scale is best guest for a scale (eq. html.style.font-size=this.scale) of the screen to have elements the same size as on the reference screen
+            this.scale = 100;
+            if ((this.dpr != 1) || (this.dpi != 96))
+                this.scale = Math.sqrt(this.dpi / this.ref_dpi)*100;
+
+        } //if (this.options.scale){...
+
+        //Get a string with browser and version
+        this.browser_version = function() {
+            if(typeof navigator === 'undefined'){
+                return 'unknown';
+            }
+            var ua = navigator.userAgent, tem,
+            M = ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [];
+            if(/trident/i.test(M[1])){
+                tem = /\brv[ :]+(\d+)/g.exec(ua) || [];
+                return 'IE '+(tem[1] || '');
+            }
+            if(M[1]=== 'Chrome'){
+                tem = ua.match(/\b(OPR|Edge)\/(\d+)/);
+                if(tem!== null) return tem.slice(1).join(' ').replace('OPR', 'Opera');
+            }
+            M = M[2]? [M[1], M[2]]: [navigator.appName, navigator.appVersion, '-?'];
+            if((tem= ua.match(/version\/(\d+)/i))!= null)
+                M.splice(1, 1, tem[1]);
+            return M.join(' ');
+        }();
+
+        //Set properties
+        this.isDesktop   = this.desktop();
+        this.isMobile    = this.mobile() || this.tablet();
+        this.isPhone     = this.mobile();
+        this.isTablet    = this.tablet();
+
+        this.isWindows   = this.windows();
+        this.isIos       = this.ios();
+        this.isAndroid   = this.android();
+
+        //Add tests to Modernizr
+        if (this.options.modernizr.device)
+            Modernizr.addTest({
+                desktop: this.isDesktop,
+                mobile : this.isMobile,
+                phone  : this.isPhone,
+                tablet : this.isTablet
+            });
+
+        if (this.options.modernizr.os)
+            Modernizr.addTest({
+                windows: this.isWindows,
+                ios    : this.isIos,
+                android: this.isAndroid
+            });
+
+        if (this.options.modernizr.ie){
+            //Adding test for Internet Explore versions 10
+            Modernizr.addTest('ie10', this.browser_version == 'MSIE 10' );
+
+            //Adding test for Internet Explore versions 11
+            Modernizr.addTest('ie11', this.browser_version == 'IE 11');
+        }
+    }
+
+    // expose access to the constructor
+    ns.ModernizrDevice = ModernizrDevice;
+
+
+}(window.Modernizr, jQuery, this, document));
+
+
+;
 /****************************************************************************
 	leaflet-global-switches.js,
 
@@ -17046,32 +17226,13 @@ return jQuery;
 (function (window/*, document, undefined*/) {
 	"use strict";
 
-    //Detect Operation System. Possible values = "windows_phone", "android", "ios", null
-    var os = function() {
-        var userAgent = navigator.userAgent || navigator.vendor || window.opera;
-
-        // Windows Phone must come first because its UA also contains "Android"
-        if (/windows phone/i.test(userAgent)) {
-            return "windows_phone";
-        }
-
-        if (/android/i.test(userAgent)) {
-            return "android";
-        }
-
-        // iOS detection from: http://stackoverflow.com/a/9039885/177710
-        if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-            return "ios";
-        }
-
-        return null;//"unknown";
-    }(),
-    //To use later: is_windows_phone = (os == "windows_phone"),
-    //To use later: is_android = (os == "android"),
-    is_ios = (os == "ios");
+    var modernizrDevice = new window.ModernizrDevice({
+        scale    : false,
+        modernizr: {}
+    });
 
     /**************************************************
-    From Leaflet 1.7.1:
+    From Leaflet 1.9.4:
     Global Switches
     Global switches are created for rare cases and generally make Leaflet to not detect a particular browser feature even if it's there.
     You need to set the switch as a global variable to true before including Leaflet on the page, like this:
@@ -17082,9 +17243,8 @@ return jQuery;
     L_DISABLE_3D	Forces Leaflet to not use hardware-accelerated CSS 3D transforms for positioning (which may cause glitches in some rare environments) even if they're supported.
     **************************************************/
 
-    //Turn off 3D transform for ios
-    window.L_DISABLE_3D = is_ios;
-
+    //Turn off 3D transform for iPads
+    window.L_DISABLE_3D = modernizrDevice.ipad();
 
 }(this, document));
 
@@ -32820,7 +32980,8 @@ return L.GeometryUtil;
     }
     addResourceBundle(lng, ns, resources, deep, overwrite) {
       let options = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : {
-        silent: false
+        silent: false,
+        skipCopy: false
       };
       let path = [lng, ns];
       if (lng.indexOf('.') > -1) {
@@ -32831,6 +32992,7 @@ return L.GeometryUtil;
       }
       this.addNamespaces(ns);
       let pack = getPath(this.data, path) || {};
+      if (!options.skipCopy) resources = JSON.parse(JSON.stringify(resources));
       if (deep) {
         deepExtend(pack, resources, overwrite);
       } else {
@@ -33363,7 +33525,8 @@ return L.GeometryUtil;
           found = this.options.supportedLngs.find(supportedLng => {
             if (supportedLng === lngOnly) return supportedLng;
             if (supportedLng.indexOf('-') < 0 && lngOnly.indexOf('-') < 0) return;
-            if (supportedLng.indexOf(lngOnly) === 0) return supportedLng;
+            if (supportedLng.indexOf('-') > 0 && lngOnly.indexOf('-') < 0 && supportedLng.substring(0, supportedLng.indexOf('-')) === lngOnly) return supportedLng;
+            if (supportedLng.indexOf(lngOnly) === 0 && lngOnly.length > 1) return supportedLng;
           });
         });
       }
@@ -34070,7 +34233,9 @@ return L.GeometryUtil;
       const ns = s[1];
       if (err) this.emit('failedLoading', lng, ns, err);
       if (data) {
-        this.store.addResourceBundle(lng, ns, data);
+        this.store.addResourceBundle(lng, ns, data, undefined, undefined, {
+          skipCopy: true
+        });
       }
       this.state[name] = err ? -1 : 2;
       const loaded = {};
@@ -34329,6 +34494,7 @@ return L.GeometryUtil;
       var _this = this;
       let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       let callback = arguments.length > 1 ? arguments[1] : undefined;
+      this.isInitializing = true;
       if (typeof options === 'function') {
         callback = options;
         options = {};
@@ -34446,6 +34612,7 @@ return L.GeometryUtil;
       const deferred = defer();
       const load = () => {
         const finish = (err, t) => {
+          this.isInitializing = false;
           if (this.isInitialized && !this.initializedStoreOnce) this.logger.warn('init: i18next is already initialized. You should call init just once!');
           this.isInitialized = true;
           if (!this.options.isClone) this.logger.log('initialized', this.options);
@@ -84301,6 +84468,13 @@ Set methodes and options for format utm
     //Create namespace
     var ns = window.Niord = window.Niord || {};
 
+    ns.options = {
+        //loadingOn and loadingOff = functions to be called when single massage are loaded
+        loadingOn : function(){},
+        loadingOff: function(){},
+    };
+
+
     //Define default error-handler (reject) and default options for promise.
     ns.defaultErrorHandler   = ns.defaultErrorHandler || null;
     ns.defaultPromiseOptions = ns.defaultPromiseOptions || {};
@@ -84318,11 +84492,7 @@ Set methodes and options for format utm
                 'nm',   //All Danish Notices to Mariners are produced in the "niord-nm" domain.
                 'fa',   //All Danish firing areas are defined as miscellaneous Notices to Mariners in the "niord-fa" domain.
                 'fe'    //The actual firing exercises are maintained as local navigational warnings in the "niord-fe" domain.
-            ],
-
-            //loadingOn and loadingOff = functions to be called when single massage are loaded
-            loadingOn : function(){},
-            loadingOff: function(){},
+            ]
         },
         baseUrl         = 'https://niord.dma.dk/rest/public/v1/',
         dateFormatParam = '?dateFormat=UNIX_EPOCH',

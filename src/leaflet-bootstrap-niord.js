@@ -17,7 +17,7 @@
     ns.options.leaflet = ns.options.leaflet || {};
 
     //window.Niord.options.leaflet.tileUrl = url for the tile-layer of the map inside the bsModal-window
-    ns.options.leaflet.tileUrl = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    ns.options.leaflet.tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
     //window.Niord.options.leaflet.attribute = attribute for the tile-layer of the map inside the bsModal-window
     ns.options.leaflet.attribution = '<i class="far fa-copyright"></i></i>&nbsp;<a target="_blank" href="https://www.openstreetmap.org/copyright/en">OpenStreetMap</a>';
