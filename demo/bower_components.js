@@ -10717,8 +10717,8 @@ return jQuery;
 
 ;
 /*!
-  * Bootstrap v5.3.3 (https://getbootstrap.com/)
-  * Copyright 2011-2024 The Bootstrap Authors (https://github.com/twbs/bootstrap/graphs/contributors)
+  * Bootstrap v5.3.5 (https://getbootstrap.com/)
+  * Copyright 2011-2025 The Bootstrap Authors (https://github.com/twbs/bootstrap/graphs/contributors)
   * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
   */
 (function (global, factory) {
@@ -10923,7 +10923,7 @@ return jQuery;
    * @param {HTMLElement} element
    * @return void
    *
-   * @see https://www.charistheo.io/blog/2021/02/restart-a-css-animation-with-javascript/#restarting-a-css-animation
+   * @see https://www.harrytheo.com/blog/2021/02/restart-a-css-animation-with-javascript/#restarting-a-css-animation
    */
   const reflow = element => {
     element.offsetHeight; // eslint-disable-line no-unused-expressions
@@ -10968,7 +10968,7 @@ return jQuery;
     });
   };
   const execute = (possibleCallback, args = [], defaultValue = possibleCallback) => {
-    return typeof possibleCallback === 'function' ? possibleCallback(...args) : defaultValue;
+    return typeof possibleCallback === 'function' ? possibleCallback.call(...args) : defaultValue;
   };
   const executeAfterTransition = (callback, transitionElement, waitForTransition = true) => {
     if (!waitForTransition) {
@@ -11290,7 +11290,7 @@ return jQuery;
       const bsKeys = Object.keys(element.dataset).filter(key => key.startsWith('bs') && !key.startsWith('bsConfig'));
       for (const key of bsKeys) {
         let pureKey = key.replace(/^bs/, '');
-        pureKey = pureKey.charAt(0).toLowerCase() + pureKey.slice(1, pureKey.length);
+        pureKey = pureKey.charAt(0).toLowerCase() + pureKey.slice(1);
         attributes[pureKey] = normalizeData(element.dataset[key]);
       }
       return attributes;
@@ -11365,7 +11365,7 @@ return jQuery;
    * Constants
    */
 
-  const VERSION = '5.3.3';
+  const VERSION = '5.3.5';
 
   /**
    * Class definition
@@ -13384,7 +13384,6 @@ return jQuery;
     var popperOffsets = computeOffsets({
       reference: referenceClientRect,
       element: popperRect,
-      strategy: 'absolute',
       placement: placement
     });
     var popperClientRect = rectToClientRect(Object.assign({}, popperRect, popperOffsets));
@@ -13712,7 +13711,6 @@ return jQuery;
     state.modifiersData[name] = computeOffsets({
       reference: state.rects.reference,
       element: state.rects.popper,
-      strategy: 'absolute',
       placement: state.placement
     });
   } // eslint-disable-next-line import/no-unused-modules
@@ -14419,7 +14417,7 @@ return jQuery;
     }
     _createPopper() {
       if (typeof Popper === 'undefined') {
-        throw new TypeError('Bootstrap\'s dropdowns require Popper (https://popper.js.org)');
+        throw new TypeError('Bootstrap\'s dropdowns require Popper (https://popper.js.org/docs/v2/)');
       }
       let referenceElement = this._element;
       if (this._config.reference === 'parent') {
@@ -14498,7 +14496,7 @@ return jQuery;
       }
       return {
         ...defaultBsPopperConfig,
-        ...execute(this._config.popperConfig, [defaultBsPopperConfig])
+        ...execute(this._config.popperConfig, [undefined, defaultBsPopperConfig])
       };
     }
     _selectMenuItem({
@@ -15685,7 +15683,7 @@ return jQuery;
       return this._config.sanitize ? sanitizeHtml(arg, this._config.allowList, this._config.sanitizeFn) : arg;
     }
     _resolvePossibleFunction(arg) {
-      return execute(arg, [this]);
+      return execute(arg, [undefined, this]);
     }
     _putElementInTemplate(element, templateElement) {
       if (this._config.html) {
@@ -15784,7 +15782,7 @@ return jQuery;
   class Tooltip extends BaseComponent {
     constructor(element, config) {
       if (typeof Popper === 'undefined') {
-        throw new TypeError('Bootstrap\'s tooltips require Popper (https://popper.js.org)');
+        throw new TypeError('Bootstrap\'s tooltips require Popper (https://popper.js.org/docs/v2/)');
       }
       super(element, config);
 
@@ -15830,7 +15828,6 @@ return jQuery;
       if (!this._isEnabled) {
         return;
       }
-      this._activeTrigger.click = !this._activeTrigger.click;
       if (this._isShown()) {
         this._leave();
         return;
@@ -16018,7 +16015,7 @@ return jQuery;
       return offset;
     }
     _resolvePossibleFunction(arg) {
-      return execute(arg, [this._element]);
+      return execute(arg, [this._element, this._element]);
     }
     _getPopperConfig(attachment) {
       const defaultBsPopperConfig = {
@@ -16056,7 +16053,7 @@ return jQuery;
       };
       return {
         ...defaultBsPopperConfig,
-        ...execute(this._config.popperConfig, [defaultBsPopperConfig])
+        ...execute(this._config.popperConfig, [undefined, defaultBsPopperConfig])
       };
     }
     _setListeners() {
@@ -32581,6 +32578,199 @@ return L.GeometryUtil;
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.i18next = factory());
 })(this, (function () { 'use strict';
 
+  const isString = obj => typeof obj === 'string';
+  const defer = () => {
+    let res;
+    let rej;
+    const promise = new Promise((resolve, reject) => {
+      res = resolve;
+      rej = reject;
+    });
+    promise.resolve = res;
+    promise.reject = rej;
+    return promise;
+  };
+  const makeString = object => {
+    if (object == null) return '';
+    return '' + object;
+  };
+  const copy = (a, s, t) => {
+    a.forEach(m => {
+      if (s[m]) t[m] = s[m];
+    });
+  };
+  const lastOfPathSeparatorRegExp = /###/g;
+  const cleanKey = key => key && key.indexOf('###') > -1 ? key.replace(lastOfPathSeparatorRegExp, '.') : key;
+  const canNotTraverseDeeper = object => !object || isString(object);
+  const getLastOfPath = (object, path, Empty) => {
+    const stack = !isString(path) ? path : path.split('.');
+    let stackIndex = 0;
+    while (stackIndex < stack.length - 1) {
+      if (canNotTraverseDeeper(object)) return {};
+      const key = cleanKey(stack[stackIndex]);
+      if (!object[key] && Empty) object[key] = new Empty();
+      if (Object.prototype.hasOwnProperty.call(object, key)) {
+        object = object[key];
+      } else {
+        object = {};
+      }
+      ++stackIndex;
+    }
+    if (canNotTraverseDeeper(object)) return {};
+    return {
+      obj: object,
+      k: cleanKey(stack[stackIndex])
+    };
+  };
+  const setPath = (object, path, newValue) => {
+    const {
+      obj,
+      k
+    } = getLastOfPath(object, path, Object);
+    if (obj !== undefined || path.length === 1) {
+      obj[k] = newValue;
+      return;
+    }
+    let e = path[path.length - 1];
+    let p = path.slice(0, path.length - 1);
+    let last = getLastOfPath(object, p, Object);
+    while (last.obj === undefined && p.length) {
+      e = `${p[p.length - 1]}.${e}`;
+      p = p.slice(0, p.length - 1);
+      last = getLastOfPath(object, p, Object);
+      if (last?.obj && typeof last.obj[`${last.k}.${e}`] !== 'undefined') {
+        last.obj = undefined;
+      }
+    }
+    last.obj[`${last.k}.${e}`] = newValue;
+  };
+  const pushPath = (object, path, newValue, concat) => {
+    const {
+      obj,
+      k
+    } = getLastOfPath(object, path, Object);
+    obj[k] = obj[k] || [];
+    obj[k].push(newValue);
+  };
+  const getPath = (object, path) => {
+    const {
+      obj,
+      k
+    } = getLastOfPath(object, path);
+    if (!obj) return undefined;
+    if (!Object.prototype.hasOwnProperty.call(obj, k)) return undefined;
+    return obj[k];
+  };
+  const getPathWithDefaults = (data, defaultData, key) => {
+    const value = getPath(data, key);
+    if (value !== undefined) {
+      return value;
+    }
+    return getPath(defaultData, key);
+  };
+  const deepExtend = (target, source, overwrite) => {
+    for (const prop in source) {
+      if (prop !== '__proto__' && prop !== 'constructor') {
+        if (prop in target) {
+          if (isString(target[prop]) || target[prop] instanceof String || isString(source[prop]) || source[prop] instanceof String) {
+            if (overwrite) target[prop] = source[prop];
+          } else {
+            deepExtend(target[prop], source[prop], overwrite);
+          }
+        } else {
+          target[prop] = source[prop];
+        }
+      }
+    }
+    return target;
+  };
+  const regexEscape = str => str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
+  var _entityMap = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '/': '&#x2F;'
+  };
+  const escape = data => {
+    if (isString(data)) {
+      return data.replace(/[&<>"'\/]/g, s => _entityMap[s]);
+    }
+    return data;
+  };
+  class RegExpCache {
+    constructor(capacity) {
+      this.capacity = capacity;
+      this.regExpMap = new Map();
+      this.regExpQueue = [];
+    }
+    getRegExp(pattern) {
+      const regExpFromCache = this.regExpMap.get(pattern);
+      if (regExpFromCache !== undefined) {
+        return regExpFromCache;
+      }
+      const regExpNew = new RegExp(pattern);
+      if (this.regExpQueue.length === this.capacity) {
+        this.regExpMap.delete(this.regExpQueue.shift());
+      }
+      this.regExpMap.set(pattern, regExpNew);
+      this.regExpQueue.push(pattern);
+      return regExpNew;
+    }
+  }
+  const chars = [' ', ',', '?', '!', ';'];
+  const looksLikeObjectPathRegExpCache = new RegExpCache(20);
+  const looksLikeObjectPath = (key, nsSeparator, keySeparator) => {
+    nsSeparator = nsSeparator || '';
+    keySeparator = keySeparator || '';
+    const possibleChars = chars.filter(c => nsSeparator.indexOf(c) < 0 && keySeparator.indexOf(c) < 0);
+    if (possibleChars.length === 0) return true;
+    const r = looksLikeObjectPathRegExpCache.getRegExp(`(${possibleChars.map(c => c === '?' ? '\\?' : c).join('|')})`);
+    let matched = !r.test(key);
+    if (!matched) {
+      const ki = key.indexOf(keySeparator);
+      if (ki > 0 && !r.test(key.substring(0, ki))) {
+        matched = true;
+      }
+    }
+    return matched;
+  };
+  const deepFind = function (obj, path) {
+    let keySeparator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '.';
+    if (!obj) return undefined;
+    if (obj[path]) {
+      if (!Object.prototype.hasOwnProperty.call(obj, path)) return undefined;
+      return obj[path];
+    }
+    const tokens = path.split(keySeparator);
+    let current = obj;
+    for (let i = 0; i < tokens.length;) {
+      if (!current || typeof current !== 'object') {
+        return undefined;
+      }
+      let next;
+      let nextPath = '';
+      for (let j = i; j < tokens.length; ++j) {
+        if (j !== i) {
+          nextPath += keySeparator;
+        }
+        nextPath += tokens[j];
+        next = current[nextPath];
+        if (next !== undefined) {
+          if (['string', 'number', 'boolean'].indexOf(typeof next) > -1 && j < tokens.length - 1) {
+            continue;
+          }
+          i += j - i + 1;
+          break;
+        }
+      }
+      current = next;
+    }
+    return current;
+  };
+  const getCleanedCode = code => code?.replace('_', '-');
+
   const consoleLogger = {
     type: 'logger',
     log(args) {
@@ -32593,7 +32783,7 @@ return L.GeometryUtil;
       this.output('error', args);
     },
     output(type, args) {
-      if (console && console[type]) console[type].apply(console, args);
+      console?.[type]?.apply?.(console, args);
     }
   };
   class Logger {
@@ -32634,7 +32824,7 @@ return L.GeometryUtil;
     }
     forward(args, lvl, prefix, debugOnly) {
       if (debugOnly && !this.debug) return null;
-      if (typeof args[0] === 'string') args[0] = `${prefix}${this.prefix} ${args[0]}`;
+      if (isString(args[0])) args[0] = `${prefix}${this.prefix} ${args[0]}`;
       return this.logger[lvl](args);
     }
     create(moduleName) {
@@ -32698,204 +32888,6 @@ return L.GeometryUtil;
     }
   }
 
-  function defer() {
-    let res;
-    let rej;
-    const promise = new Promise((resolve, reject) => {
-      res = resolve;
-      rej = reject;
-    });
-    promise.resolve = res;
-    promise.reject = rej;
-    return promise;
-  }
-  function makeString(object) {
-    if (object == null) return '';
-    return '' + object;
-  }
-  function copy(a, s, t) {
-    a.forEach(m => {
-      if (s[m]) t[m] = s[m];
-    });
-  }
-  const lastOfPathSeparatorRegExp = /###/g;
-  function getLastOfPath(object, path, Empty) {
-    function cleanKey(key) {
-      return key && key.indexOf('###') > -1 ? key.replace(lastOfPathSeparatorRegExp, '.') : key;
-    }
-    function canNotTraverseDeeper() {
-      return !object || typeof object === 'string';
-    }
-    const stack = typeof path !== 'string' ? path : path.split('.');
-    let stackIndex = 0;
-    while (stackIndex < stack.length - 1) {
-      if (canNotTraverseDeeper()) return {};
-      const key = cleanKey(stack[stackIndex]);
-      if (!object[key] && Empty) object[key] = new Empty();
-      if (Object.prototype.hasOwnProperty.call(object, key)) {
-        object = object[key];
-      } else {
-        object = {};
-      }
-      ++stackIndex;
-    }
-    if (canNotTraverseDeeper()) return {};
-    return {
-      obj: object,
-      k: cleanKey(stack[stackIndex])
-    };
-  }
-  function setPath(object, path, newValue) {
-    const {
-      obj,
-      k
-    } = getLastOfPath(object, path, Object);
-    if (obj !== undefined || path.length === 1) {
-      obj[k] = newValue;
-      return;
-    }
-    let e = path[path.length - 1];
-    let p = path.slice(0, path.length - 1);
-    let last = getLastOfPath(object, p, Object);
-    while (last.obj === undefined && p.length) {
-      e = `${p[p.length - 1]}.${e}`;
-      p = p.slice(0, p.length - 1);
-      last = getLastOfPath(object, p, Object);
-      if (last && last.obj && typeof last.obj[`${last.k}.${e}`] !== 'undefined') {
-        last.obj = undefined;
-      }
-    }
-    last.obj[`${last.k}.${e}`] = newValue;
-  }
-  function pushPath(object, path, newValue, concat) {
-    const {
-      obj,
-      k
-    } = getLastOfPath(object, path, Object);
-    obj[k] = obj[k] || [];
-    if (concat) obj[k] = obj[k].concat(newValue);
-    if (!concat) obj[k].push(newValue);
-  }
-  function getPath(object, path) {
-    const {
-      obj,
-      k
-    } = getLastOfPath(object, path);
-    if (!obj) return undefined;
-    return obj[k];
-  }
-  function getPathWithDefaults(data, defaultData, key) {
-    const value = getPath(data, key);
-    if (value !== undefined) {
-      return value;
-    }
-    return getPath(defaultData, key);
-  }
-  function deepExtend(target, source, overwrite) {
-    for (const prop in source) {
-      if (prop !== '__proto__' && prop !== 'constructor') {
-        if (prop in target) {
-          if (typeof target[prop] === 'string' || target[prop] instanceof String || typeof source[prop] === 'string' || source[prop] instanceof String) {
-            if (overwrite) target[prop] = source[prop];
-          } else {
-            deepExtend(target[prop], source[prop], overwrite);
-          }
-        } else {
-          target[prop] = source[prop];
-        }
-      }
-    }
-    return target;
-  }
-  function regexEscape(str) {
-    return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
-  }
-  var _entityMap = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-    '/': '&#x2F;'
-  };
-  function escape(data) {
-    if (typeof data === 'string') {
-      return data.replace(/[&<>"'\/]/g, s => _entityMap[s]);
-    }
-    return data;
-  }
-  class RegExpCache {
-    constructor(capacity) {
-      this.capacity = capacity;
-      this.regExpMap = new Map();
-      this.regExpQueue = [];
-    }
-    getRegExp(pattern) {
-      const regExpFromCache = this.regExpMap.get(pattern);
-      if (regExpFromCache !== undefined) {
-        return regExpFromCache;
-      }
-      const regExpNew = new RegExp(pattern);
-      if (this.regExpQueue.length === this.capacity) {
-        this.regExpMap.delete(this.regExpQueue.shift());
-      }
-      this.regExpMap.set(pattern, regExpNew);
-      this.regExpQueue.push(pattern);
-      return regExpNew;
-    }
-  }
-  const chars = [' ', ',', '?', '!', ';'];
-  const looksLikeObjectPathRegExpCache = new RegExpCache(20);
-  function looksLikeObjectPath(key, nsSeparator, keySeparator) {
-    nsSeparator = nsSeparator || '';
-    keySeparator = keySeparator || '';
-    const possibleChars = chars.filter(c => nsSeparator.indexOf(c) < 0 && keySeparator.indexOf(c) < 0);
-    if (possibleChars.length === 0) return true;
-    const r = looksLikeObjectPathRegExpCache.getRegExp(`(${possibleChars.map(c => c === '?' ? '\\?' : c).join('|')})`);
-    let matched = !r.test(key);
-    if (!matched) {
-      const ki = key.indexOf(keySeparator);
-      if (ki > 0 && !r.test(key.substring(0, ki))) {
-        matched = true;
-      }
-    }
-    return matched;
-  }
-  function deepFind(obj, path) {
-    let keySeparator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '.';
-    if (!obj) return undefined;
-    if (obj[path]) return obj[path];
-    const tokens = path.split(keySeparator);
-    let current = obj;
-    for (let i = 0; i < tokens.length;) {
-      if (!current || typeof current !== 'object') {
-        return undefined;
-      }
-      let next;
-      let nextPath = '';
-      for (let j = i; j < tokens.length; ++j) {
-        if (j !== i) {
-          nextPath += keySeparator;
-        }
-        nextPath += tokens[j];
-        next = current[nextPath];
-        if (next !== undefined) {
-          if (['string', 'number', 'boolean'].indexOf(typeof next) > -1 && j < tokens.length - 1) {
-            continue;
-          }
-          i += j - i + 1;
-          break;
-        }
-      }
-      current = next;
-    }
-    return current;
-  }
-  function getCleanedCode(code) {
-    if (code && code.indexOf('_') > 0) return code.replace('_', '-');
-    return code;
-  }
-
   class ResourceStore extends EventEmitter {
     constructor(data) {
       let options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
@@ -32935,7 +32927,7 @@ return L.GeometryUtil;
         if (key) {
           if (Array.isArray(key)) {
             path.push(...key);
-          } else if (typeof key === 'string' && keySeparator) {
+          } else if (isString(key) && keySeparator) {
             path.push(...key.split(keySeparator));
           } else {
             path.push(key);
@@ -32948,8 +32940,8 @@ return L.GeometryUtil;
         ns = path[1];
         key = path.slice(2).join('.');
       }
-      if (result || !ignoreJSONStructure || typeof key !== 'string') return result;
-      return deepFind(this.data && this.data[lng] && this.data[lng][ns], key, keySeparator);
+      if (result || !ignoreJSONStructure || !isString(key)) return result;
+      return deepFind(this.data?.[lng]?.[ns], key, keySeparator);
     }
     addResource(lng, ns, key, value) {
       let options = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
@@ -32972,7 +32964,7 @@ return L.GeometryUtil;
         silent: false
       };
       for (const m in resources) {
-        if (typeof resources[m] === 'string' || Object.prototype.toString.apply(resources[m]) === '[object Array]') this.addResource(lng, ns, m, resources[m], {
+        if (isString(resources[m]) || Array.isArray(resources[m])) this.addResource(lng, ns, m, resources[m], {
           silent: true
         });
       }
@@ -33016,10 +33008,6 @@ return L.GeometryUtil;
     }
     getResourceBundle(lng, ns) {
       if (!ns) ns = this.options.defaultNS;
-      if (this.options.compatibilityAPI === 'v1') return {
-        ...{},
-        ...this.getResource(lng, ns)
-      };
       return this.getResource(lng, ns);
     }
     getDataByLanguage(lng) {
@@ -33042,13 +33030,14 @@ return L.GeometryUtil;
     },
     handle(processors, value, key, options, translator) {
       processors.forEach(processor => {
-        if (this.processors[processor]) value = this.processors[processor].process(value, key, options, translator);
+        value = this.processors[processor]?.process(value, key, options, translator) ?? value;
       });
       return value;
     }
   };
 
   const checkedLoadedFor = {};
+  const shouldHandleAsObject = res => !isString(res) && typeof res !== 'boolean' && typeof res !== 'number';
   class Translator extends EventEmitter {
     constructor(services) {
       let options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
@@ -33067,11 +33056,11 @@ return L.GeometryUtil;
       let options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
         interpolation: {}
       };
-      if (key === undefined || key === null) {
+      if (key == null) {
         return false;
       }
       const resolved = this.resolve(key, options);
-      return resolved && resolved.res !== undefined;
+      return resolved?.res !== undefined;
     }
     extractFromKey(key, options) {
       let nsSeparator = options.nsSeparator !== undefined ? options.nsSeparator : this.options.nsSeparator;
@@ -33085,17 +33074,16 @@ return L.GeometryUtil;
         if (m && m.length > 0) {
           return {
             key,
-            namespaces
+            namespaces: isString(namespaces) ? [namespaces] : namespaces
           };
         }
         const parts = key.split(nsSeparator);
         if (nsSeparator !== keySeparator || nsSeparator === keySeparator && this.options.ns.indexOf(parts[0]) > -1) namespaces = parts.shift();
         key = parts.join(keySeparator);
       }
-      if (typeof namespaces === 'string') namespaces = [namespaces];
       return {
         key,
-        namespaces
+        namespaces: isString(namespaces) ? [namespaces] : namespaces
       };
     }
     translate(keys, options, lastKey) {
@@ -33106,7 +33094,7 @@ return L.GeometryUtil;
         ...options
       };
       if (!options) options = {};
-      if (keys === undefined || keys === null) return '';
+      if (keys == null) return '';
       if (!Array.isArray(keys)) keys = [String(keys)];
       const returnDetails = options.returnDetails !== undefined ? options.returnDetails : this.options.returnDetails;
       const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator;
@@ -33117,7 +33105,7 @@ return L.GeometryUtil;
       const namespace = namespaces[namespaces.length - 1];
       const lng = options.lng || this.language;
       const appendNamespaceToCIMode = options.appendNamespaceToCIMode || this.options.appendNamespaceToCIMode;
-      if (lng && lng.toLowerCase() === 'cimode') {
+      if (lng?.toLowerCase() === 'cimode') {
         if (appendNamespaceToCIMode) {
           const nsSeparator = options.nsSeparator || this.options.nsSeparator;
           if (returnDetails) {
@@ -33145,20 +33133,32 @@ return L.GeometryUtil;
         return key;
       }
       const resolved = this.resolve(keys, options);
-      let res = resolved && resolved.res;
-      const resUsedKey = resolved && resolved.usedKey || key;
-      const resExactUsedKey = resolved && resolved.exactUsedKey || key;
-      const resType = Object.prototype.toString.apply(res);
+      let res = resolved?.res;
+      const resUsedKey = resolved?.usedKey || key;
+      const resExactUsedKey = resolved?.exactUsedKey || key;
       const noObject = ['[object Number]', '[object Function]', '[object RegExp]'];
       const joinArrays = options.joinArrays !== undefined ? options.joinArrays : this.options.joinArrays;
       const handleAsObjectInI18nFormat = !this.i18nFormat || this.i18nFormat.handleAsObject;
-      const handleAsObject = typeof res !== 'string' && typeof res !== 'boolean' && typeof res !== 'number';
-      if (handleAsObjectInI18nFormat && res && handleAsObject && noObject.indexOf(resType) < 0 && !(typeof joinArrays === 'string' && resType === '[object Array]')) {
+      const needsPluralHandling = options.count !== undefined && !isString(options.count);
+      const hasDefaultValue = Translator.hasDefaultValue(options);
+      const defaultValueSuffix = needsPluralHandling ? this.pluralResolver.getSuffix(lng, options.count, options) : '';
+      const defaultValueSuffixOrdinalFallback = options.ordinal && needsPluralHandling ? this.pluralResolver.getSuffix(lng, options.count, {
+        ordinal: false
+      }) : '';
+      const needsZeroSuffixLookup = needsPluralHandling && !options.ordinal && options.count === 0;
+      const defaultValue = needsZeroSuffixLookup && options[`defaultValue${this.options.pluralSeparator}zero`] || options[`defaultValue${defaultValueSuffix}`] || options[`defaultValue${defaultValueSuffixOrdinalFallback}`] || options.defaultValue;
+      let resForObjHndl = res;
+      if (handleAsObjectInI18nFormat && !res && hasDefaultValue) {
+        resForObjHndl = defaultValue;
+      }
+      const handleAsObject = shouldHandleAsObject(resForObjHndl);
+      const resType = Object.prototype.toString.apply(resForObjHndl);
+      if (handleAsObjectInI18nFormat && resForObjHndl && handleAsObject && noObject.indexOf(resType) < 0 && !(isString(joinArrays) && Array.isArray(resForObjHndl))) {
         if (!options.returnObjects && !this.options.returnObjects) {
           if (!this.options.returnedObjectHandler) {
             this.logger.warn('accessing an object - but returnObjects options is not enabled!');
           }
-          const r = this.options.returnedObjectHandler ? this.options.returnedObjectHandler(resUsedKey, res, {
+          const r = this.options.returnedObjectHandler ? this.options.returnedObjectHandler(resUsedKey, resForObjHndl, {
             ...options,
             ns: namespaces
           }) : `key '${key} (${this.language})' returned an object instead of string.`;
@@ -33170,38 +33170,41 @@ return L.GeometryUtil;
           return r;
         }
         if (keySeparator) {
-          const resTypeIsArray = resType === '[object Array]';
+          const resTypeIsArray = Array.isArray(resForObjHndl);
           const copy = resTypeIsArray ? [] : {};
           const newKeyToUse = resTypeIsArray ? resExactUsedKey : resUsedKey;
-          for (const m in res) {
-            if (Object.prototype.hasOwnProperty.call(res, m)) {
+          for (const m in resForObjHndl) {
+            if (Object.prototype.hasOwnProperty.call(resForObjHndl, m)) {
               const deepKey = `${newKeyToUse}${keySeparator}${m}`;
-              copy[m] = this.translate(deepKey, {
-                ...options,
-                ...{
-                  joinArrays: false,
-                  ns: namespaces
-                }
-              });
-              if (copy[m] === deepKey) copy[m] = res[m];
+              if (hasDefaultValue && !res) {
+                copy[m] = this.translate(deepKey, {
+                  ...options,
+                  defaultValue: shouldHandleAsObject(defaultValue) ? defaultValue[m] : undefined,
+                  ...{
+                    joinArrays: false,
+                    ns: namespaces
+                  }
+                });
+              } else {
+                copy[m] = this.translate(deepKey, {
+                  ...options,
+                  ...{
+                    joinArrays: false,
+                    ns: namespaces
+                  }
+                });
+              }
+              if (copy[m] === deepKey) copy[m] = resForObjHndl[m];
             }
           }
           res = copy;
         }
-      } else if (handleAsObjectInI18nFormat && typeof joinArrays === 'string' && resType === '[object Array]') {
+      } else if (handleAsObjectInI18nFormat && isString(joinArrays) && Array.isArray(res)) {
         res = res.join(joinArrays);
         if (res) res = this.extendTranslation(res, keys, options, lastKey);
       } else {
         let usedDefault = false;
         let usedKey = false;
-        const needsPluralHandling = options.count !== undefined && typeof options.count !== 'string';
-        const hasDefaultValue = Translator.hasDefaultValue(options);
-        const defaultValueSuffix = needsPluralHandling ? this.pluralResolver.getSuffix(lng, options.count, options) : '';
-        const defaultValueSuffixOrdinalFallback = options.ordinal && needsPluralHandling ? this.pluralResolver.getSuffix(lng, options.count, {
-          ordinal: false
-        }) : '';
-        const needsZeroSuffixLookup = needsPluralHandling && !options.ordinal && options.count === 0 && this.pluralResolver.shouldUseIntlApi();
-        const defaultValue = needsZeroSuffixLookup && options[`defaultValue${this.options.pluralSeparator}zero`] || options[`defaultValue${defaultValueSuffix}`] || options[`defaultValue${defaultValueSuffixOrdinalFallback}`] || options.defaultValue;
         if (!this.isValidLookup(res) && hasDefaultValue) {
           usedDefault = true;
           res = defaultValue;
@@ -33237,7 +33240,7 @@ return L.GeometryUtil;
             const defaultForMissing = hasDefaultValue && specificDefaultValue !== res ? specificDefaultValue : resForMissing;
             if (this.options.missingKeyHandler) {
               this.options.missingKeyHandler(l, namespace, k, defaultForMissing, updateMissing, options);
-            } else if (this.backendConnector && this.backendConnector.saveMissing) {
+            } else if (this.backendConnector?.saveMissing) {
               this.backendConnector.saveMissing(l, namespace, k, defaultForMissing, updateMissing, options);
             }
             this.emit('missingKey', l, namespace, k, res);
@@ -33261,11 +33264,7 @@ return L.GeometryUtil;
         res = this.extendTranslation(res, keys, options, resolved, lastKey);
         if (usedKey && res === key && this.options.appendNamespaceToMissingKey) res = `${namespace}:${key}`;
         if ((usedKey || usedDefault) && this.options.parseMissingKeyHandler) {
-          if (this.options.compatibilityAPI !== 'v1') {
-            res = this.options.parseMissingKeyHandler(this.options.appendNamespaceToMissingKey ? `${namespace}:${key}` : key, usedDefault ? res : undefined);
-          } else {
-            res = this.options.parseMissingKeyHandler(res);
-          }
+          res = this.options.parseMissingKeyHandler(this.options.appendNamespaceToMissingKey ? `${namespace}:${key}` : key, usedDefault ? res : undefined);
         }
       }
       if (returnDetails) {
@@ -33277,7 +33276,7 @@ return L.GeometryUtil;
     }
     extendTranslation(res, key, options, resolved, lastKey) {
       var _this = this;
-      if (this.i18nFormat && this.i18nFormat.parse) {
+      if (this.i18nFormat?.parse) {
         res = this.i18nFormat.parse(res, {
           ...this.options.interpolation.defaultVariables,
           ...options
@@ -33294,29 +33293,29 @@ return L.GeometryUtil;
             }
           }
         });
-        const skipOnVariables = typeof res === 'string' && (options && options.interpolation && options.interpolation.skipOnVariables !== undefined ? options.interpolation.skipOnVariables : this.options.interpolation.skipOnVariables);
+        const skipOnVariables = isString(res) && (options?.interpolation?.skipOnVariables !== undefined ? options.interpolation.skipOnVariables : this.options.interpolation.skipOnVariables);
         let nestBef;
         if (skipOnVariables) {
           const nb = res.match(this.interpolator.nestingRegexp);
           nestBef = nb && nb.length;
         }
-        let data = options.replace && typeof options.replace !== 'string' ? options.replace : options;
+        let data = options.replace && !isString(options.replace) ? options.replace : options;
         if (this.options.interpolation.defaultVariables) data = {
           ...this.options.interpolation.defaultVariables,
           ...data
         };
-        res = this.interpolator.interpolate(res, data, options.lng || this.language, options);
+        res = this.interpolator.interpolate(res, data, options.lng || this.language || resolved.usedLng, options);
         if (skipOnVariables) {
           const na = res.match(this.interpolator.nestingRegexp);
           const nestAft = na && na.length;
           if (nestBef < nestAft) options.nest = false;
         }
-        if (!options.lng && this.options.compatibilityAPI !== 'v1' && resolved && resolved.res) options.lng = resolved.usedLng;
+        if (!options.lng && resolved && resolved.res) options.lng = this.language || resolved.usedLng;
         if (options.nest !== false) res = this.interpolator.nest(res, function () {
           for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
             args[_key] = arguments[_key];
           }
-          if (lastKey && lastKey[0] === args[0] && !options.context) {
+          if (lastKey?.[0] === args[0] && !options.context) {
             _this.logger.warn(`It seems you are nesting recursively key: ${args[0]} in key: ${key[0]}`);
             return null;
           }
@@ -33325,8 +33324,8 @@ return L.GeometryUtil;
         if (options.interpolation) this.interpolator.reset();
       }
       const postProcess = options.postProcess || this.options.postProcess;
-      const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess;
-      if (res !== undefined && res !== null && postProcessorNames && postProcessorNames.length && options.applyPostProcessor !== false) {
+      const postProcessorNames = isString(postProcess) ? [postProcess] : postProcess;
+      if (res != null && postProcessorNames?.length && options.applyPostProcessor !== false) {
         res = postProcessor.handle(postProcessorNames, res, key, this.options && this.options.postProcessPassResolved ? {
           i18nResolved: {
             ...resolved,
@@ -33344,7 +33343,7 @@ return L.GeometryUtil;
       let exactUsedKey;
       let usedLng;
       let usedNS;
-      if (typeof keys === 'string') keys = [keys];
+      if (isString(keys)) keys = [keys];
       keys.forEach(k => {
         if (this.isValidLookup(found)) return;
         const extracted = this.extractFromKey(k, options);
@@ -33352,14 +33351,14 @@ return L.GeometryUtil;
         usedKey = key;
         let namespaces = extracted.namespaces;
         if (this.options.fallbackNS) namespaces = namespaces.concat(this.options.fallbackNS);
-        const needsPluralHandling = options.count !== undefined && typeof options.count !== 'string';
-        const needsZeroSuffixLookup = needsPluralHandling && !options.ordinal && options.count === 0 && this.pluralResolver.shouldUseIntlApi();
-        const needsContextHandling = options.context !== undefined && (typeof options.context === 'string' || typeof options.context === 'number') && options.context !== '';
+        const needsPluralHandling = options.count !== undefined && !isString(options.count);
+        const needsZeroSuffixLookup = needsPluralHandling && !options.ordinal && options.count === 0;
+        const needsContextHandling = options.context !== undefined && (isString(options.context) || typeof options.context === 'number') && options.context !== '';
         const codes = options.lngs ? options.lngs : this.languageUtils.toResolveHierarchy(options.lng || this.language, options.fallbackLng);
         namespaces.forEach(ns => {
           if (this.isValidLookup(found)) return;
           usedNS = ns;
-          if (!checkedLoadedFor[`${codes[0]}-${ns}`] && this.utils && this.utils.hasLoadedNamespace && !this.utils.hasLoadedNamespace(usedNS)) {
+          if (!checkedLoadedFor[`${codes[0]}-${ns}`] && this.utils?.hasLoadedNamespace && !this.utils?.hasLoadedNamespace(usedNS)) {
             checkedLoadedFor[`${codes[0]}-${ns}`] = true;
             this.logger.warn(`key "${usedKey}" for languages "${codes.join(', ')}" won't get resolved as namespace "${usedNS}" was not yet loaded`, 'This means something IS WRONG in your setup. You access the t function before i18next.init / i18next.loadNamespace / i18next.changeLanguage was done. Wait for the callback or Promise to resolve before accessing it!!!');
           }
@@ -33367,7 +33366,7 @@ return L.GeometryUtil;
             if (this.isValidLookup(found)) return;
             usedLng = code;
             const finalKeys = [key];
-            if (this.i18nFormat && this.i18nFormat.addLookupKeys) {
+            if (this.i18nFormat?.addLookupKeys) {
               this.i18nFormat.addLookupKeys(finalKeys, key, code, ns, options);
             } else {
               let pluralSuffix;
@@ -33420,13 +33419,13 @@ return L.GeometryUtil;
     }
     getResource(code, ns, key) {
       let options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-      if (this.i18nFormat && this.i18nFormat.getResource) return this.i18nFormat.getResource(code, ns, key, options);
+      if (this.i18nFormat?.getResource) return this.i18nFormat.getResource(code, ns, key, options);
       return this.resourceStore.getResource(code, ns, key, options);
     }
     getUsedParamsDetails() {
       let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       const optionsKeys = ['defaultValue', 'ordinal', 'context', 'replace', 'lng', 'lngs', 'fallbackLng', 'ns', 'keySeparator', 'nsSeparator', 'returnObjects', 'returnDetails', 'joinArrays', 'postProcess', 'interpolation'];
-      const useOptionsReplaceForData = options.replace && typeof options.replace !== 'string';
+      const useOptionsReplaceForData = options.replace && !isString(options.replace);
       let data = useOptionsReplaceForData ? options.replace : options;
       if (useOptionsReplaceForData && typeof options.count !== 'undefined') {
         data.count = options.count;
@@ -33458,9 +33457,6 @@ return L.GeometryUtil;
     }
   }
 
-  function capitalize(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-  }
   class LanguageUtil {
     constructor(options) {
       this.options = options;
@@ -33483,23 +33479,19 @@ return L.GeometryUtil;
       return this.formatLanguageCode(p[0]);
     }
     formatLanguageCode(code) {
-      if (typeof code === 'string' && code.indexOf('-') > -1) {
-        const specialCases = ['hans', 'hant', 'latn', 'cyrl', 'cans', 'mong', 'arab'];
-        let p = code.split('-');
-        if (this.options.lowerCaseLng) {
-          p = p.map(part => part.toLowerCase());
-        } else if (p.length === 2) {
-          p[0] = p[0].toLowerCase();
-          p[1] = p[1].toUpperCase();
-          if (specialCases.indexOf(p[1].toLowerCase()) > -1) p[1] = capitalize(p[1].toLowerCase());
-        } else if (p.length === 3) {
-          p[0] = p[0].toLowerCase();
-          if (p[1].length === 2) p[1] = p[1].toUpperCase();
-          if (p[0] !== 'sgn' && p[2].length === 2) p[2] = p[2].toUpperCase();
-          if (specialCases.indexOf(p[1].toLowerCase()) > -1) p[1] = capitalize(p[1].toLowerCase());
-          if (specialCases.indexOf(p[2].toLowerCase()) > -1) p[2] = capitalize(p[2].toLowerCase());
+      if (isString(code) && code.indexOf('-') > -1) {
+        let formattedCode;
+        try {
+          formattedCode = Intl.getCanonicalLocales(code)[0];
+        } catch (e) {}
+        if (formattedCode && this.options.lowerCaseLng) {
+          formattedCode = formattedCode.toLowerCase();
         }
-        return p.join('-');
+        if (formattedCode) return formattedCode;
+        if (this.options.lowerCaseLng) {
+          return code.toLowerCase();
+        }
+        return code;
       }
       return this.options.cleanCode || this.options.lowerCaseLng ? code.toLowerCase() : code;
     }
@@ -33536,8 +33528,8 @@ return L.GeometryUtil;
     getFallbackCodes(fallbacks, code) {
       if (!fallbacks) return [];
       if (typeof fallbacks === 'function') fallbacks = fallbacks(code);
-      if (typeof fallbacks === 'string') fallbacks = [fallbacks];
-      if (Object.prototype.toString.apply(fallbacks) === '[object Array]') return fallbacks;
+      if (isString(fallbacks)) fallbacks = [fallbacks];
+      if (Array.isArray(fallbacks)) return fallbacks;
       if (!code) return fallbacks.default || [];
       let found = fallbacks[code];
       if (!found) found = fallbacks[this.getScriptPartFromCode(code)];
@@ -33557,11 +33549,11 @@ return L.GeometryUtil;
           this.logger.warn(`rejecting language code not found in supportedLngs: ${c}`);
         }
       };
-      if (typeof code === 'string' && (code.indexOf('-') > -1 || code.indexOf('_') > -1)) {
+      if (isString(code) && (code.indexOf('-') > -1 || code.indexOf('_') > -1)) {
         if (this.options.load !== 'languageOnly') addCode(this.formatLanguageCode(code));
         if (this.options.load !== 'languageOnly' && this.options.load !== 'currentOnly') addCode(this.getScriptPartFromCode(code));
         if (this.options.load !== 'currentOnly') addCode(this.getLanguagePartFromCode(code));
-      } else if (typeof code === 'string') {
+      } else if (isString(code)) {
         addCode(this.formatLanguageCode(code));
       }
       fallbackCodes.forEach(fc => {
@@ -33571,169 +33563,6 @@ return L.GeometryUtil;
     }
   }
 
-  let sets = [{
-    lngs: ['ach', 'ak', 'am', 'arn', 'br', 'fil', 'gun', 'ln', 'mfe', 'mg', 'mi', 'oc', 'pt', 'pt-BR', 'tg', 'tl', 'ti', 'tr', 'uz', 'wa'],
-    nr: [1, 2],
-    fc: 1
-  }, {
-    lngs: ['af', 'an', 'ast', 'az', 'bg', 'bn', 'ca', 'da', 'de', 'dev', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fi', 'fo', 'fur', 'fy', 'gl', 'gu', 'ha', 'hi', 'hu', 'hy', 'ia', 'it', 'kk', 'kn', 'ku', 'lb', 'mai', 'ml', 'mn', 'mr', 'nah', 'nap', 'nb', 'ne', 'nl', 'nn', 'no', 'nso', 'pa', 'pap', 'pms', 'ps', 'pt-PT', 'rm', 'sco', 'se', 'si', 'so', 'son', 'sq', 'sv', 'sw', 'ta', 'te', 'tk', 'ur', 'yo'],
-    nr: [1, 2],
-    fc: 2
-  }, {
-    lngs: ['ay', 'bo', 'cgg', 'fa', 'ht', 'id', 'ja', 'jbo', 'ka', 'km', 'ko', 'ky', 'lo', 'ms', 'sah', 'su', 'th', 'tt', 'ug', 'vi', 'wo', 'zh'],
-    nr: [1],
-    fc: 3
-  }, {
-    lngs: ['be', 'bs', 'cnr', 'dz', 'hr', 'ru', 'sr', 'uk'],
-    nr: [1, 2, 5],
-    fc: 4
-  }, {
-    lngs: ['ar'],
-    nr: [0, 1, 2, 3, 11, 100],
-    fc: 5
-  }, {
-    lngs: ['cs', 'sk'],
-    nr: [1, 2, 5],
-    fc: 6
-  }, {
-    lngs: ['csb', 'pl'],
-    nr: [1, 2, 5],
-    fc: 7
-  }, {
-    lngs: ['cy'],
-    nr: [1, 2, 3, 8],
-    fc: 8
-  }, {
-    lngs: ['fr'],
-    nr: [1, 2],
-    fc: 9
-  }, {
-    lngs: ['ga'],
-    nr: [1, 2, 3, 7, 11],
-    fc: 10
-  }, {
-    lngs: ['gd'],
-    nr: [1, 2, 3, 20],
-    fc: 11
-  }, {
-    lngs: ['is'],
-    nr: [1, 2],
-    fc: 12
-  }, {
-    lngs: ['jv'],
-    nr: [0, 1],
-    fc: 13
-  }, {
-    lngs: ['kw'],
-    nr: [1, 2, 3, 4],
-    fc: 14
-  }, {
-    lngs: ['lt'],
-    nr: [1, 2, 10],
-    fc: 15
-  }, {
-    lngs: ['lv'],
-    nr: [1, 2, 0],
-    fc: 16
-  }, {
-    lngs: ['mk'],
-    nr: [1, 2],
-    fc: 17
-  }, {
-    lngs: ['mnk'],
-    nr: [0, 1, 2],
-    fc: 18
-  }, {
-    lngs: ['mt'],
-    nr: [1, 2, 11, 20],
-    fc: 19
-  }, {
-    lngs: ['or'],
-    nr: [2, 1],
-    fc: 2
-  }, {
-    lngs: ['ro'],
-    nr: [1, 2, 20],
-    fc: 20
-  }, {
-    lngs: ['sl'],
-    nr: [5, 1, 2, 3],
-    fc: 21
-  }, {
-    lngs: ['he', 'iw'],
-    nr: [1, 2, 20, 21],
-    fc: 22
-  }];
-  let _rulesPluralsTypes = {
-    1: function (n) {
-      return Number(n > 1);
-    },
-    2: function (n) {
-      return Number(n != 1);
-    },
-    3: function (n) {
-      return 0;
-    },
-    4: function (n) {
-      return Number(n % 10 == 1 && n % 100 != 11 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2);
-    },
-    5: function (n) {
-      return Number(n == 0 ? 0 : n == 1 ? 1 : n == 2 ? 2 : n % 100 >= 3 && n % 100 <= 10 ? 3 : n % 100 >= 11 ? 4 : 5);
-    },
-    6: function (n) {
-      return Number(n == 1 ? 0 : n >= 2 && n <= 4 ? 1 : 2);
-    },
-    7: function (n) {
-      return Number(n == 1 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2);
-    },
-    8: function (n) {
-      return Number(n == 1 ? 0 : n == 2 ? 1 : n != 8 && n != 11 ? 2 : 3);
-    },
-    9: function (n) {
-      return Number(n >= 2);
-    },
-    10: function (n) {
-      return Number(n == 1 ? 0 : n == 2 ? 1 : n < 7 ? 2 : n < 11 ? 3 : 4);
-    },
-    11: function (n) {
-      return Number(n == 1 || n == 11 ? 0 : n == 2 || n == 12 ? 1 : n > 2 && n < 20 ? 2 : 3);
-    },
-    12: function (n) {
-      return Number(n % 10 != 1 || n % 100 == 11);
-    },
-    13: function (n) {
-      return Number(n !== 0);
-    },
-    14: function (n) {
-      return Number(n == 1 ? 0 : n == 2 ? 1 : n == 3 ? 2 : 3);
-    },
-    15: function (n) {
-      return Number(n % 10 == 1 && n % 100 != 11 ? 0 : n % 10 >= 2 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2);
-    },
-    16: function (n) {
-      return Number(n % 10 == 1 && n % 100 != 11 ? 0 : n !== 0 ? 1 : 2);
-    },
-    17: function (n) {
-      return Number(n == 1 || n % 10 == 1 && n % 100 != 11 ? 0 : 1);
-    },
-    18: function (n) {
-      return Number(n == 0 ? 0 : n == 1 ? 1 : 2);
-    },
-    19: function (n) {
-      return Number(n == 1 ? 0 : n == 0 || n % 100 > 1 && n % 100 < 11 ? 1 : n % 100 > 10 && n % 100 < 20 ? 2 : 3);
-    },
-    20: function (n) {
-      return Number(n == 1 ? 0 : n == 0 || n % 100 > 0 && n % 100 < 20 ? 1 : 2);
-    },
-    21: function (n) {
-      return Number(n % 100 == 1 ? 1 : n % 100 == 2 ? 2 : n % 100 == 3 || n % 100 == 4 ? 3 : 0);
-    },
-    22: function (n) {
-      return Number(n == 1 ? 0 : n == 2 ? 1 : (n < 0 || n > 10) && n % 10 == 0 ? 2 : 3);
-    }
-  };
-  const nonIntlVersions = ['v1', 'v2', 'v3'];
-  const intlVersions = ['v4'];
   const suffixesOrder = {
     zero: 0,
     one: 1,
@@ -33742,53 +33571,59 @@ return L.GeometryUtil;
     many: 4,
     other: 5
   };
-  function createRules() {
-    const rules = {};
-    sets.forEach(set => {
-      set.lngs.forEach(l => {
-        rules[l] = {
-          numbers: set.nr,
-          plurals: _rulesPluralsTypes[set.fc]
-        };
-      });
-    });
-    return rules;
-  }
+  const dummyRule = {
+    select: count => count === 1 ? 'one' : 'other',
+    resolvedOptions: () => ({
+      pluralCategories: ['one', 'other']
+    })
+  };
   class PluralResolver {
     constructor(languageUtils) {
       let options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
       this.languageUtils = languageUtils;
       this.options = options;
       this.logger = baseLogger.create('pluralResolver');
-      if ((!this.options.compatibilityJSON || intlVersions.includes(this.options.compatibilityJSON)) && (typeof Intl === 'undefined' || !Intl.PluralRules)) {
-        this.options.compatibilityJSON = 'v3';
-        this.logger.error('Your environment seems not to be Intl API compatible, use an Intl.PluralRules polyfill. Will fallback to the compatibilityJSON v3 format handling.');
-      }
-      this.rules = createRules();
+      this.pluralRulesCache = {};
     }
     addRule(lng, obj) {
       this.rules[lng] = obj;
     }
+    clearCache() {
+      this.pluralRulesCache = {};
+    }
     getRule(code) {
       let options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-      if (this.shouldUseIntlApi()) {
-        try {
-          return new Intl.PluralRules(getCleanedCode(code === 'dev' ? 'en' : code), {
-            type: options.ordinal ? 'ordinal' : 'cardinal'
-          });
-        } catch (err) {
-          return;
-        }
+      const cleanedCode = getCleanedCode(code === 'dev' ? 'en' : code);
+      const type = options.ordinal ? 'ordinal' : 'cardinal';
+      const cacheKey = JSON.stringify({
+        cleanedCode,
+        type
+      });
+      if (cacheKey in this.pluralRulesCache) {
+        return this.pluralRulesCache[cacheKey];
       }
-      return this.rules[code] || this.rules[this.languageUtils.getLanguagePartFromCode(code)];
+      let rule;
+      try {
+        rule = new Intl.PluralRules(cleanedCode, {
+          type
+        });
+      } catch (err) {
+        if (!Intl) {
+          this.logger.error('No Intl support, please use an Intl polyfill!');
+          return dummyRule;
+        }
+        if (!code.match(/-|_/)) return dummyRule;
+        const lngPart = this.languageUtils.getLanguagePartFromCode(code);
+        rule = this.getRule(lngPart, options);
+      }
+      this.pluralRulesCache[cacheKey] = rule;
+      return rule;
     }
     needsPlural(code) {
       let options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-      const rule = this.getRule(code, options);
-      if (this.shouldUseIntlApi()) {
-        return rule && rule.resolvedOptions().pluralCategories.length > 1;
-      }
-      return rule && rule.numbers.length > 1;
+      let rule = this.getRule(code, options);
+      if (!rule) rule = this.getRule('dev', options);
+      return rule?.resolvedOptions().pluralCategories.length > 1;
     }
     getPluralFormsOfKey(code, key) {
       let options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
@@ -33796,70 +33631,39 @@ return L.GeometryUtil;
     }
     getSuffixes(code) {
       let options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-      const rule = this.getRule(code, options);
-      if (!rule) {
-        return [];
-      }
-      if (this.shouldUseIntlApi()) {
-        return rule.resolvedOptions().pluralCategories.sort((pluralCategory1, pluralCategory2) => suffixesOrder[pluralCategory1] - suffixesOrder[pluralCategory2]).map(pluralCategory => `${this.options.prepend}${options.ordinal ? `ordinal${this.options.prepend}` : ''}${pluralCategory}`);
-      }
-      return rule.numbers.map(number => this.getSuffix(code, number, options));
+      let rule = this.getRule(code, options);
+      if (!rule) rule = this.getRule('dev', options);
+      if (!rule) return [];
+      return rule.resolvedOptions().pluralCategories.sort((pluralCategory1, pluralCategory2) => suffixesOrder[pluralCategory1] - suffixesOrder[pluralCategory2]).map(pluralCategory => `${this.options.prepend}${options.ordinal ? `ordinal${this.options.prepend}` : ''}${pluralCategory}`);
     }
     getSuffix(code, count) {
       let options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
       const rule = this.getRule(code, options);
       if (rule) {
-        if (this.shouldUseIntlApi()) {
-          return `${this.options.prepend}${options.ordinal ? `ordinal${this.options.prepend}` : ''}${rule.select(count)}`;
-        }
-        return this.getSuffixRetroCompatible(rule, count);
+        return `${this.options.prepend}${options.ordinal ? `ordinal${this.options.prepend}` : ''}${rule.select(count)}`;
       }
       this.logger.warn(`no plural rule found for: ${code}`);
-      return '';
-    }
-    getSuffixRetroCompatible(rule, count) {
-      const idx = rule.noAbs ? rule.plurals(count) : rule.plurals(Math.abs(count));
-      let suffix = rule.numbers[idx];
-      if (this.options.simplifyPluralSuffix && rule.numbers.length === 2 && rule.numbers[0] === 1) {
-        if (suffix === 2) {
-          suffix = 'plural';
-        } else if (suffix === 1) {
-          suffix = '';
-        }
-      }
-      const returnSuffix = () => this.options.prepend && suffix.toString() ? this.options.prepend + suffix.toString() : suffix.toString();
-      if (this.options.compatibilityJSON === 'v1') {
-        if (suffix === 1) return '';
-        if (typeof suffix === 'number') return `_plural_${suffix.toString()}`;
-        return returnSuffix();
-      } else if (this.options.compatibilityJSON === 'v2') {
-        return returnSuffix();
-      } else if (this.options.simplifyPluralSuffix && rule.numbers.length === 2 && rule.numbers[0] === 1) {
-        return returnSuffix();
-      }
-      return this.options.prepend && idx.toString() ? this.options.prepend + idx.toString() : idx.toString();
-    }
-    shouldUseIntlApi() {
-      return !nonIntlVersions.includes(this.options.compatibilityJSON);
+      return this.getSuffix('dev', count, options);
     }
   }
 
-  function deepFindWithDefaults(data, defaultData, key) {
+  const deepFindWithDefaults = function (data, defaultData, key) {
     let keySeparator = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '.';
     let ignoreJSONStructure = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
     let path = getPathWithDefaults(data, defaultData, key);
-    if (!path && ignoreJSONStructure && typeof key === 'string') {
+    if (!path && ignoreJSONStructure && isString(key)) {
       path = deepFind(data, key, keySeparator);
       if (path === undefined) path = deepFind(defaultData, key, keySeparator);
     }
     return path;
-  }
+  };
+  const regexSafe = val => val.replace(/\$/g, '$$$$');
   class Interpolator {
     constructor() {
       let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       this.logger = baseLogger.create('interpolator');
       this.options = options;
-      this.format = options.interpolation && options.interpolation.format || (value => value);
+      this.format = options?.interpolation?.format || (value => value);
       this.init(options);
     }
     init() {
@@ -33867,20 +33671,38 @@ return L.GeometryUtil;
       if (!options.interpolation) options.interpolation = {
         escapeValue: true
       };
-      const iOpts = options.interpolation;
-      this.escape = iOpts.escape !== undefined ? iOpts.escape : escape;
-      this.escapeValue = iOpts.escapeValue !== undefined ? iOpts.escapeValue : true;
-      this.useRawValueToEscape = iOpts.useRawValueToEscape !== undefined ? iOpts.useRawValueToEscape : false;
-      this.prefix = iOpts.prefix ? regexEscape(iOpts.prefix) : iOpts.prefixEscaped || '{{';
-      this.suffix = iOpts.suffix ? regexEscape(iOpts.suffix) : iOpts.suffixEscaped || '}}';
-      this.formatSeparator = iOpts.formatSeparator ? iOpts.formatSeparator : iOpts.formatSeparator || ',';
-      this.unescapePrefix = iOpts.unescapeSuffix ? '' : iOpts.unescapePrefix || '-';
-      this.unescapeSuffix = this.unescapePrefix ? '' : iOpts.unescapeSuffix || '';
-      this.nestingPrefix = iOpts.nestingPrefix ? regexEscape(iOpts.nestingPrefix) : iOpts.nestingPrefixEscaped || regexEscape('$t(');
-      this.nestingSuffix = iOpts.nestingSuffix ? regexEscape(iOpts.nestingSuffix) : iOpts.nestingSuffixEscaped || regexEscape(')');
-      this.nestingOptionsSeparator = iOpts.nestingOptionsSeparator ? iOpts.nestingOptionsSeparator : iOpts.nestingOptionsSeparator || ',';
-      this.maxReplaces = iOpts.maxReplaces ? iOpts.maxReplaces : 1000;
-      this.alwaysFormat = iOpts.alwaysFormat !== undefined ? iOpts.alwaysFormat : false;
+      const {
+        escape: escape$1,
+        escapeValue,
+        useRawValueToEscape,
+        prefix,
+        prefixEscaped,
+        suffix,
+        suffixEscaped,
+        formatSeparator,
+        unescapeSuffix,
+        unescapePrefix,
+        nestingPrefix,
+        nestingPrefixEscaped,
+        nestingSuffix,
+        nestingSuffixEscaped,
+        nestingOptionsSeparator,
+        maxReplaces,
+        alwaysFormat
+      } = options.interpolation;
+      this.escape = escape$1 !== undefined ? escape$1 : escape;
+      this.escapeValue = escapeValue !== undefined ? escapeValue : true;
+      this.useRawValueToEscape = useRawValueToEscape !== undefined ? useRawValueToEscape : false;
+      this.prefix = prefix ? regexEscape(prefix) : prefixEscaped || '{{';
+      this.suffix = suffix ? regexEscape(suffix) : suffixEscaped || '}}';
+      this.formatSeparator = formatSeparator || ',';
+      this.unescapePrefix = unescapeSuffix ? '' : unescapePrefix || '-';
+      this.unescapeSuffix = this.unescapePrefix ? '' : unescapeSuffix || '';
+      this.nestingPrefix = nestingPrefix ? regexEscape(nestingPrefix) : nestingPrefixEscaped || regexEscape('$t(');
+      this.nestingSuffix = nestingSuffix ? regexEscape(nestingSuffix) : nestingSuffixEscaped || regexEscape(')');
+      this.nestingOptionsSeparator = nestingOptionsSeparator || ',';
+      this.maxReplaces = maxReplaces || 1000;
+      this.alwaysFormat = alwaysFormat !== undefined ? alwaysFormat : false;
       this.resetRegExp();
     }
     reset() {
@@ -33888,7 +33710,7 @@ return L.GeometryUtil;
     }
     resetRegExp() {
       const getOrResetRegExp = (existingRegExp, pattern) => {
-        if (existingRegExp && existingRegExp.source === pattern) {
+        if (existingRegExp?.source === pattern) {
           existingRegExp.lastIndex = 0;
           return existingRegExp;
         }
@@ -33903,9 +33725,6 @@ return L.GeometryUtil;
       let value;
       let replaces;
       const defaultData = this.options && this.options.interpolation && this.options.interpolation.defaultVariables || {};
-      function regexSafe(val) {
-        return val.replace(/\$/g, '$$$$');
-      }
       const handleFormat = key => {
         if (key.indexOf(this.formatSeparator) < 0) {
           const path = deepFindWithDefaults(data, defaultData, key, this.options.keySeparator, this.options.ignoreJSONStructure);
@@ -33925,8 +33744,8 @@ return L.GeometryUtil;
         });
       };
       this.resetRegExp();
-      const missingInterpolationHandler = options && options.missingInterpolationHandler || this.options.missingInterpolationHandler;
-      const skipOnVariables = options && options.interpolation && options.interpolation.skipOnVariables !== undefined ? options.interpolation.skipOnVariables : this.options.interpolation.skipOnVariables;
+      const missingInterpolationHandler = options?.missingInterpolationHandler || this.options.missingInterpolationHandler;
+      const skipOnVariables = options?.interpolation?.skipOnVariables !== undefined ? options.interpolation.skipOnVariables : this.options.interpolation.skipOnVariables;
       const todos = [{
         regex: this.regexpUnescape,
         safeValue: val => regexSafe(val)
@@ -33942,7 +33761,7 @@ return L.GeometryUtil;
           if (value === undefined) {
             if (typeof missingInterpolationHandler === 'function') {
               const temp = missingInterpolationHandler(str, match, options);
-              value = typeof temp === 'string' ? temp : '';
+              value = isString(temp) ? temp : '';
             } else if (options && Object.prototype.hasOwnProperty.call(options, matchedVar)) {
               value = '';
             } else if (skipOnVariables) {
@@ -33952,7 +33771,7 @@ return L.GeometryUtil;
               this.logger.warn(`missed to pass in variable ${matchedVar} for interpolating ${str}`);
               value = '';
             }
-          } else if (typeof value !== 'string' && !this.useRawValueToEscape) {
+          } else if (!isString(value) && !this.useRawValueToEscape) {
             value = makeString(value);
           }
           const safeValue = todo.safeValue(value);
@@ -33976,7 +33795,7 @@ return L.GeometryUtil;
       let match;
       let value;
       let clonedOptions;
-      function handleHasOptions(key, inheritedOptions) {
+      const handleHasOptions = (key, inheritedOptions) => {
         const sep = this.nestingOptionsSeparator;
         if (key.indexOf(sep) < 0) return key;
         const c = key.split(new RegExp(`${sep}[ ]*{`));
@@ -33985,7 +33804,7 @@ return L.GeometryUtil;
         optionsString = this.interpolate(optionsString, clonedOptions);
         const matchedSingleQuotes = optionsString.match(/'/g);
         const matchedDoubleQuotes = optionsString.match(/"/g);
-        if (matchedSingleQuotes && matchedSingleQuotes.length % 2 === 0 && !matchedDoubleQuotes || matchedDoubleQuotes.length % 2 !== 0) {
+        if ((matchedSingleQuotes?.length ?? 0) % 2 === 0 && !matchedDoubleQuotes || matchedDoubleQuotes.length % 2 !== 0) {
           optionsString = optionsString.replace(/'/g, '"');
         }
         try {
@@ -33998,15 +33817,15 @@ return L.GeometryUtil;
           this.logger.warn(`failed parsing options string in nesting for key ${key}`, e);
           return `${key}${sep}${optionsString}`;
         }
-        delete clonedOptions.defaultValue;
+        if (clonedOptions.defaultValue && clonedOptions.defaultValue.indexOf(this.prefix) > -1) delete clonedOptions.defaultValue;
         return key;
-      }
+      };
       while (match = this.nestingRegexp.exec(str)) {
         let formatters = [];
         clonedOptions = {
           ...options
         };
-        clonedOptions = clonedOptions.replace && typeof clonedOptions.replace !== 'string' ? clonedOptions.replace : clonedOptions;
+        clonedOptions = clonedOptions.replace && !isString(clonedOptions.replace) ? clonedOptions.replace : clonedOptions;
         clonedOptions.applyPostProcessor = false;
         delete clonedOptions.defaultValue;
         let doReduce = false;
@@ -34017,8 +33836,8 @@ return L.GeometryUtil;
           doReduce = true;
         }
         value = fc(handleHasOptions.call(this, match[1].trim(), clonedOptions), clonedOptions);
-        if (value && match[0] === str && typeof value !== 'string') return value;
-        if (typeof value !== 'string') value = makeString(value);
+        if (value && match[0] === str && !isString(value)) return value;
+        if (!isString(value)) value = makeString(value);
         if (!value) {
           this.logger.warn(`missed to resolve ${match[1]} for nesting ${str}`);
           value = '';
@@ -34036,7 +33855,7 @@ return L.GeometryUtil;
     }
   }
 
-  function parseFormatStr(formatStr) {
+  const parseFormatStr = formatStr => {
     let formatName = formatStr.toLowerCase().trim();
     const formatOptions = {};
     if (formatStr.indexOf('(') > -1) {
@@ -34050,13 +33869,15 @@ return L.GeometryUtil;
       } else {
         const opts = optStr.split(';');
         opts.forEach(opt => {
-          if (!opt) return;
-          const [key, ...rest] = opt.split(':');
-          const val = rest.join(':').trim().replace(/^'+|'+$/g, '');
-          if (!formatOptions[key.trim()]) formatOptions[key.trim()] = val;
-          if (val === 'false') formatOptions[key.trim()] = false;
-          if (val === 'true') formatOptions[key.trim()] = true;
-          if (!isNaN(val)) formatOptions[key.trim()] = parseInt(val, 10);
+          if (opt) {
+            const [key, ...rest] = opt.split(':');
+            const val = rest.join(':').trim().replace(/^'+|'+$/g, '');
+            const trimmedKey = key.trim();
+            if (!formatOptions[trimmedKey]) formatOptions[trimmedKey] = val;
+            if (val === 'false') formatOptions[trimmedKey] = false;
+            if (val === 'true') formatOptions[trimmedKey] = true;
+            if (!isNaN(val)) formatOptions[trimmedKey] = parseInt(val, 10);
+          }
         });
       }
     }
@@ -34064,11 +33885,18 @@ return L.GeometryUtil;
       formatName,
       formatOptions
     };
-  }
-  function createCachedFormatter(fn) {
+  };
+  const createCachedFormatter = fn => {
     const cache = {};
-    return function invokeFormatter(val, lng, options) {
-      const key = lng + JSON.stringify(options);
+    return (val, lng, options) => {
+      let optForCache = options;
+      if (options && options.interpolationkey && options.formatParams && options.formatParams[options.interpolationkey] && options[options.interpolationkey]) {
+        optForCache = {
+          ...optForCache,
+          [options.interpolationkey]: undefined
+        };
+      }
+      const key = lng + JSON.stringify(optForCache);
       let formatter = cache[key];
       if (!formatter) {
         formatter = fn(getCleanedCode(lng), options);
@@ -34076,7 +33904,7 @@ return L.GeometryUtil;
       }
       return formatter(val);
     };
-  }
+  };
   class Formatter {
     constructor() {
       let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -34121,8 +33949,7 @@ return L.GeometryUtil;
       let options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
         interpolation: {}
       };
-      const iOpts = options.interpolation;
-      this.formatSeparator = iOpts.formatSeparator ? iOpts.formatSeparator : iOpts.formatSeparator || ',';
+      this.formatSeparator = options.interpolation.formatSeparator || ',';
     }
     add(name, fc) {
       this.formats[name.toLowerCase().trim()] = fc;
@@ -34133,6 +33960,10 @@ return L.GeometryUtil;
     format(value, format, lng) {
       let options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
       const formats = format.split(this.formatSeparator);
+      if (formats.length > 1 && formats[0].indexOf('(') > 1 && formats[0].indexOf(')') < 0 && formats.find(f => f.indexOf(')') > -1)) {
+        const lastIndex = formats.findIndex(f => f.indexOf(')') > -1);
+        formats[0] = [formats[0], ...formats.splice(1, lastIndex)].join(this.formatSeparator);
+      }
       const result = formats.reduce((mem, f) => {
         const {
           formatName,
@@ -34141,7 +33972,7 @@ return L.GeometryUtil;
         if (this.formats[formatName]) {
           let formatted = mem;
           try {
-            const valOptions = options && options.formatParams && options.formatParams[options.interpolationkey] || {};
+            const valOptions = options?.formatParams?.[options.interpolationkey] || {};
             const l = valOptions.locale || valOptions.lng || options.locale || options.lng || lng;
             formatted = this.formats[formatName](mem, l, {
               ...formatOptions,
@@ -34161,12 +33992,12 @@ return L.GeometryUtil;
     }
   }
 
-  function removePending(q, name) {
+  const removePending = (q, name) => {
     if (q.pending[name] !== undefined) {
       delete q.pending[name];
       q.pendingCount--;
     }
-  }
+  };
   class Connector extends EventEmitter {
     constructor(backend, store, services) {
       let options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
@@ -34184,9 +34015,7 @@ return L.GeometryUtil;
       this.retryTimeout = options.retryTimeout >= 1 ? options.retryTimeout : 350;
       this.state = {};
       this.queue = [];
-      if (this.backend && this.backend.init) {
-        this.backend.init(services, options.backend, options);
-      }
+      this.backend?.init?.(services, options.backend, options);
     }
     queueLoad(languages, namespaces, options, callback) {
       const toLoad = {};
@@ -34232,12 +34061,13 @@ return L.GeometryUtil;
       const lng = s[0];
       const ns = s[1];
       if (err) this.emit('failedLoading', lng, ns, err);
-      if (data) {
+      if (!err && data) {
         this.store.addResourceBundle(lng, ns, data, undefined, undefined, {
           skipCopy: true
         });
       }
       this.state[name] = err ? -1 : 2;
+      if (err && data) this.state[name] = 0;
       const loaded = {};
       this.queue.forEach(q => {
         pushPath(q.loaded, [lng], ns);
@@ -34318,8 +34148,8 @@ return L.GeometryUtil;
         this.logger.warn('No backend was added via i18next.use. Will not load resources.');
         return callback && callback();
       }
-      if (typeof languages === 'string') languages = this.languageUtils.toResolveHierarchy(languages);
-      if (typeof namespaces === 'string') namespaces = [namespaces];
+      if (isString(languages)) languages = this.languageUtils.toResolveHierarchy(languages);
+      if (isString(namespaces)) namespaces = [namespaces];
       const toLoad = this.queueLoad(languages, namespaces, options, callback);
       if (!toLoad.toLoad.length) {
         if (!toLoad.pending.length) callback();
@@ -34351,12 +34181,12 @@ return L.GeometryUtil;
     saveMissing(languages, namespace, key, fallbackValue, isUpdate) {
       let options = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : {};
       let clb = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : () => {};
-      if (this.services.utils && this.services.utils.hasLoadedNamespace && !this.services.utils.hasLoadedNamespace(namespace)) {
+      if (this.services?.utils?.hasLoadedNamespace && !this.services?.utils?.hasLoadedNamespace(namespace)) {
         this.logger.warn(`did not save key "${key}" as the namespace "${namespace}" was not yet loaded`, 'This means something IS WRONG in your setup. You access the t function before i18next.init / i18next.loadNamespace / i18next.changeLanguage was done. Wait for the callback or Promise to resolve before accessing it!!!');
         return;
       }
       if (key === undefined || key === null || key === '') return;
-      if (this.backend && this.backend.create) {
+      if (this.backend?.create) {
         const opts = {
           ...options,
           isUpdate
@@ -34387,87 +34217,86 @@ return L.GeometryUtil;
     }
   }
 
-  function get() {
-    return {
-      debug: false,
-      initImmediate: true,
-      ns: ['translation'],
-      defaultNS: ['translation'],
-      fallbackLng: ['dev'],
-      fallbackNS: false,
-      supportedLngs: false,
-      nonExplicitSupportedLngs: false,
-      load: 'all',
-      preload: false,
-      simplifyPluralSuffix: true,
-      keySeparator: '.',
-      nsSeparator: ':',
-      pluralSeparator: '_',
-      contextSeparator: '_',
-      partialBundledLanguages: false,
-      saveMissing: false,
-      updateMissing: false,
-      saveMissingTo: 'fallback',
-      saveMissingPlurals: true,
-      missingKeyHandler: false,
-      missingInterpolationHandler: false,
-      postProcess: false,
-      postProcessPassResolved: false,
-      returnNull: false,
-      returnEmptyString: true,
-      returnObjects: false,
-      joinArrays: false,
-      returnedObjectHandler: false,
-      parseMissingKeyHandler: false,
-      appendNamespaceToMissingKey: false,
-      appendNamespaceToCIMode: false,
-      overloadTranslationOptionHandler: function handle(args) {
-        let ret = {};
-        if (typeof args[1] === 'object') ret = args[1];
-        if (typeof args[1] === 'string') ret.defaultValue = args[1];
-        if (typeof args[2] === 'string') ret.tDescription = args[2];
-        if (typeof args[2] === 'object' || typeof args[3] === 'object') {
-          const options = args[3] || args[2];
-          Object.keys(options).forEach(key => {
-            ret[key] = options[key];
-          });
-        }
-        return ret;
-      },
-      interpolation: {
-        escapeValue: true,
-        format: value => value,
-        prefix: '{{',
-        suffix: '}}',
-        formatSeparator: ',',
-        unescapePrefix: '-',
-        nestingPrefix: '$t(',
-        nestingSuffix: ')',
-        nestingOptionsSeparator: ',',
-        maxReplaces: 1000,
-        skipOnVariables: true
+  const get = () => ({
+    debug: false,
+    initAsync: true,
+    ns: ['translation'],
+    defaultNS: ['translation'],
+    fallbackLng: ['dev'],
+    fallbackNS: false,
+    supportedLngs: false,
+    nonExplicitSupportedLngs: false,
+    load: 'all',
+    preload: false,
+    simplifyPluralSuffix: true,
+    keySeparator: '.',
+    nsSeparator: ':',
+    pluralSeparator: '_',
+    contextSeparator: '_',
+    partialBundledLanguages: false,
+    saveMissing: false,
+    updateMissing: false,
+    saveMissingTo: 'fallback',
+    saveMissingPlurals: true,
+    missingKeyHandler: false,
+    missingInterpolationHandler: false,
+    postProcess: false,
+    postProcessPassResolved: false,
+    returnNull: false,
+    returnEmptyString: true,
+    returnObjects: false,
+    joinArrays: false,
+    returnedObjectHandler: false,
+    parseMissingKeyHandler: false,
+    appendNamespaceToMissingKey: false,
+    appendNamespaceToCIMode: false,
+    overloadTranslationOptionHandler: args => {
+      let ret = {};
+      if (typeof args[1] === 'object') ret = args[1];
+      if (isString(args[1])) ret.defaultValue = args[1];
+      if (isString(args[2])) ret.tDescription = args[2];
+      if (typeof args[2] === 'object' || typeof args[3] === 'object') {
+        const options = args[3] || args[2];
+        Object.keys(options).forEach(key => {
+          ret[key] = options[key];
+        });
       }
-    };
-  }
-  function transformOptions(options) {
-    if (typeof options.ns === 'string') options.ns = [options.ns];
-    if (typeof options.fallbackLng === 'string') options.fallbackLng = [options.fallbackLng];
-    if (typeof options.fallbackNS === 'string') options.fallbackNS = [options.fallbackNS];
-    if (options.supportedLngs && options.supportedLngs.indexOf('cimode') < 0) {
+      return ret;
+    },
+    interpolation: {
+      escapeValue: true,
+      format: value => value,
+      prefix: '{{',
+      suffix: '}}',
+      formatSeparator: ',',
+      unescapePrefix: '-',
+      nestingPrefix: '$t(',
+      nestingSuffix: ')',
+      nestingOptionsSeparator: ',',
+      maxReplaces: 1000,
+      skipOnVariables: true
+    }
+  });
+  const transformOptions = options => {
+    if (isString(options.ns)) options.ns = [options.ns];
+    if (isString(options.fallbackLng)) options.fallbackLng = [options.fallbackLng];
+    if (isString(options.fallbackNS)) options.fallbackNS = [options.fallbackNS];
+    if (options.supportedLngs?.indexOf?.('cimode') < 0) {
       options.supportedLngs = options.supportedLngs.concat(['cimode']);
     }
+    if (typeof options.initImmediate === 'boolean') options.initAsync = options.initImmediate;
     return options;
-  }
+  };
 
-  function noop() {}
-  function bindMemberFunctions(inst) {
+  const noop = () => {};
+  const bindMemberFunctions = inst => {
     const mems = Object.getOwnPropertyNames(Object.getPrototypeOf(inst));
     mems.forEach(mem => {
       if (typeof inst[mem] === 'function') {
         inst[mem] = inst[mem].bind(inst);
       }
     });
-  }
+  };
   class I18n extends EventEmitter {
     constructor() {
       let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -34481,7 +34310,7 @@ return L.GeometryUtil;
       };
       bindMemberFunctions(this);
       if (callback && !this.isInitialized && !options.isClone) {
-        if (!this.options.initImmediate) {
+        if (!this.options.initAsync) {
           this.init(options, callback);
           return this;
         }
@@ -34499,8 +34328,8 @@ return L.GeometryUtil;
         callback = options;
         options = {};
       }
-      if (!options.defaultNS && options.defaultNS !== false && options.ns) {
-        if (typeof options.ns === 'string') {
+      if (options.defaultNS == null && options.ns) {
+        if (isString(options.ns)) {
           options.defaultNS = options.ns;
         } else if (options.ns.indexOf('translation') < 0) {
           options.defaultNS = options.ns[0];
@@ -34512,23 +34341,21 @@ return L.GeometryUtil;
         ...this.options,
         ...transformOptions(options)
       };
-      if (this.options.compatibilityAPI !== 'v1') {
-        this.options.interpolation = {
-          ...defOpts.interpolation,
-          ...this.options.interpolation
-        };
-      }
+      this.options.interpolation = {
+        ...defOpts.interpolation,
+        ...this.options.interpolation
+      };
       if (options.keySeparator !== undefined) {
         this.options.userDefinedKeySeparator = options.keySeparator;
       }
       if (options.nsSeparator !== undefined) {
         this.options.userDefinedNsSeparator = options.nsSeparator;
       }
-      function createClassOnDemand(ClassOrObject) {
+      const createClassOnDemand = ClassOrObject => {
         if (!ClassOrObject) return null;
         if (typeof ClassOrObject === 'function') return new ClassOrObject();
         return ClassOrObject;
-      }
+      };
       if (!this.options.isClone) {
         if (this.modules.logger) {
           baseLogger.init(createClassOnDemand(this.modules.logger), this.options);
@@ -34538,7 +34365,7 @@ return L.GeometryUtil;
         let formatter;
         if (this.modules.formatter) {
           formatter = this.modules.formatter;
-        } else if (typeof Intl !== 'undefined') {
+        } else {
           formatter = Formatter;
         }
         const lu = new LanguageUtil(this.options);
@@ -34549,7 +34376,6 @@ return L.GeometryUtil;
         s.languageUtils = lu;
         s.pluralResolver = new PluralResolver(lu, {
           prepend: this.options.pluralSeparator,
-          compatibilityJSON: this.options.compatibilityJSON,
           simplifyPluralSuffix: this.options.simplifyPluralSuffix
         });
         if (formatter && (!this.options.interpolation.format || this.options.interpolation.format === defOpts.interpolation.format)) {
@@ -34620,10 +34446,10 @@ return L.GeometryUtil;
           deferred.resolve(t);
           callback(err, t);
         };
-        if (this.languages && this.options.compatibilityAPI !== 'v1' && !this.isInitialized) return finish(null, this.t.bind(this));
+        if (this.languages && !this.isInitialized) return finish(null, this.t.bind(this));
         this.changeLanguage(this.options.lng, finish);
       };
-      if (this.options.resources || !this.options.initImmediate) {
+      if (this.options.resources || !this.options.initAsync) {
         load();
       } else {
         setTimeout(load, 0);
@@ -34633,10 +34459,10 @@ return L.GeometryUtil;
     loadResources(language) {
       let callback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : noop;
       let usedCallback = callback;
-      const usedLng = typeof language === 'string' ? language : this.language;
+      const usedLng = isString(language) ? language : this.language;
       if (typeof language === 'function') usedCallback = language;
       if (!this.options.resources || this.options.partialBundledLanguages) {
-        if (usedLng && usedLng.toLowerCase() === 'cimode' && (!this.options.preload || this.options.preload.length === 0)) return usedCallback();
+        if (usedLng?.toLowerCase() === 'cimode' && (!this.options.preload || this.options.preload.length === 0)) return usedCallback();
         const toLoad = [];
         const append = lng => {
           if (!lng) return;
@@ -34653,9 +34479,7 @@ return L.GeometryUtil;
         } else {
           append(usedLng);
         }
-        if (this.options.preload) {
-          this.options.preload.forEach(l => append(l));
-        }
+        this.options.preload?.forEach?.(l => append(l));
         this.services.backendConnector.load(toLoad, this.options.ns, e => {
           if (!e && !this.resolvedLanguage && this.language) this.setResolvedLanguage(this.language);
           usedCallback(e);
@@ -34666,6 +34490,14 @@ return L.GeometryUtil;
     }
     reloadResources(lngs, ns, callback) {
       const deferred = defer();
+      if (typeof lngs === 'function') {
+        callback = lngs;
+        lngs = undefined;
+      }
+      if (typeof ns === 'function') {
+        callback = ns;
+        ns = undefined;
+      }
       if (!lngs) lngs = this.languages;
       if (!ns) ns = this.options.ns;
       if (!callback) callback = noop;
@@ -34743,13 +34575,13 @@ return L.GeometryUtil;
       };
       const setLng = lngs => {
         if (!lng && !lngs && this.services.languageDetector) lngs = [];
-        const l = typeof lngs === 'string' ? lngs : this.services.languageUtils.getBestMatchFromCodes(lngs);
+        const l = isString(lngs) ? lngs : this.services.languageUtils.getBestMatchFromCodes(lngs);
         if (l) {
           if (!this.language) {
             setLngProps(l);
           }
           if (!this.translator.language) this.translator.changeLanguage(l);
-          if (this.services.languageDetector && this.services.languageDetector.cacheUserLanguage) this.services.languageDetector.cacheUserLanguage(l);
+          this.services.languageDetector?.cacheUserLanguage?.(l);
         }
         this.loadResources(l, err => {
           done(err, l);
@@ -34785,7 +34617,7 @@ return L.GeometryUtil;
         options.lng = options.lng || fixedT.lng;
         options.lngs = options.lngs || fixedT.lngs;
         options.ns = options.ns || fixedT.ns;
-        options.keyPrefix = options.keyPrefix || keyPrefix || fixedT.keyPrefix;
+        if (options.keyPrefix !== '') options.keyPrefix = options.keyPrefix || keyPrefix || fixedT.keyPrefix;
         const keySeparator = _this3.options.keySeparator || '.';
         let resultKey;
         if (options.keyPrefix && Array.isArray(key)) {
@@ -34795,7 +34627,7 @@ return L.GeometryUtil;
         }
         return _this3.t(resultKey, options);
       };
-      if (typeof lng === 'string') {
+      if (isString(lng)) {
         fixedT.lng = lng;
       } else {
         fixedT.lngs = lng;
@@ -34805,10 +34637,16 @@ return L.GeometryUtil;
       return fixedT;
     }
     t() {
-      return this.translator && this.translator.translate(...arguments);
+      for (var _len4 = arguments.length, args = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+        args[_key4] = arguments[_key4];
+      }
+      return this.translator?.translate(...args);
     }
     exists() {
-      return this.translator && this.translator.exists(...arguments);
+      for (var _len5 = arguments.length, args = new Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
+        args[_key5] = arguments[_key5];
+      }
+      return this.translator?.exists(...args);
     }
     setDefaultNamespace(ns) {
       this.options.defaultNS = ns;
@@ -34829,7 +34667,7 @@ return L.GeometryUtil;
       if (lng.toLowerCase() === 'cimode') return true;
       const loadNotPending = (l, n) => {
         const loadState = this.services.backendConnector.state[`${l}|${n}`];
-        return loadState === -1 || loadState === 2;
+        return loadState === -1 || loadState === 0 || loadState === 2;
       };
       if (options.precheck) {
         const preResult = options.precheck(this, loadNotPending);
@@ -34846,7 +34684,7 @@ return L.GeometryUtil;
         if (callback) callback();
         return Promise.resolve();
       }
-      if (typeof ns === 'string') ns = [ns];
+      if (isString(ns)) ns = [ns];
       ns.forEach(n => {
         if (this.options.ns.indexOf(n) < 0) this.options.ns.push(n);
       });
@@ -34858,9 +34696,9 @@ return L.GeometryUtil;
     }
     loadLanguages(lngs, callback) {
       const deferred = defer();
-      if (typeof lngs === 'string') lngs = [lngs];
+      if (isString(lngs)) lngs = [lngs];
       const preloaded = this.options.preload || [];
-      const newLngs = lngs.filter(lng => preloaded.indexOf(lng) < 0);
+      const newLngs = lngs.filter(lng => preloaded.indexOf(lng) < 0 && this.services.languageUtils.isSupportedCode(lng));
       if (!newLngs.length) {
         if (callback) callback();
         return Promise.resolve();
@@ -34873,10 +34711,10 @@ return L.GeometryUtil;
       return deferred;
     }
     dir(lng) {
-      if (!lng) lng = this.resolvedLanguage || (this.languages && this.languages.length > 0 ? this.languages[0] : this.language);
+      if (!lng) lng = this.resolvedLanguage || (this.languages?.length > 0 ? this.languages[0] : this.language);
       if (!lng) return 'rtl';
       const rtlLngs = ['ar', 'shu', 'sqr', 'ssh', 'xaa', 'yhd', 'yud', 'aao', 'abh', 'abv', 'acm', 'acq', 'acw', 'acx', 'acy', 'adf', 'ads', 'aeb', 'aec', 'afb', 'ajp', 'apc', 'apd', 'arb', 'arq', 'ars', 'ary', 'arz', 'auz', 'avl', 'ayh', 'ayl', 'ayn', 'ayp', 'bbz', 'pga', 'he', 'iw', 'ps', 'pbt', 'pbu', 'pst', 'prp', 'prd', 'ug', 'ur', 'ydd', 'yds', 'yih', 'ji', 'yi', 'hbo', 'men', 'xmn', 'fa', 'jpr', 'peo', 'pes', 'prs', 'dv', 'sam', 'ckb'];
-      const languageUtils = this.services && this.services.languageUtils || new LanguageUtil(get());
+      const languageUtils = this.services?.languageUtils || new LanguageUtil(get());
       return rtlLngs.indexOf(languageUtils.getLanguagePartFromCode(lng)) > -1 || lng.toLowerCase().indexOf('-arab') > 1 ? 'rtl' : 'ltr';
     }
     static createInstance() {
@@ -34911,13 +34749,24 @@ return L.GeometryUtil;
         hasLoadedNamespace: clone.hasLoadedNamespace.bind(clone)
       };
       if (forkResourceStore) {
-        clone.store = new ResourceStore(this.store.data, mergedOptions);
+        const clonedData = Object.keys(this.store.data).reduce((prev, l) => {
+          prev[l] = {
+            ...this.store.data[l]
+          };
+          return Object.keys(prev[l]).reduce((acc, n) => {
+            acc[n] = {
+              ...prev[l][n]
+            };
+            return acc;
+          }, {});
+        }, {});
+        clone.store = new ResourceStore(clonedData, mergedOptions);
         clone.services.resourceStore = clone.store;
       }
       clone.translator = new Translator(clone.services, mergedOptions);
       clone.translator.on('*', function (event) {
-        for (var _len4 = arguments.length, args = new Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
-          args[_key4 - 1] = arguments[_key4];
+        for (var _len6 = arguments.length, args = new Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
+          args[_key6 - 1] = arguments[_key6];
         }
         clone.emit(event, ...args);
       });
@@ -42996,37 +42845,48 @@ module.exports = Yaml;
     Promise.defaultErrorHandler = Promise.defaultErrorHandler || function( /* error: {name, status, message, text, statusText}  */ ){};
 
     function createErrorObject( reason, url ){
-        var response = reason.response,
-            text = response ? response.statusText :
-                    reason.message ? reason.message :
-                    reason;
-        return {
+        let response = reason.response || {},
+            text     = response.statusText || reason.statusText || response.message || reason.message,
+            error    = new Error(text, url);
+
+        $.extend(error, {
             name      : 'Error',
-            status    : response ? response.status : null,
+            status    : response.status || reason.status || null,
             url       : url,
             message   : text,
             text      : text,
             statusText: text
-        };
+        });
+        return error;
     }
 
     //Set event handler for unhandled rejections
     window.onunhandledrejection = function(e, promise){
+
         if (e && e.preventDefault)
             e.preventDefault();
 
-        //Unknown why, but in some browwsers onunhandledrejection is called twice - one time with e.detail
+        //Unknown why, but in some browsers onunhandledrejection is called twice - one time with e.detail
         if (e && e.detail)
             return false;
 
-        var url = promise && promise.promiseOptions ? promise.promiseOptions.url : null;
+        let url = '';
+
+
+        if (promise){
+            //Try different ways to get the url
+            if (promise.toJSON){
+                const pJSON = promise.toJSON();
+                url = pJSON && pJSON.rejectionReason ? pJSON.rejectionReason.url : '';
+            }
+
+            if (!url)
+                url = promise.promiseOptions ? promise.promiseOptions.url : '';
+        }
+
 
         Promise.defaultErrorHandler( createErrorObject( e, url ) );
     };
-
-    function callDefaultErrorHandle(reason, url){
-        return Promise.defaultErrorHandler( createErrorObject( reason, url ) );
-    }
 
     //Promise.defaultPrefetch = function(url, options): To be called before ALL fetch
     Promise.defaultPrefetch = null;
@@ -43038,7 +42898,36 @@ module.exports = Yaml;
     Promise.fetch( url, options )
     Fetch the url.
     Retries up to options.retries times with delay between of options.retryDeday ms
+    Princip taken from https://medium.com/@yshen4/javascript-fetch-with-retry-fb7e2e8f8cad
+
+    Original code from https://medium.com/@yshen4/javascript-fetch-with-retry-fb7e2e8f8cad:
+
+    const wait = (delay) => (new Promise((resolve) => setTimeout(resolve, delay)));
+    Promise.fetchWithRetry = function(url, tries=2){
+        fetch(url)
+            .then( (response) => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    // 1. throw a new exception
+                    if (res.status === 401) throw new 4xxError('Not authorized', response)
+                    if (res.status === 404) throw new 4xxError(`Resource doesn't exist`, response)
+                    // 2. reject instead of throw, peferred
+                    return Promise.reject(response);
+                }
+            })
+            .catch( (error) => {
+                if (error instanceof 4xxError || tries < 1) {
+                    throw error;
+                } else {
+                    //Retry network error or 5xx errors
+                    const delay = Math.floor(Math.random() * 1000);
+                    wait(delay).then(()=> Promise.fetchWithRetry(url, tries - 1));
+                }
+            })
+    }
     **************************************************************/
+    const wait = (delay) => (new Promise((resolve) => setTimeout(resolve, delay)));
     Promise.fetch = function(url, options) {
         options = $.extend( {}, {
             retries   : 3,
@@ -43052,31 +42941,46 @@ module.exports = Yaml;
 */
         }, options || {});
 
-        //Adding parame dummy=12345678 if options.noCache: true to force no-cache. TODO: Replaced with correct header
+        //Adding parame dummy=12345678 if options.noCache: true to force no-cache
         if (options.noCache)
             url = url + (url.indexOf('?') > 0 ? '&' : '?') + 'dummy='+Math.random().toString(36).substr(2, 9);
+        //Tried cache: 'reload' but did not seam to work
+        //if (options.noCache && !options.cache)
+        //    options.cache = 'reload';
 
-        if (Promise.defaultPrefetch)
+
+
+        if (Promise.defaultPrefetch && !options.noDefaultPrefetch)
             Promise.defaultPrefetch(url, options);
 
         return new Promise(function(resolve, reject) {
-            var wrappedFetch = function(n) {
-                fetch(url, options)
-                    .then(function(response) {
+            fetch(url, options)
+                .then((response) => {
+                    if (response.ok)
                         resolve(response);
-                    })
-                    .catch(function(error) {
-                        if (n > 0) {
-                            setTimeout(function() {
-                                wrappedFetch(--n);
-                            }, options.retryDelay);
-                        }
-                        else {
+                    else {
+                        return Promise.reject(createErrorObject(response, options.url));
+                        //return Promise.reject(new Error(response));
+                        //return Promise.reject(response);
+                        //return createErrorObject(response, options.url);
+                    }
+                })
+                .catch((/*error*/reason) => {
+                    if (options.retries > 0){
+                        options.retries--;
+                        options.noCache = false;
+                        options.noDefaultPrefetch = true;
+                        wait(options.retryDelay)
+                            .then(()=> Promise.fetch(url, options) );
+                    }
+                    else {
+                        let error =  createErrorObject(reason, options.url);
+                        if (options.reject)
+                            options.reject(error);
+                        if (options.useDefaultErrorHandler)
                             reject(error);
-                        }
-                    });
-            };
-            wrappedFetch(options.retries);
+                    }
+                });
         });
     };
 
@@ -43157,10 +43061,12 @@ module.exports = Yaml;
         fin     = fin     || options.finally || options.always;
 
         if (options.context){
-            resolve = resolve ? $.proxy( resolve, options.context ) : null;
-            reject = reject   ? $.proxy( reject,  options.context ) : null;
-            fin    = fin      ? $.proxy( fin,     options.context ) : null;
+            resolve = resolve ? resolve.bind(options.context) : null;
+            reject = reject   ? reject.bind(options.context)  : null;
+            fin    = fin      ? fin.bind(options.context)     : null;
         }
+
+        options.reject = reject;
 
         var result =
             Promise.fetch(url, options) //Get the file
@@ -43194,29 +43100,6 @@ module.exports = Yaml;
 
         if (resolve)
             result = result.then( resolve );
-
-        //Adding error/reject promise
-        var defaultReject = function(reason){
-                return callDefaultErrorHandle(reason, options.url);
-            };
-
-        if (reject){
-            //If options.useDefaultErrorHandler => also needs to call => Promise.defaultErrorHandler
-            if (options.useDefaultErrorHandler)
-                result = result.catch( function( reason ){
-                    reject( createErrorObject( reason, options.url ) );
-                    return defaultReject.call( null, reason );
-                });
-            else
-                //Just use reject as catch
-                result = result.catch( function( reason ){
-                    return reject( createErrorObject( reason, options.url ) );
-                });
-        }
-        else
-            if (!options.useDefaultErrorHandler)
-                //Prevent the use of Promise.defaultErrorHandler
-                result = result.catch( function(){} );
 
         //Adding finally (if any)
         if (fin || Promise.defaultFinally){
@@ -43691,10 +43574,10 @@ module.exports = Yaml;
   }
 
   /*!
-   * GSAP 3.12.5
+   * GSAP 3.12.7
    * https://gsap.com
    *
-   * @license Copyright 2008-2024, GreenSock. All rights reserved.
+   * @license Copyright 2008-2025, GreenSock. All rights reserved.
    * Subject to the terms at https://gsap.com/standard-license or for
    * Club GSAP members, the agreement issued with that membership.
    * @author: Jack Doyle, jack@greensock.com
@@ -44036,7 +43919,7 @@ module.exports = Yaml;
     return animation._repeat ? _animationCycle(animation._tTime, animation = animation.duration() + animation._rDelay) * animation : 0;
   },
       _animationCycle = function _animationCycle(tTime, cycleDuration) {
-    var whole = Math.floor(tTime /= cycleDuration);
+    var whole = Math.floor(tTime = _roundPrecise(tTime / cycleDuration));
     return tTime && whole === tTime ? whole - 1 : whole;
   },
       _parentToChildTotalTime = function _parentToChildTotalTime(parentTime, child) {
@@ -45166,7 +45049,7 @@ module.exports = Yaml;
   })(7.5625, 2.75);
 
   _insertEase("Expo", function (p) {
-    return p ? Math.pow(2, 10 * (p - 1)) : 0;
+    return Math.pow(2, 10 * (p - 1)) * p + p * p * p * p * p * p * (1 - p);
   });
 
   _insertEase("Circ", function (p) {
@@ -45299,7 +45182,7 @@ module.exports = Yaml;
     };
 
     _proto.totalProgress = function totalProgress(value, suppressEvents) {
-      return arguments.length ? this.totalTime(this.totalDuration() * value, suppressEvents) : this.totalDuration() ? Math.min(1, this._tTime / this._tDur) : this.rawTime() > 0 ? 1 : 0;
+      return arguments.length ? this.totalTime(this.totalDuration() * value, suppressEvents) : this.totalDuration() ? Math.min(1, this._tTime / this._tDur) : this.rawTime() >= 0 && this._initted ? 1 : 0;
     };
 
     _proto.progress = function progress(value, suppressEvents) {
@@ -45439,7 +45322,9 @@ module.exports = Yaml;
     };
 
     _proto.restart = function restart(includeDelay, suppressEvents) {
-      return this.play().totalTime(includeDelay ? -this._delay : 0, _isNotFalse(suppressEvents));
+      this.play().totalTime(includeDelay ? -this._delay : 0, _isNotFalse(suppressEvents));
+      this._dur || (this._zTime = -_tinyNum);
+      return this;
     };
 
     _proto.play = function play(from, suppressEvents) {
@@ -45676,9 +45561,10 @@ module.exports = Yaml;
             iteration = this._repeat;
             time = dur;
           } else {
-            iteration = ~~(tTime / cycleDuration);
+            prevIteration = _roundPrecise(tTime / cycleDuration);
+            iteration = ~~prevIteration;
 
-            if (iteration && iteration === tTime / cycleDuration) {
+            if (iteration && iteration === prevIteration) {
               time = dur;
               iteration--;
             }
@@ -45914,7 +45800,7 @@ module.exports = Yaml;
         return this.killTweensOf(child);
       }
 
-      _removeLinkedListItem(this, child);
+      child.parent === this && _removeLinkedListItem(this, child);
 
       if (child === this._recent) {
         this._recent = this._last;
@@ -46788,7 +46674,7 @@ module.exports = Yaml;
 
       if (!dur) {
         _renderZeroDurationTween(this, totalTime, suppressEvents, force);
-      } else if (tTime !== this._tTime || !totalTime || force || !this._initted && this._tTime || this._startAt && this._zTime < 0 !== isNegative) {
+      } else if (tTime !== this._tTime || !totalTime || force || !this._initted && this._tTime || this._startAt && this._zTime < 0 !== isNegative || this._lazy) {
         time = tTime;
         timeline = this.timeline;
 
@@ -46805,14 +46691,15 @@ module.exports = Yaml;
             iteration = this._repeat;
             time = dur;
           } else {
-            iteration = ~~(tTime / cycleDuration);
+            prevIteration = _roundPrecise(tTime / cycleDuration);
+            iteration = ~~prevIteration;
 
-            if (iteration && iteration === _roundPrecise(tTime / cycleDuration)) {
+            if (iteration && iteration === prevIteration) {
               time = dur;
               iteration--;
+            } else if (time > dur) {
+              time = dur;
             }
-
-            time > dur && (time = dur);
           }
 
           isYoyo = this._yoyo && iteration & 1;
@@ -46832,7 +46719,7 @@ module.exports = Yaml;
           if (iteration !== prevIteration) {
             timeline && this._yEase && _propagateYoyoEase(timeline, isYoyo);
 
-            if (this.vars.repeatRefresh && !isYoyo && !this._lock && this._time !== cycleDuration && this._initted) {
+            if (this.vars.repeatRefresh && !isYoyo && !this._lock && time !== cycleDuration && this._initted) {
               this._lock = force = 1;
               this.render(_roundPrecise(cycleDuration * iteration), true).invalidate()._lock = 0;
             }
@@ -46945,7 +46832,8 @@ module.exports = Yaml;
 
       if (!targets && (!vars || vars === "all")) {
         this._lazy = this._pt = 0;
-        return this.parent ? _interrupt(this) : this;
+        this.parent ? _interrupt(this) : this.scrollTrigger && this.scrollTrigger.kill(!!_reverting);
+        return this;
       }
 
       if (this.timeline) {
@@ -47547,9 +47435,9 @@ module.exports = Yaml;
       };
     },
     quickTo: function quickTo(target, property, vars) {
-      var _merge2;
+      var _setDefaults2;
 
-      var tween = gsap.to(target, _merge((_merge2 = {}, _merge2[property] = "+=0.1", _merge2.paused = true, _merge2), vars || {})),
+      var tween = gsap.to(target, _setDefaults((_setDefaults2 = {}, _setDefaults2[property] = "+=0.1", _setDefaults2.paused = true, _setDefaults2.stagger = 0, _setDefaults2), vars || {})),
           func = function func(value, start, startIsRelative) {
         return tween.resetTo(property, value, start, startIsRelative);
       };
@@ -47815,7 +47703,7 @@ module.exports = Yaml;
       }
     }
   }, _buildModifierPlugin("roundProps", _roundModifier), _buildModifierPlugin("modifiers"), _buildModifierPlugin("snap", snap)) || _gsap;
-  Tween.version = Timeline.version = gsap.version = "3.12.5";
+  Tween.version = Timeline.version = gsap.version = "3.12.7";
   _coreReady = 1;
   _windowExists() && _wake();
   var Power0 = _easeMap.Power0,
@@ -47956,7 +47844,13 @@ module.exports = Yaml;
         p;
 
     for (i = 0; i < props.length; i += 3) {
-      props[i + 1] ? target[props[i]] = props[i + 2] : props[i + 2] ? style[props[i]] = props[i + 2] : style.removeProperty(props[i].substr(0, 2) === "--" ? props[i] : props[i].replace(_capsExp, "-$1").toLowerCase());
+      if (!props[i + 1]) {
+        props[i + 2] ? style[props[i]] = props[i + 2] : style.removeProperty(props[i].substr(0, 2) === "--" ? props[i] : props[i].replace(_capsExp, "-$1").toLowerCase());
+      } else if (props[i + 1] === 2) {
+        target[props[i]](props[i + 2]);
+      } else {
+        target[props[i]] = props[i + 2];
+      }
     }
 
     if (this.tfm) {
@@ -47992,7 +47886,7 @@ module.exports = Yaml;
       save: _saveStyle
     };
     target._gsap || gsap.core.getCache(target);
-    properties && properties.split(",").forEach(function (p) {
+    properties && target.style && target.nodeType && properties.split(",").forEach(function (p) {
       return saver.save(p);
     });
     return saver;
@@ -48039,39 +47933,25 @@ module.exports = Yaml;
       _pluginInitted = 1;
     }
   },
-      _getBBoxHack = function _getBBoxHack(swapIfPossible) {
-    var svg = _createElement("svg", this.ownerSVGElement && this.ownerSVGElement.getAttribute("xmlns") || "http://www.w3.org/2000/svg"),
-        oldParent = this.parentNode,
-        oldSibling = this.nextSibling,
-        oldCSS = this.style.cssText,
+      _getReparentedCloneBBox = function _getReparentedCloneBBox(target) {
+    var owner = target.ownerSVGElement,
+        svg = _createElement("svg", owner && owner.getAttribute("xmlns") || "http://www.w3.org/2000/svg"),
+        clone = target.cloneNode(true),
         bbox;
+
+    clone.style.display = "block";
+    svg.appendChild(clone);
 
     _docElement.appendChild(svg);
 
-    svg.appendChild(this);
-    this.style.display = "block";
+    try {
+      bbox = clone.getBBox();
+    } catch (e) {}
 
-    if (swapIfPossible) {
-      try {
-        bbox = this.getBBox();
-        this._gsapBBox = this.getBBox;
-        this.getBBox = _getBBoxHack;
-      } catch (e) {}
-    } else if (this._gsapBBox) {
-      bbox = this._gsapBBox();
-    }
-
-    if (oldParent) {
-      if (oldSibling) {
-        oldParent.insertBefore(this, oldSibling);
-      } else {
-        oldParent.appendChild(this);
-      }
-    }
+    svg.removeChild(clone);
 
     _docElement.removeChild(svg);
 
-    this.style.cssText = oldCSS;
     return bbox;
   },
       _getAttributeFallbacks = function _getAttributeFallbacks(target, attributesArray) {
@@ -48084,15 +47964,16 @@ module.exports = Yaml;
     }
   },
       _getBBox = function _getBBox(target) {
-    var bounds;
+    var bounds, cloned;
 
     try {
       bounds = target.getBBox();
     } catch (error) {
-      bounds = _getBBoxHack.call(target, true);
+      bounds = _getReparentedCloneBBox(target);
+      cloned = 1;
     }
 
-    bounds && (bounds.width || bounds.height) || target.getBBox === _getBBoxHack || (bounds = _getBBoxHack.call(target, true));
+    bounds && (bounds.width || bounds.height) || cloned || (bounds = _getReparentedCloneBBox(target));
     return bounds && !bounds.width && !bounds.x && !bounds.y ? {
       x: +_getAttributeFallbacks(target, ["x", "cx", "x1"]) || 0,
       y: +_getAttributeFallbacks(target, ["y", "cy", "y1"]) || 0,
@@ -48172,7 +48053,7 @@ module.exports = Yaml;
     }
 
     style[horizontal ? "width" : "height"] = amount + (toPixels ? curUnit : unit);
-    parent = ~property.indexOf("adius") || unit === "em" && target.appendChild && !isRootSVG ? target : target.parentNode;
+    parent = unit !== "rem" && ~property.indexOf("adius") || unit === "em" && target.appendChild && !isRootSVG ? target : target.parentNode;
 
     if (isSVG) {
       parent = (target.ownerSVGElement || {}).parentNode;
@@ -48391,6 +48272,7 @@ module.exports = Yaml;
 
         if (cache) {
           cache.svg && target.removeAttribute("transform");
+          style.scale = style.rotate = style.translate = "none";
 
           _parseTransform(target, 1);
 
@@ -48443,7 +48325,7 @@ module.exports = Yaml;
       style.display = "block";
       parent = target.parentNode;
 
-      if (!parent || !target.offsetParent) {
+      if (!parent || !target.offsetParent && !target.getBoundingClientRect().width) {
         addedToDOM = 1;
         nextSibling = target.nextElementSibling;
 
@@ -49197,7 +49079,7 @@ module.exports = Yaml;
             _tweenComplexCSSString.call(this, target, p, startValue, relative ? relative + endValue : endValue);
           }
 
-          isTransformRelated || (p in style ? inlineProps.push(p, 0, style[p]) : inlineProps.push(p, 1, startValue || target[p]));
+          isTransformRelated || (p in style ? inlineProps.push(p, 0, style[p]) : typeof target[p] === "function" ? inlineProps.push(p, 2, target[p]()) : inlineProps.push(p, 1, startValue || target[p]));
           props.push(p);
         }
       }
@@ -56556,78 +56438,85 @@ if (typeof define === 'function' && define.amd) {
 }(jQuery, window.Hammer));
 ;
 /*!
- * jQuery Mousewheel 3.1.13
- *
- * Copyright jQuery Foundation and other contributors
- * Released under the MIT license
- * http://jquery.org/license
+ * jQuery Mousewheel 3.2.2
+ * Copyright OpenJS Foundation and other contributors
  */
 
-(function (factory) {
-    if ( typeof define === 'function' && define.amd ) {
+( function( factory ) {
+    "use strict";
+
+    if ( typeof define === "function" && define.amd ) {
+
         // AMD. Register as an anonymous module.
-        define(['jquery'], factory);
-    } else if (typeof exports === 'object') {
+        define( [ "jquery" ], factory );
+    } else if ( typeof exports === "object" ) {
+
         // Node/CommonJS style for Browserify
         module.exports = factory;
     } else {
-        // Browser globals
-        factory(jQuery);
-    }
-}(function ($) {
 
-    var toFix  = ['wheel', 'mousewheel', 'DOMMouseScroll', 'MozMousePixelScroll'],
-        toBind = ( 'onwheel' in document || document.documentMode >= 9 ) ?
-                    ['wheel'] : ['mousewheel', 'DomMouseScroll', 'MozMousePixelScroll'],
-        slice  = Array.prototype.slice,
-        nullLowestDeltaTimeout, lowestDelta;
+        // Browser globals
+        factory( jQuery );
+    }
+} )( function( $ ) {
+    "use strict";
+
+    var nullLowestDeltaTimeout, lowestDelta,
+        modernEvents = !!$.fn.on,
+        toFix  = [ "wheel", "mousewheel", "DOMMouseScroll", "MozMousePixelScroll" ],
+        toBind = ( "onwheel" in window.document || window.document.documentMode >= 9 ) ?
+            [ "wheel" ] : [ "mousewheel", "DomMouseScroll", "MozMousePixelScroll" ],
+        slice  = Array.prototype.slice;
 
     if ( $.event.fixHooks ) {
         for ( var i = toFix.length; i; ) {
-            $.event.fixHooks[ toFix[--i] ] = $.event.mouseHooks;
+            $.event.fixHooks[ toFix[ --i ] ] = $.event.mouseHooks;
         }
     }
 
     var special = $.event.special.mousewheel = {
-        version: '3.1.12',
+        version: "3.2.2",
 
         setup: function() {
             if ( this.addEventListener ) {
                 for ( var i = toBind.length; i; ) {
-                    this.addEventListener( toBind[--i], handler, false );
+                    this.addEventListener( toBind[ --i ], handler, false );
                 }
             } else {
                 this.onmousewheel = handler;
             }
+
             // Store the line height and page height for this particular element
-            $.data(this, 'mousewheel-line-height', special.getLineHeight(this));
-            $.data(this, 'mousewheel-page-height', special.getPageHeight(this));
+            $.data( this, "mousewheel-line-height", special.getLineHeight( this ) );
+            $.data( this, "mousewheel-page-height", special.getPageHeight( this ) );
         },
 
         teardown: function() {
             if ( this.removeEventListener ) {
                 for ( var i = toBind.length; i; ) {
-                    this.removeEventListener( toBind[--i], handler, false );
+                    this.removeEventListener( toBind[ --i ], handler, false );
                 }
             } else {
                 this.onmousewheel = null;
             }
+
             // Clean up the data we added to the element
-            $.removeData(this, 'mousewheel-line-height');
-            $.removeData(this, 'mousewheel-page-height');
+            $.removeData( this, "mousewheel-line-height" );
+            $.removeData( this, "mousewheel-page-height" );
         },
 
-        getLineHeight: function(elem) {
-            var $elem = $(elem),
-                $parent = $elem['offsetParent' in $.fn ? 'offsetParent' : 'parent']();
-            if (!$parent.length) {
-                $parent = $('body');
+        getLineHeight: function( elem ) {
+            var $elem = $( elem ),
+                $parent = $elem[ "offsetParent" in $.fn ? "offsetParent" : "parent" ]();
+            if ( !$parent.length ) {
+                $parent = $( "body" );
             }
-            return parseInt($parent.css('fontSize'), 10) || parseInt($elem.css('fontSize'), 10) || 16;
+            return parseInt( $parent.css( "fontSize" ), 10 ) ||
+                parseInt( $elem.css( "fontSize" ), 10 ) || 16;
         },
 
-        getPageHeight: function(elem) {
-            return $(elem).height();
+        getPageHeight: function( elem ) {
+            return $( elem ).height();
         },
 
         settings: {
@@ -56636,56 +56525,68 @@ if (typeof define === 'function' && define.amd) {
         }
     };
 
-    $.fn.extend({
-        mousewheel: function(fn) {
-            return fn ? this.bind('mousewheel', fn) : this.trigger('mousewheel');
+    $.fn.extend( {
+        mousewheel: function( fn ) {
+            return fn ?
+                this[ modernEvents ? "on" : "bind" ]( "mousewheel", fn ) :
+                this.trigger( "mousewheel" );
         },
 
-        unmousewheel: function(fn) {
-            return this.unbind('mousewheel', fn);
+        unmousewheel: function( fn ) {
+            return this[ modernEvents ? "off" : "unbind" ]( "mousewheel", fn );
         }
-    });
+    } );
 
 
-    function handler(event) {
+    function handler( event ) {
         var orgEvent   = event || window.event,
-            args       = slice.call(arguments, 1),
+            args       = slice.call( arguments, 1 ),
             delta      = 0,
             deltaX     = 0,
             deltaY     = 0,
-            absDelta   = 0,
-            offsetX    = 0,
-            offsetY    = 0;
-        event = $.event.fix(orgEvent);
-        event.type = 'mousewheel';
+            absDelta   = 0;
+        event = $.event.fix( orgEvent );
+        event.type = "mousewheel";
 
         // Old school scrollwheel delta
-        if ( 'detail'      in orgEvent ) { deltaY = orgEvent.detail * -1;      }
-        if ( 'wheelDelta'  in orgEvent ) { deltaY = orgEvent.wheelDelta;       }
-        if ( 'wheelDeltaY' in orgEvent ) { deltaY = orgEvent.wheelDeltaY;      }
-        if ( 'wheelDeltaX' in orgEvent ) { deltaX = orgEvent.wheelDeltaX * -1; }
+        if ( "detail" in orgEvent ) {
+            deltaY = orgEvent.detail * -1;
+        }
+        if ( "wheelDelta" in orgEvent ) {
+            deltaY = orgEvent.wheelDelta;
+        }
+        if ( "wheelDeltaY" in orgEvent ) {
+            deltaY = orgEvent.wheelDeltaY;
+        }
+        if ( "wheelDeltaX" in orgEvent ) {
+            deltaX = orgEvent.wheelDeltaX * -1;
+        }
 
         // Firefox < 17 horizontal scrolling related to DOMMouseScroll event
-        if ( 'axis' in orgEvent && orgEvent.axis === orgEvent.HORIZONTAL_AXIS ) {
+        if ( "axis" in orgEvent && orgEvent.axis === orgEvent.HORIZONTAL_AXIS ) {
             deltaX = deltaY * -1;
             deltaY = 0;
         }
 
-        // Set delta to be deltaY or deltaX if deltaY is 0 for backwards compatabilitiy
+        // Set delta to be deltaY or deltaX if deltaY is 0 for backwards compatability
         delta = deltaY === 0 ? deltaX : deltaY;
 
         // New school wheel delta (wheel event)
-        if ( 'deltaY' in orgEvent ) {
+        if ( "deltaY" in orgEvent ) {
             deltaY = orgEvent.deltaY * -1;
             delta  = deltaY;
         }
-        if ( 'deltaX' in orgEvent ) {
+        if ( "deltaX" in orgEvent ) {
             deltaX = orgEvent.deltaX;
-            if ( deltaY === 0 ) { delta  = deltaX * -1; }
+            if ( deltaY === 0 ) {
+                delta  = deltaX * -1;
+            }
         }
 
         // No change actually happened, no reason to go any further
-        if ( deltaY === 0 && deltaX === 0 ) { return; }
+        if ( deltaY === 0 && deltaX === 0 ) {
+            return;
+        }
 
         // Need to convert lines and pages to pixels if we aren't already in pixels
         // There are three delta modes:
@@ -56693,31 +56594,32 @@ if (typeof define === 'function' && define.amd) {
         //   * deltaMode 1 is by lines
         //   * deltaMode 2 is by pages
         if ( orgEvent.deltaMode === 1 ) {
-            var lineHeight = $.data(this, 'mousewheel-line-height');
+            var lineHeight = $.data( this, "mousewheel-line-height" );
             delta  *= lineHeight;
             deltaY *= lineHeight;
             deltaX *= lineHeight;
         } else if ( orgEvent.deltaMode === 2 ) {
-            var pageHeight = $.data(this, 'mousewheel-page-height');
+            var pageHeight = $.data( this, "mousewheel-page-height" );
             delta  *= pageHeight;
             deltaY *= pageHeight;
             deltaX *= pageHeight;
         }
 
         // Store lowest absolute delta to normalize the delta values
-        absDelta = Math.max( Math.abs(deltaY), Math.abs(deltaX) );
+        absDelta = Math.max( Math.abs( deltaY ), Math.abs( deltaX ) );
 
         if ( !lowestDelta || absDelta < lowestDelta ) {
             lowestDelta = absDelta;
 
             // Adjust older deltas if necessary
-            if ( shouldAdjustOldDeltas(orgEvent, absDelta) ) {
+            if ( shouldAdjustOldDeltas( orgEvent, absDelta ) ) {
                 lowestDelta /= 40;
             }
         }
 
         // Adjust older deltas if necessary
-        if ( shouldAdjustOldDeltas(orgEvent, absDelta) ) {
+        if ( shouldAdjustOldDeltas( orgEvent, absDelta ) ) {
+
             // Divide all the things by 40!
             delta  /= 40;
             deltaX /= 40;
@@ -56725,57 +56627,58 @@ if (typeof define === 'function' && define.amd) {
         }
 
         // Get a whole, normalized value for the deltas
-        delta  = Math[ delta  >= 1 ? 'floor' : 'ceil' ](delta  / lowestDelta);
-        deltaX = Math[ deltaX >= 1 ? 'floor' : 'ceil' ](deltaX / lowestDelta);
-        deltaY = Math[ deltaY >= 1 ? 'floor' : 'ceil' ](deltaY / lowestDelta);
+        delta  = Math[ delta  >= 1 ? "floor" : "ceil" ]( delta  / lowestDelta );
+        deltaX = Math[ deltaX >= 1 ? "floor" : "ceil" ]( deltaX / lowestDelta );
+        deltaY = Math[ deltaY >= 1 ? "floor" : "ceil" ]( deltaY / lowestDelta );
 
         // Normalise offsetX and offsetY properties
         if ( special.settings.normalizeOffset && this.getBoundingClientRect ) {
             var boundingRect = this.getBoundingClientRect();
-            offsetX = event.clientX - boundingRect.left;
-            offsetY = event.clientY - boundingRect.top;
+            event.offsetX = event.clientX - boundingRect.left;
+            event.offsetY = event.clientY - boundingRect.top;
         }
 
         // Add information to the event object
         event.deltaX = deltaX;
         event.deltaY = deltaY;
         event.deltaFactor = lowestDelta;
-        event.offsetX = offsetX;
-        event.offsetY = offsetY;
+
         // Go ahead and set deltaMode to 0 since we converted to pixels
         // Although this is a little odd since we overwrite the deltaX/Y
         // properties with normalized deltas.
         event.deltaMode = 0;
 
         // Add event and delta to the front of the arguments
-        args.unshift(event, delta, deltaX, deltaY);
+        args.unshift( event, delta, deltaX, deltaY );
 
-        // Clearout lowestDelta after sometime to better
+        // Clear out lowestDelta after sometime to better
         // handle multiple device types that give different
         // a different lowestDelta
         // Ex: trackpad = 3 and mouse wheel = 120
-        if (nullLowestDeltaTimeout) { clearTimeout(nullLowestDeltaTimeout); }
-        nullLowestDeltaTimeout = setTimeout(nullLowestDelta, 200);
+        if ( nullLowestDeltaTimeout ) {
+            window.clearTimeout( nullLowestDeltaTimeout );
+        }
+        nullLowestDeltaTimeout = window.setTimeout( function() {
+            lowestDelta = null;
+        }, 200 );
 
-        return ($.event.dispatch || $.event.handle).apply(this, args);
+        return ( $.event.dispatch || $.event.handle ).apply( this, args );
     }
 
-    function nullLowestDelta() {
-        lowestDelta = null;
-    }
+    function shouldAdjustOldDeltas( orgEvent, absDelta ) {
 
-    function shouldAdjustOldDeltas(orgEvent, absDelta) {
-        // If this is an older event and the delta is divisable by 120,
+        // If this is an older event and the delta is divisible by 120,
         // then we are assuming that the browser is treating this as an
         // older mouse wheel event and that we should divide the deltas
         // by 40 to try and get a more usable deltaFactor.
         // Side note, this actually impacts the reported scroll distance
         // in older browsers and can cause scrolling to be slower than native.
         // Turn this off by setting $.event.special.mousewheel.settings.adjustOldDeltas to false.
-        return special.settings.adjustOldDeltas && orgEvent.type === 'mousewheel' && absDelta % 120 === 0;
+        return special.settings.adjustOldDeltas && orgEvent.type === "mousewheel" &&
+            absDelta % 120 === 0;
     }
 
-}));
+} );
 
 ;
 /****************************************************************************
@@ -59936,6 +59839,96 @@ return index;
 }(jQuery, this.i18next, this, document));
 ;
 /****************************************************************************
+jquery-scroll-booster.js
+
+Adding the use of ding ScrollBooster
+https://ilyashubin.github.io/scrollbooster/
+
+
+****************************************************************************/
+(function ($, window/*, document, undefined*/) {
+    "use strict";
+
+
+    $.fn.extend({
+
+        addScrollBooster: function( options = {} ){
+            let $viewport =
+                    (options.viewport ? $(options.viewport) : null) ||
+                    options.$viewport ||
+                    (options.container ? $(options.container) : null) ||
+                    options.$container ||
+                    this,
+                $content  = (options.content ? $(options.content) : null) || options.$content,
+                direction = (options.direction == 'both' ? 'all' : null) || options.direction || 'all';
+
+            options = $.extend(true, {}, {
+                viewport                        : $viewport.get(0), //DOM Node  null     Content viewport element (required)
+                content                         : $content.get(0),  //DOM Node  viewport child element    Scrollable content element inside viewport
+                scrollMode                      : 'native',         //String    undefined Scroll technique - via CSS transform or natively. Could be 'transform' or 'native'
+                direction                       : direction,        //String    'all'     Scroll direction. Could be 'horizontal', 'vertical' or 'all'
+                bounce                          : false,            //Boolean   true      Enables elastic bounce effect when hitting viewport borders
+
+              //textSelection                   : false,    //Boolean   false     Enables text selection inside viewport
+              //inputsFocus                     : true,     //Boolean   true      Enables focus for elements: 'input', 'textarea', 'button', 'select' and 'label'
+              //pointerMode                     : 'all',    //String    'all'     Specify pointer type. Supported values - 'touch' (scroll only on touch devices), 'mouse' (scroll only on desktop), 'all' (mobile and desktop)
+              //friction                        : 0.05,     //Number    0.05      Scroll friction factor - how fast scrolling stops after pointer release
+              //bounceForce                     : 0.1,      //Number    0.1       Elastic bounce effect factor
+              //emulateScroll                   : false,    //Boolean   false     Enables mouse wheel/trackpad emulation inside viewport
+              //preventDefaultOnEmulateScroll   : false,    //String    false     Prevents horizontal or vertical default when emulateScroll is enabled (eg. useful to prevent horizontal trackpad gestures while enabling vertical scrolling). Could be 'horizontal' or 'vertical'.
+              //lockScrollOnDragDirection       : false,    //String    false     Detect drag direction and either prevent default mousedown/touchstart event or lock content scroll. Could be 'horizontal', 'vertical' or 'all'
+              //dragDirectionTolerance          : 40,       //Number    40        Tolerance for horizontal or vertical drag detection
+              //onUpdate                        : null,     //Function  noop      Handler function to perform actual scrolling. Receives scrolling state object with coordinates
+              //onClick                         : null,     //Function  noop      Click handler function. Here you can, for example, prevent default event for click on links. Receives object with scrolling metrics and event object. Calls after each click in scrollable area
+              //onPointerDown                   : null,     //Function  noop      mousedown/touchstart events handler
+              //onPointerUp                     : null,     //Function  noop      mouseup/touchend events handler
+              //onPointerMove                   : null,     //Function  noop      mousemove/touchmove events handler
+              //onWheel                         : null,     //Function  noop      wheel event handler
+              //shouldScroll                    : null,     //Function  noop      Function to permit or disable scrolling. Receives object with scrolling state and event object. Calls on pointerdown (mousedown, touchstart) in scrollable area. You can return true or false to enable or disable scrolling
+
+            }, options );
+
+            let scrollBooster = new window.ScrollBooster(options);
+            this.data('scrollBooster', scrollBooster);
+
+            $viewport.on('mouseleave', this._sb_mouseleave.bind(this) );
+
+            return scrollBooster;
+        },
+
+        getScrollBooster: function(){
+            return this.data('scrollBooster');
+        },
+
+        sbUpdate: function(){
+            let sb = this.getScrollBooster();
+            if (sb)
+                sb.updateMetrics();
+        },
+
+        sbScrollTo(left, top){
+            let sb = this.getScrollBooster();
+            if (sb){
+                sb.scrollTo({x: left, y: top});
+                sb.updateMetrics();
+            }
+            else
+                this.$container.get(0).scrollTo(left, top);
+
+        },
+
+
+        _sb_mouseleave: function(){
+            let sb = this.getScrollBooster();
+            if (sb && sb.isDragging)
+                sb.events.pointerup();
+        }
+
+    });
+
+}(jQuery, this, document));
+;
+/****************************************************************************
     jquery-scroll-container.js,
 
     (c) 2017, FCOO
@@ -60020,13 +60013,13 @@ return index;
         if (isVertical){
             noScroll = elem.scrollHeight <= elem.clientHeight;
             position = elem.scrollTop <= 0 ? 'start' :
-                       elem.scrollTop >= elem.scrollHeight - elem.clientHeight ? 'end' :
+                       Math.ceil(elem.scrollTop) >= elem.scrollHeight - elem.clientHeight ? 'end' :
                        null;
         }
         else {
             noScroll = elem.scrollWidth < elem.clientWidth;
             position = elem.scrollLeft <= 0 ? 'start' :
-                       elem.scrollLeft >= elem.scrollWidth - elem.clientWidth ? 'end' :
+                       Math.ceil(elem.scrollLeft) >= elem.scrollWidth - elem.clientWidth ? 'end' :
                        null;
         }
 
@@ -60099,6 +60092,404 @@ return index;
     };
 
 }(jQuery, this, document));
+;
+/****************************************************************************
+scrollbooster-bable.js,
+
+A bable-adjusted version of ScrollBooster
+See https://ilyashubin.github.io/scrollbooster/
+
+****************************************************************************/
+!function (t, e) {
+  "object" == typeof exports && "object" == typeof module ? module.exports = e() : "function" == typeof define && define.amd ? define("ScrollBooster", [], e) : "object" == typeof exports ? exports.ScrollBooster = e() : t.ScrollBooster = e();
+}(this, function () {
+  return function (t) {
+    var e = {};
+    function i(o) {
+      if (e[o]) return e[o].exports;
+      var n = e[o] = {
+        i: o,
+        l: !1,
+        exports: {}
+      };
+      return t[o].call(n.exports, n, n.exports, i), n.l = !0, n.exports;
+    }
+    return i.m = t, i.c = e, i.d = function (t, e, o) {
+      i.o(t, e) || Object.defineProperty(t, e, {
+        enumerable: !0,
+        get: o
+      });
+    }, i.r = function (t) {
+      "undefined" != typeof Symbol && Symbol.toStringTag && Object.defineProperty(t, Symbol.toStringTag, {
+        value: "Module"
+      }), Object.defineProperty(t, "__esModule", {
+        value: !0
+      });
+    }, i.t = function (t, e) {
+      if (1 & e && (t = i(t)), 8 & e) return t;
+      if (4 & e && "object" == typeof t && t && t.__esModule) return t;
+      var o = Object.create(null);
+      if (i.r(o), Object.defineProperty(o, "default", {
+        enumerable: !0,
+        value: t
+      }), 2 & e && "string" != typeof t) for (var n in t) i.d(o, n, function (e) {
+        return t[e];
+      }.bind(null, n));
+      return o;
+    }, i.n = function (t) {
+      var e = t && t.__esModule ? function () {
+        return t.default;
+      } : function () {
+        return t;
+      };
+      return i.d(e, "a", e), e;
+    }, i.o = function (t, e) {
+      return Object.prototype.hasOwnProperty.call(t, e);
+    }, i.p = "", i(i.s = 0);
+  }([function (t, e, i) {
+    "use strict";
+
+    function o(t, e) {
+      var i = Object.keys(t);
+      if (Object.getOwnPropertySymbols) {
+        var o = Object.getOwnPropertySymbols(t);
+        e && (o = o.filter(function (e) {
+          return Object.getOwnPropertyDescriptor(t, e).enumerable;
+        })), i.push.apply(i, o);
+      }
+      return i;
+    }
+    function n(t) {
+      for (var e = 1; e < arguments.length; e++) {
+        var i = null != arguments[e] ? arguments[e] : {};
+        e % 2 ? o(Object(i), !0).forEach(function (e) {
+          s(t, e, i[e]);
+        }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(t, Object.getOwnPropertyDescriptors(i)) : o(Object(i)).forEach(function (e) {
+          Object.defineProperty(t, e, Object.getOwnPropertyDescriptor(i, e));
+        });
+      }
+      return t;
+    }
+    function s(t, e, i) {
+      return e in t ? Object.defineProperty(t, e, {
+        value: i,
+        enumerable: !0,
+        configurable: !0,
+        writable: !0
+      }) : t[e] = i, t;
+    }
+    function r(t, e) {
+      if (!(t instanceof e)) throw new TypeError("Cannot call a class as a function");
+    }
+    function a(t, e) {
+      for (var i = 0; i < e.length; i++) {
+        var o = e[i];
+        o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(t, o.key, o);
+      }
+    }
+    i.r(e), i.d(e, "default", function () {
+      return p;
+    });
+    var l = function (t) {
+        return Math.max(t.offsetHeight, t.scrollHeight);
+      },
+      p = function () {
+        function t() {
+          var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {};
+          r(this, t);
+          var i = {
+            content: e.viewport.children[0],
+            direction: "all",
+            pointerMode: "all",
+            scrollMode: void 0,
+            bounce: !0,
+            bounceForce: .1,
+            friction: .05,
+            textSelection: !1,
+            inputsFocus: !0,
+            emulateScroll: !1,
+            preventDefaultOnEmulateScroll: !1,
+            preventPointerMoveDefault: !0,
+            lockScrollOnDragDirection: !1,
+            dragDirectionTolerance: 40,
+            onPointerDown: function () {},
+            onPointerUp: function () {},
+            onPointerMove: function () {},
+            onClick: function () {},
+            onUpdate: function () {},
+            onWheel: function () {},
+            shouldScroll: function () {
+              return !0;
+            }
+          };
+          if (this.props = n(n({}, i), e), this.props.viewport && this.props.viewport instanceof Element) {
+            if (this.props.content) {
+              this.isDragging = !1, this.isTargetScroll = !1, this.isScrolling = !1, this.isRunning = !1;
+              var o = {
+                x: 0,
+                y: 0
+              };
+              this.position = n({}, o), this.velocity = n({}, o), this.dragStartPosition = n({}, o), this.dragOffset = n({}, o), this.clientOffset = n({}, o), this.dragPosition = n({}, o), this.targetPosition = n({}, o), this.scrollOffset = n({}, o), this.rafID = null, this.events = {}, this.updateMetrics(), this.handleEvents();
+            } else console.error("ScrollBooster init error: Viewport does not have any content");
+          } else console.error('ScrollBooster init error: "viewport" config property must be present and must be Element');
+        }
+        var e, i, o;
+        return e = t, (i = [{
+          key: "updateOptions",
+          value: function () {
+            var t = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {};
+            this.props = n(n({}, this.props), t), this.props.onUpdate(this.getState()), this.startAnimationLoop();
+          }
+        }, {
+          key: "updateMetrics",
+          value: function () {
+            var t;
+            this.viewport = {
+              width: this.props.viewport.clientWidth,
+              height: this.props.viewport.clientHeight
+            }, this.content = {
+              width: (t = this.props.content, Math.max(t.offsetWidth, t.scrollWidth)),
+              height: l(this.props.content)
+            }, this.edgeX = {
+              from: Math.min(-this.content.width + this.viewport.width, 0),
+              to: 0
+            }, this.edgeY = {
+              from: Math.min(-this.content.height + this.viewport.height, 0),
+              to: 0
+            }, this.props.onUpdate(this.getState()), this.startAnimationLoop();
+          }
+        }, {
+          key: "startAnimationLoop",
+          value: function () {
+            var t = this;
+            this.isRunning = !0, cancelAnimationFrame(this.rafID), this.rafID = requestAnimationFrame(function () {
+              return t.animate();
+            });
+          }
+        }, {
+          key: "animate",
+          value: function () {
+            var t = this;
+            if (this.isRunning) {
+              this.updateScrollPosition(), this.isMoving() || (this.isRunning = !1, this.isTargetScroll = !1);
+              var e = this.getState();
+              this.setContentPosition(e), this.props.onUpdate(e), this.rafID = requestAnimationFrame(function () {
+                return t.animate();
+              });
+            }
+          }
+        }, {
+          key: "updateScrollPosition",
+          value: function () {
+            this.applyEdgeForce(), this.applyDragForce(), this.applyScrollForce(), this.applyTargetForce();
+            var t = 1 - this.props.friction;
+            this.velocity.x *= t, this.velocity.y *= t, "vertical" !== this.props.direction && (this.position.x += this.velocity.x), "horizontal" !== this.props.direction && (this.position.y += this.velocity.y), this.props.bounce && !this.isScrolling || this.isTargetScroll || (this.position.x = Math.max(Math.min(this.position.x, this.edgeX.to), this.edgeX.from), this.position.y = Math.max(Math.min(this.position.y, this.edgeY.to), this.edgeY.from));
+          }
+        }, {
+          key: "applyForce",
+          value: function (t) {
+            this.velocity.x += t.x, this.velocity.y += t.y;
+          }
+        }, {
+          key: "applyEdgeForce",
+          value: function () {
+            if (this.props.bounce && !this.isDragging) {
+              var t = this.position.x < this.edgeX.from,
+                e = this.position.x > this.edgeX.to,
+                i = this.position.y < this.edgeY.from,
+                o = this.position.y > this.edgeY.to,
+                n = t || e,
+                s = i || o;
+              if (n || s) {
+                var r = t ? this.edgeX.from : this.edgeX.to,
+                  a = i ? this.edgeY.from : this.edgeY.to,
+                  l = r - this.position.x,
+                  p = a - this.position.y,
+                  c = {
+                    x: l * this.props.bounceForce,
+                    y: p * this.props.bounceForce
+                  },
+                  h = this.position.x + (this.velocity.x + c.x) / this.props.friction,
+                  u = this.position.y + (this.velocity.y + c.y) / this.props.friction;
+                (t && h >= this.edgeX.from || e && h <= this.edgeX.to) && (c.x = l * this.props.bounceForce - this.velocity.x), (i && u >= this.edgeY.from || o && u <= this.edgeY.to) && (c.y = p * this.props.bounceForce - this.velocity.y), this.applyForce({
+                  x: n ? c.x : 0,
+                  y: s ? c.y : 0
+                });
+              }
+            }
+          }
+        }, {
+          key: "applyDragForce",
+          value: function () {
+            if (this.isDragging) {
+              var t = this.dragPosition.x - this.position.x,
+                e = this.dragPosition.y - this.position.y;
+              this.applyForce({
+                x: t - this.velocity.x,
+                y: e - this.velocity.y
+              });
+            }
+          }
+        }, {
+          key: "applyScrollForce",
+          value: function () {
+            this.isScrolling && (this.applyForce({
+              x: this.scrollOffset.x - this.velocity.x,
+              y: this.scrollOffset.y - this.velocity.y
+            }), this.scrollOffset.x = 0, this.scrollOffset.y = 0);
+          }
+        }, {
+          key: "applyTargetForce",
+          value: function () {
+            this.isTargetScroll && this.applyForce({
+              x: .08 * (this.targetPosition.x - this.position.x) - this.velocity.x,
+              y: .08 * (this.targetPosition.y - this.position.y) - this.velocity.y
+            });
+          }
+        }, {
+          key: "isMoving",
+          value: function () {
+            return this.isDragging || this.isScrolling || Math.abs(this.velocity.x) >= .01 || Math.abs(this.velocity.y) >= .01;
+          }
+        }, {
+          key: "scrollTo",
+          value: function () {
+            var t = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {};
+            this.isTargetScroll = !0, this.targetPosition.x = -t.x || 0, this.targetPosition.y = -t.y || 0, this.startAnimationLoop();
+          }
+        }, {
+          key: "setPosition",
+          value: function () {
+            var t = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {};
+            this.velocity.x = 0, this.velocity.y = 0, this.position.x = -t.x || 0, this.position.y = -t.y || 0, this.startAnimationLoop();
+          }
+        }, {
+          key: "getState",
+          value: function () {
+            return {
+              isMoving: this.isMoving(),
+              isDragging: !(!this.dragOffset.x && !this.dragOffset.y),
+              position: {
+                x: -this.position.x,
+                y: -this.position.y
+              },
+              dragOffset: this.dragOffset,
+              dragAngle: this.getDragAngle(this.clientOffset.x, this.clientOffset.y),
+              borderCollision: {
+                left: this.position.x >= this.edgeX.to,
+                right: this.position.x <= this.edgeX.from,
+                top: this.position.y >= this.edgeY.to,
+                bottom: this.position.y <= this.edgeY.from
+              }
+            };
+          }
+        }, {
+          key: "getDragAngle",
+          value: function (t, e) {
+            return Math.round(Math.atan2(t, e) * (180 / Math.PI));
+          }
+        }, {
+          key: "getDragDirection",
+          value: function (t, e) {
+            return Math.abs(90 - Math.abs(t)) <= 90 - e ? "horizontal" : "vertical";
+          }
+        }, {
+          key: "setContentPosition",
+          value: function (t) {
+            "transform" === this.props.scrollMode && (this.props.content.style.transform = "translate(".concat(-t.position.x, "px, ").concat(-t.position.y, "px)")), "native" === this.props.scrollMode && (this.props.viewport.scrollTop = t.position.y, this.props.viewport.scrollLeft = t.position.x);
+          }
+        }, {
+          key: "handleEvents",
+          value: function () {
+            var t = this,
+              e = {
+                x: 0,
+                y: 0
+              },
+              i = {
+                x: 0,
+                y: 0
+              },
+              o = null,
+              n = null,
+              s = !1,
+              r = function (n) {
+                if (t.isDragging) {
+                  var r = s ? n.touches[0] : n,
+                    a = r.pageX,
+                    l = r.pageY,
+                    p = r.clientX,
+                    c = r.clientY;
+                  t.dragOffset.x = a - e.x, t.dragOffset.y = l - e.y, t.clientOffset.x = p - i.x, t.clientOffset.y = c - i.y, (Math.abs(t.clientOffset.x) > 5 && !o || Math.abs(t.clientOffset.y) > 5 && !o) && (o = t.getDragDirection(t.getDragAngle(t.clientOffset.x, t.clientOffset.y), t.props.dragDirectionTolerance)), t.props.lockScrollOnDragDirection && "all" !== t.props.lockScrollOnDragDirection ? o === t.props.lockScrollOnDragDirection && s ? (t.dragPosition.x = t.dragStartPosition.x + t.dragOffset.x, t.dragPosition.y = t.dragStartPosition.y + t.dragOffset.y) : s ? (t.dragPosition.x = t.dragStartPosition.x, t.dragPosition.y = t.dragStartPosition.y) : (t.dragPosition.x = t.dragStartPosition.x + t.dragOffset.x, t.dragPosition.y = t.dragStartPosition.y + t.dragOffset.y) : (t.dragPosition.x = t.dragStartPosition.x + t.dragOffset.x, t.dragPosition.y = t.dragStartPosition.y + t.dragOffset.y);
+                }
+              };
+            this.events.pointerdown = function (o) {
+              s = !(!o.touches || !o.touches[0]), t.props.onPointerDown(t.getState(), o, s);
+              var n = s ? o.touches[0] : o,
+                a = n.pageX,
+                l = n.pageY,
+                p = n.clientX,
+                c = n.clientY,
+                h = t.props.viewport,
+                u = h.getBoundingClientRect();
+              if (!(p - u.left >= h.clientLeft + h.clientWidth) && !(c - u.top >= h.clientTop + h.clientHeight) && t.props.shouldScroll(t.getState(), o) && 2 !== o.button && ("mouse" !== t.props.pointerMode || !s) && ("touch" !== t.props.pointerMode || s) && !(t.props.inputsFocus && ["input", "textarea", "button", "select", "label"].indexOf(o.target.nodeName.toLowerCase()) > -1)) {
+                if (t.props.textSelection) {
+                  if (function (t, e, i) {
+                    for (var o = t.childNodes, n = document.createRange(), s = 0; s < o.length; s++) {
+                      var r = o[s];
+                      if (3 === r.nodeType) {
+                        n.selectNodeContents(r);
+                        var a = n.getBoundingClientRect();
+                        if (e >= a.left && i >= a.top && e <= a.right && i <= a.bottom) return r;
+                      }
+                    }
+                    return !1;
+                  }(o.target, p, c)) return;
+                  (f = window.getSelection ? window.getSelection() : document.selection) && (f.removeAllRanges ? f.removeAllRanges() : f.empty && f.empty());
+                }
+                var f;
+                t.isDragging = !0, e.x = a, e.y = l, i.x = p, i.y = c, t.dragStartPosition.x = t.position.x, t.dragStartPosition.y = t.position.y, r(o), t.startAnimationLoop();
+              }
+            }, this.events.pointermove = function (e) {
+              !e.cancelable || "all" !== t.props.lockScrollOnDragDirection && t.props.lockScrollOnDragDirection !== o || e.preventDefault(), r(e), t.props.onPointerMove(t.getState(), e, s);
+            }, this.events.pointerup = function (e) {
+              t.isDragging = !1, o = null, t.props.onPointerUp(t.getState(), e, s);
+            }, this.events.wheel = function (e) {
+              var i = t.getState();
+              t.props.emulateScroll && (t.velocity.x = 0, t.velocity.y = 0, t.isScrolling = !0, t.scrollOffset.x = -e.deltaX, t.scrollOffset.y = -e.deltaY, t.props.onWheel(i, e), t.startAnimationLoop(), clearTimeout(n), n = setTimeout(function () {
+                return t.isScrolling = !1;
+              }, 200/*80*/), t.props.preventDefaultOnEmulateScroll && t.getDragDirection(t.getDragAngle(-e.deltaX, -e.deltaY), t.props.dragDirectionTolerance) === t.props.preventDefaultOnEmulateScroll && e.preventDefault());
+            }, this.events.scroll = function () {
+              var e = t.props.viewport,
+                i = e.scrollLeft,
+                o = e.scrollTop;
+              Math.abs(t.position.x + i) > 3 && (t.position.x = -i, t.velocity.x = 0), Math.abs(t.position.y + o) > 3 && (t.position.y = -o, t.velocity.y = 0);
+            }, this.events.click = function (e) {
+              var i = t.getState(),
+                o = "vertical" !== t.props.direction ? i.dragOffset.x : 0,
+                n = "horizontal" !== t.props.direction ? i.dragOffset.y : 0;
+              Math.max(Math.abs(o), Math.abs(n)) > 5 && (e.preventDefault(), e.stopPropagation()), t.props.onClick(i, e, s);
+            }, this.events.contentLoad = function () {
+              return t.updateMetrics();
+            }, this.events.resize = function () {
+              return t.updateMetrics();
+            }, this.props.viewport.addEventListener("mousedown", this.events.pointerdown), this.props.viewport.addEventListener("touchstart", this.events.pointerdown, {
+              passive: !1
+            }), this.props.viewport.addEventListener("click", this.events.click), this.props.viewport.addEventListener("wheel", this.events.wheel, {
+              passive: !1
+            }), this.props.viewport.addEventListener("scroll", this.events.scroll), this.props.content.addEventListener("load", this.events.contentLoad, !0), window.addEventListener("mousemove", this.events.pointermove), window.addEventListener("touchmove", this.events.pointermove, {
+              passive: !1
+            }), window.addEventListener("mouseup", this.events.pointerup), window.addEventListener("touchend", this.events.pointerup), window.addEventListener("resize", this.events.resize);
+          }
+        }, {
+          key: "destroy",
+          value: function () {
+            this.props.viewport.removeEventListener("mousedown", this.events.pointerdown), this.props.viewport.removeEventListener("touchstart", this.events.pointerdown), this.props.viewport.removeEventListener("click", this.events.click), this.props.viewport.removeEventListener("wheel", this.events.wheel), this.props.viewport.removeEventListener("scroll", this.events.scroll), this.props.content.removeEventListener("load", this.events.contentLoad), window.removeEventListener("mousemove", this.events.pointermove), window.removeEventListener("touchmove", this.events.pointermove), window.removeEventListener("mouseup", this.events.pointerup), window.removeEventListener("touchend", this.events.pointerup), window.removeEventListener("resize", this.events.resize);
+          }
+        }]) && a(e.prototype, i), o && a(e, o), t;
+      }();
+  }]).default;
+});
 ;
 // Stupid jQuery table plugin.
 
@@ -67869,7 +68260,7 @@ return index;
 }).call(this);
 ;
 //! moment-timezone.js
-//! version : 0.5.45
+//! version : 0.5.48
 //! Copyright (c) JS Foundation and other contributors
 //! license : MIT
 //! github.com/moment/moment-timezone
@@ -67899,7 +68290,7 @@ return index;
 	// 	return moment;
 	// }
 
-	var VERSION = "0.5.45",
+	var VERSION = "0.5.48",
 		zones = {},
 		links = {},
 		countries = {},
@@ -68594,78 +68985,75 @@ return index;
 	}
 
 	loadData({
-		"version": "2024a",
+		"version": "2025b",
 		"zones": [
 			"Africa/Abidjan|GMT|0|0||48e5",
 			"Africa/Nairobi|EAT|-30|0||47e5",
 			"Africa/Algiers|CET|-10|0||26e5",
 			"Africa/Lagos|WAT|-10|0||17e6",
 			"Africa/Khartoum|CAT|-20|0||51e5",
-			"Africa/Cairo|EET EEST|-20 -30|010101010101010|29NW0 1cL0 1cN0 1fz0 1a10 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0|15e6",
-			"Africa/Casablanca|+01 +00|-10 0|010101010101010101010101|208q0 e00 2600 gM0 2600 e00 2600 gM0 2600 e00 28M0 e00 2600 gM0 2600 e00 28M0 e00 2600 gM0 2600 e00 2600|32e5",
-			"Europe/Paris|CET CEST|-10 -20|01010101010101010101010|1XSp0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0|11e6",
+			"Africa/Cairo|EET EEST|-20 -30|01010101010101010|29NW0 1cL0 1cN0 1fz0 1a10 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1fz0|15e6",
+			"Africa/Casablanca|+01 +00|-10 0|010101010101010101010101|22sq0 gM0 2600 e00 2600 gM0 2600 e00 28M0 e00 2600 gM0 2600 e00 28M0 e00 2600 gM0 2600 e00 2600 gM0 2600|32e5",
+			"Europe/Paris|CET CEST|-10 -20|01010101010101010101010|22k10 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|11e6",
 			"Africa/Johannesburg|SAST|-20|0||84e5",
 			"Africa/Juba|EAT CAT|-30 -20|01|24nx0|",
-			"Africa/Sao_Tome|WAT GMT|-10 0|01|1XiN0|",
 			"Africa/Tripoli|EET|-20|0||11e5",
-			"America/Adak|HST HDT|a0 90|01010101010101010101010|1XKc0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|326",
-			"America/Anchorage|AKST AKDT|90 80|01010101010101010101010|1XKb0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|30e4",
+			"America/Adak|HST HDT|a0 90|01010101010101010101010|22bM0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|326",
+			"America/Anchorage|AKST AKDT|90 80|01010101010101010101010|22bL0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|30e4",
 			"America/Santo_Domingo|AST|40|0||29e5",
-			"America/Fortaleza|-03|30|0||34e5",
-			"America/Asuncion|-03 -04|30 40|01010101010101010101010|1XPD0 1ip0 17b0 1ip0 19X0 1fB0 19X0 1fB0 19X0 1fB0 19X0 1ip0 17b0 1ip0 17b0 1ip0 19X0 1fB0 19X0 1fB0 19X0 1ip0|28e5",
+			"America/Sao_Paulo|-03|30|0||20e6",
+			"America/Asuncion|-03 -04|30 40|01010101010|22hf0 1ip0 19X0 1fB0 19X0 1fB0 19X0 1fB0 19X0 1ip0|28e5",
 			"America/Panama|EST|50|0||15e5",
-			"America/Mexico_City|CST CDT|60 50|010101010|1XVk0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0|20e6",
+			"America/Mexico_City|CST CDT|60 50|0101010|22mU0 1lb0 14p0 1nX0 11B0 1nX0|20e6",
 			"America/Managua|CST|60|0||22e5",
 			"America/Caracas|-04|40|0||29e5",
 			"America/Lima|-05|50|0||11e6",
-			"America/Denver|MST MDT|70 60|01010101010101010101010|1XK90 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|26e5",
-			"America/Campo_Grande|-03 -04|30 40|01|1XBD0|77e4",
-			"America/Chicago|CST CDT|60 50|01010101010101010101010|1XK80 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|92e5",
-			"America/Chihuahua|MST MDT CST|70 60 60|010101012|1XVl0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0|81e4",
-			"America/Ciudad_Juarez|MST MDT CST|70 60 60|010101012010101010101010|1XK90 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1wn0 cm0 EP0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|",
+			"America/Denver|MST MDT|70 60|01010101010101010101010|22bJ0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|26e5",
+			"America/Chicago|CST CDT|60 50|01010101010101010101010|22bI0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|92e5",
+			"America/Chihuahua|MST MDT CST|70 60 60|0101012|22mV0 1lb0 14p0 1nX0 11B0 1nX0|81e4",
+			"America/Ciudad_Juarez|MST MDT CST|70 60 60|010101201010101010101010|22bJ0 1zb0 Rd0 1zb0 Op0 1wn0 cm0 EP0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|",
+			"America/Coyhaique|-03 -04|30 40|01010101010|22mP0 11B0 1nX0 11B0 1nX0 14p0 1lb0 11B0 1qL0 11B0|",
 			"America/Phoenix|MST|70|0||42e5",
-			"America/Whitehorse|PST PDT MST|80 70 70|01012|1XKa0 1zb0 Op0 1z90|23e3",
-			"America/New_York|EST EDT|50 40|01010101010101010101010|1XK70 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|21e6",
-			"America/Los_Angeles|PST PDT|80 70|01010101010101010101010|1XKa0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|15e6",
-			"America/Halifax|AST ADT|40 30|01010101010101010101010|1XK60 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|39e4",
-			"America/Godthab|-03 -02 -01|30 20 10|0101010101212121212121|1XSp0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 2so0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0|17e3",
-			"America/Havana|CST CDT|50 40|01010101010101010101010|1XK50 1zc0 Oo0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0|21e5",
-			"America/Mazatlan|MST MDT|70 60|010101010|1XVl0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0|44e4",
-			"America/Metlakatla|PST AKST AKDT|80 90 80|012121212121212121212121|1Xqy0 jB0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|14e2",
-			"America/Miquelon|-03 -02|30 20|01010101010101010101010|1XK50 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|61e2",
+			"America/Whitehorse|PST PDT MST|80 70 70|012|22bK0 1z90|23e3",
+			"America/New_York|EST EDT|50 40|01010101010101010101010|22bH0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|21e6",
+			"America/Los_Angeles|PST PDT|80 70|01010101010101010101010|22bK0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|15e6",
+			"America/Halifax|AST ADT|40 30|01010101010101010101010|22bG0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|39e4",
+			"America/Godthab|-03 -02 -01|30 20 10|0101010121212121212121|22k10 1o00 11A0 1qM0 WM0 1qM0 WM0 2so0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|17e3",
+			"America/Havana|CST CDT|50 40|01010101010101010101010|22bF0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0|21e5",
+			"America/Mazatlan|MST MDT|70 60|0101010|22mV0 1lb0 14p0 1nX0 11B0 1nX0|44e4",
+			"America/Miquelon|-03 -02|30 20|01010101010101010101010|22bF0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|61e2",
 			"America/Noronha|-02|20|0||30e2",
-			"America/Ojinaga|MST MDT CST CDT|70 60 60 50|01010101232323232323232|1XK90 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1wn0 Rc0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|23e3",
-			"America/Santiago|-03 -04|30 40|01010101010101010101010|1XVf0 11B0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 11B0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0|62e5",
-			"America/Sao_Paulo|-02 -03|20 30|01|1XBC0|20e6",
-			"America/Scoresbysund|-01 +00 -02|10 0 20|0101010101020202020202|1XSp0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 2pA0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0|452",
-			"America/St_Johns|NST NDT|3u 2u|01010101010101010101010|1XK5u 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0|11e4",
-			"Antarctica/Casey|+11 +08|-b0 -80|0101010101|1XME0 1kr0 12l0 1o01 14kX 1lf1 14kX 1lf1 13bX|10",
+			"America/Ojinaga|MST MDT CST CDT|70 60 60 50|01010123232323232323232|22bJ0 1zb0 Rd0 1zb0 Op0 1wn0 Rc0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|23e3",
+			"America/Santiago|-03 -04|30 40|01010101010101010101010|22mP0 11B0 1nX0 11B0 1nX0 14p0 1lb0 11B0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 11B0|62e5",
+			"America/Scoresbysund|-01 +00 -02|10 0 20|0101010102020202020202|22k10 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 2pA0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|452",
+			"America/St_Johns|NST NDT|3u 2u|01010101010101010101010|22bFu 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0|11e4",
+			"Antarctica/Casey|+11 +08|-b0 -80|01010101|22bs0 1o01 14kX 1lf1 14kX 1lf1 13bX|10",
 			"Asia/Bangkok|+07|-70|0||15e6",
 			"Asia/Vladivostok|+10|-a0|0||60e4",
-			"Australia/Sydney|AEDT AEST|-b0 -a0|01010101010101010101010|1XV40 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0|40e5",
+			"Australia/Sydney|AEDT AEST|-b0 -a0|01010101010101010101010|22mE0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0|40e5",
 			"Asia/Tashkent|+05|-50|0||23e5",
-			"Pacific/Auckland|NZDT NZST|-d0 -c0|01010101010101010101010|1XV20 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1io0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0|14e5",
+			"Pacific/Auckland|NZDT NZST|-d0 -c0|01010101010101010101010|22mC0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1io0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00|14e5",
 			"Europe/Istanbul|+03|-30|0||13e6",
-			"Antarctica/Troll|+00 +02|0 -20|01010101010101010101010|1XSp0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0|40",
+			"Antarctica/Troll|+00 +02|0 -20|01010101010101010101010|22k10 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|40",
 			"Antarctica/Vostok|+07 +05|-70 -50|01|2bnv0|25",
 			"Asia/Almaty|+06 +05|-60 -50|01|2bR60|15e5",
-			"Asia/Amman|EET EEST +03|-20 -30 -30|010101012|1XRy0 1o00 11A0 1qM0 WM0 1qM0 LA0 1C00|25e5",
+			"Asia/Amman|EET EEST +03|-20 -30 -30|0101012|22ja0 1qM0 WM0 1qM0 LA0 1C00|25e5",
 			"Asia/Kamchatka|+12|-c0|0||18e4",
 			"Asia/Dubai|+04|-40|0||39e5",
-			"Asia/Beirut|EET EEST|-20 -30|01010101010101010101010|1XSm0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0|22e5",
+			"Asia/Beirut|EET EEST|-20 -30|01010101010101010101010|22jW0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0|22e5",
 			"Asia/Dhaka|+06|-60|0||16e6",
 			"Asia/Kuala_Lumpur|+08|-80|0||71e5",
 			"Asia/Kolkata|IST|-5u|0||15e6",
 			"Asia/Chita|+09|-90|0||33e4",
 			"Asia/Shanghai|CST|-80|0||23e6",
 			"Asia/Colombo|+0530|-5u|0||22e5",
-			"Asia/Damascus|EET EEST +03|-20 -30 -30|010101012|1XRy0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0|26e5",
-			"Europe/Athens|EET EEST|-20 -30|01010101010101010101010|1XSp0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0|35e5",
-			"Asia/Gaza|EET EEST|-20 -30|01010101010101010101010|1XRy0 1on0 11B0 1o00 11A0 1qo0 XA0 1qp0 1cN0 1cL0 1a10 1fz0 17d0 1in0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0|18e5",
+			"Asia/Damascus|EET EEST +03|-20 -30 -30|0101012|22ja0 1qL0 WN0 1qL0 WN0 1qL0|26e5",
+			"Europe/Athens|EET EEST|-20 -30|01010101010101010101010|22k10 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|35e5",
+			"Asia/Gaza|EET EEST|-20 -30|01010101010101010101010|22jy0 1o00 11A0 1qo0 XA0 1qp0 1cN0 1cL0 1a10 1fz0 17d0 1in0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0|18e5",
 			"Asia/Hong_Kong|HKT|-80|0||73e5",
 			"Asia/Jakarta|WIB|-70|0||31e6",
 			"Asia/Jayapura|WIT|-90|0||26e4",
-			"Asia/Jerusalem|IST IDT|-20 -30|01010101010101010101010|1XRA0 1oL0 10N0 1oL0 10N0 1rz0 W10 1rz0 W10 1rz0 10N0 1oL0 10N0 1oL0 10N0 1oL0 10N0 1rz0 W10 1rz0 W10 1rz0|81e4",
+			"Asia/Jerusalem|IST IDT|-20 -30|01010101010101010101010|22jc0 1oL0 10N0 1rz0 W10 1rz0 W10 1rz0 10N0 1oL0 10N0 1oL0 10N0 1oL0 10N0 1rz0 W10 1rz0 W10 1rz0 10N0 1oL0|81e4",
 			"Asia/Kabul|+0430|-4u|0||46e5",
 			"Asia/Karachi|PKT|-50|0||24e6",
 			"Asia/Kathmandu|+0545|-5J|0||12e5",
@@ -68674,19 +69062,19 @@ return index;
 			"Asia/Manila|PST|-80|0||24e6",
 			"Asia/Seoul|KST|-90|0||23e6",
 			"Asia/Rangoon|+0630|-6u|0||48e5",
-			"Asia/Tehran|+0330 +0430|-3u -4u|010101010|1XOIu 1dz0 1cp0 1dz0 1cN0 1dz0 1cp0 1dz0|14e6",
+			"Asia/Tehran|+0330 +0430|-3u -4u|0101010|22gIu 1dz0 1cN0 1dz0 1cp0 1dz0|14e6",
 			"Asia/Tokyo|JST|-90|0||38e6",
-			"Atlantic/Azores|-01 +00|10 0|01010101010101010101010|1XSp0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0|25e4",
-			"Europe/Lisbon|WET WEST|0 -10|01010101010101010101010|1XSp0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0|27e5",
+			"Atlantic/Azores|-01 +00|10 0|01010101010101010101010|22k10 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|25e4",
+			"Europe/Lisbon|WET WEST|0 -10|01010101010101010101010|22k10 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|27e5",
 			"Atlantic/Cape_Verde|-01|10|0||50e4",
-			"Australia/Adelaide|ACDT ACST|-au -9u|01010101010101010101010|1XV4u 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0|11e5",
+			"Australia/Adelaide|ACDT ACST|-au -9u|01010101010101010101010|22mEu 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0|11e5",
 			"Australia/Brisbane|AEST|-a0|0||20e5",
 			"Australia/Darwin|ACST|-9u|0||12e4",
 			"Australia/Eucla|+0845|-8J|0||368",
-			"Australia/Lord_Howe|+11 +1030|-b0 -au|01010101010101010101010|1XV30 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1fzu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1fAu|347",
+			"Australia/Lord_Howe|+11 +1030|-b0 -au|01010101010101010101010|22mD0 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1fzu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1cMu 1cLu 1fAu 1cLu 1cMu|347",
 			"Australia/Perth|AWST|-80|0||18e5",
-			"Pacific/Easter|-05 -06|50 60|01010101010101010101010|1XVf0 11B0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 11B0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0|30e2",
-			"Europe/Dublin|GMT IST|0 -10|01010101010101010101010|1XSp0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0|12e5",
+			"Pacific/Easter|-05 -06|50 60|01010101010101010101010|22mP0 11B0 1nX0 11B0 1nX0 14p0 1lb0 11B0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 11B0|30e2",
+			"Europe/Dublin|GMT IST|0 -10|01010101010101010101010|22k10 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|12e5",
 			"Etc/GMT-1|+01|-10|0||",
 			"Pacific/Tongatapu|+13|-d0|0||75e3",
 			"Pacific/Kiritimati|+14|-e0|0||51e2",
@@ -68699,19 +69087,18 @@ return index;
 			"Pacific/Pitcairn|-08|80|0||56",
 			"Pacific/Gambier|-09|90|0||125",
 			"Etc/UTC|UTC|0|0||",
-			"Europe/London|GMT BST|0 -10|01010101010101010101010|1XSp0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0|10e6",
-			"Europe/Chisinau|EET EEST|-20 -30|01010101010101010101010|1XSo0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0|67e4",
+			"Europe/London|GMT BST|0 -10|01010101010101010101010|22k10 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|10e6",
+			"Europe/Chisinau|EET EEST|-20 -30|01010101010101010101010|22k00 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00|67e4",
 			"Europe/Moscow|MSK|-30|0||16e6",
 			"Europe/Volgograd|+04 MSK|-40 -30|01|249a0|10e5",
 			"Pacific/Honolulu|HST|a0|0||37e4",
-			"MET|MET MEST|-10 -20|01010101010101010101010|1XSp0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0|",
-			"Pacific/Chatham|+1345 +1245|-dJ -cJ|01010101010101010101010|1XV20 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1io0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0|600",
-			"Pacific/Apia|+14 +13|-e0 -d0|010101|1XV20 1a00 1fA0 1a00 1fA0|37e3",
-			"Pacific/Fiji|+13 +12|-d0 -c0|010101|1Xnq0 20o0 pc0 2hc0 bc0|88e4",
+			"Pacific/Chatham|+1345 +1245|-dJ -cJ|01010101010101010101010|22mC0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1io0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00|600",
+			"Pacific/Apia|+14 +13|-e0 -d0|0101|22mC0 1a00 1fA0|37e3",
+			"Pacific/Fiji|+13 +12|-d0 -c0|0101|21N20 2hc0 bc0|88e4",
 			"Pacific/Guam|ChST|-a0|0||17e4",
 			"Pacific/Marquesas|-0930|9u|0||86e2",
 			"Pacific/Pago_Pago|SST|b0|0||37e2",
-			"Pacific/Norfolk|+11 +12|-b0 -c0|0101010101010101010101|219P0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0|25e4"
+			"Pacific/Norfolk|+12 +11|-c0 -b0|01010101010101010101010|22mD0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0|25e4"
 		],
 		"links": [
 			"Africa/Abidjan|Africa/Accra",
@@ -68725,6 +69112,7 @@ return index;
 			"Africa/Abidjan|Africa/Monrovia",
 			"Africa/Abidjan|Africa/Nouakchott",
 			"Africa/Abidjan|Africa/Ouagadougou",
+			"Africa/Abidjan|Africa/Sao_Tome",
 			"Africa/Abidjan|Africa/Timbuktu",
 			"Africa/Abidjan|America/Danmarkshavn",
 			"Africa/Abidjan|Atlantic/Reykjavik",
@@ -68779,12 +69167,14 @@ return index;
 			"America/Adak|America/Atka",
 			"America/Adak|US/Aleutian",
 			"America/Anchorage|America/Juneau",
+			"America/Anchorage|America/Metlakatla",
 			"America/Anchorage|America/Nome",
 			"America/Anchorage|America/Sitka",
 			"America/Anchorage|America/Yakutat",
 			"America/Anchorage|US/Alaska",
-			"America/Campo_Grande|America/Cuiaba",
 			"America/Caracas|America/Boa_Vista",
+			"America/Caracas|America/Campo_Grande",
+			"America/Caracas|America/Cuiaba",
 			"America/Caracas|America/Guyana",
 			"America/Caracas|America/La_Paz",
 			"America/Caracas|America/Manaus",
@@ -68817,39 +69207,6 @@ return index;
 			"America/Denver|MST7MDT",
 			"America/Denver|Navajo",
 			"America/Denver|US/Mountain",
-			"America/Fortaleza|America/Araguaina",
-			"America/Fortaleza|America/Argentina/Buenos_Aires",
-			"America/Fortaleza|America/Argentina/Catamarca",
-			"America/Fortaleza|America/Argentina/ComodRivadavia",
-			"America/Fortaleza|America/Argentina/Cordoba",
-			"America/Fortaleza|America/Argentina/Jujuy",
-			"America/Fortaleza|America/Argentina/La_Rioja",
-			"America/Fortaleza|America/Argentina/Mendoza",
-			"America/Fortaleza|America/Argentina/Rio_Gallegos",
-			"America/Fortaleza|America/Argentina/Salta",
-			"America/Fortaleza|America/Argentina/San_Juan",
-			"America/Fortaleza|America/Argentina/San_Luis",
-			"America/Fortaleza|America/Argentina/Tucuman",
-			"America/Fortaleza|America/Argentina/Ushuaia",
-			"America/Fortaleza|America/Bahia",
-			"America/Fortaleza|America/Belem",
-			"America/Fortaleza|America/Buenos_Aires",
-			"America/Fortaleza|America/Catamarca",
-			"America/Fortaleza|America/Cayenne",
-			"America/Fortaleza|America/Cordoba",
-			"America/Fortaleza|America/Jujuy",
-			"America/Fortaleza|America/Maceio",
-			"America/Fortaleza|America/Mendoza",
-			"America/Fortaleza|America/Montevideo",
-			"America/Fortaleza|America/Paramaribo",
-			"America/Fortaleza|America/Punta_Arenas",
-			"America/Fortaleza|America/Recife",
-			"America/Fortaleza|America/Rosario",
-			"America/Fortaleza|America/Santarem",
-			"America/Fortaleza|Antarctica/Palmer",
-			"America/Fortaleza|Antarctica/Rothera",
-			"America/Fortaleza|Atlantic/Stanley",
-			"America/Fortaleza|Etc/GMT+3",
 			"America/Godthab|America/Nuuk",
 			"America/Halifax|America/Glace_Bay",
 			"America/Halifax|America/Goose_Bay",
@@ -68952,7 +69309,41 @@ return index;
 			"America/Santo_Domingo|America/St_Vincent",
 			"America/Santo_Domingo|America/Tortola",
 			"America/Santo_Domingo|America/Virgin",
+			"America/Sao_Paulo|America/Araguaina",
+			"America/Sao_Paulo|America/Argentina/Buenos_Aires",
+			"America/Sao_Paulo|America/Argentina/Catamarca",
+			"America/Sao_Paulo|America/Argentina/ComodRivadavia",
+			"America/Sao_Paulo|America/Argentina/Cordoba",
+			"America/Sao_Paulo|America/Argentina/Jujuy",
+			"America/Sao_Paulo|America/Argentina/La_Rioja",
+			"America/Sao_Paulo|America/Argentina/Mendoza",
+			"America/Sao_Paulo|America/Argentina/Rio_Gallegos",
+			"America/Sao_Paulo|America/Argentina/Salta",
+			"America/Sao_Paulo|America/Argentina/San_Juan",
+			"America/Sao_Paulo|America/Argentina/San_Luis",
+			"America/Sao_Paulo|America/Argentina/Tucuman",
+			"America/Sao_Paulo|America/Argentina/Ushuaia",
+			"America/Sao_Paulo|America/Bahia",
+			"America/Sao_Paulo|America/Belem",
+			"America/Sao_Paulo|America/Buenos_Aires",
+			"America/Sao_Paulo|America/Catamarca",
+			"America/Sao_Paulo|America/Cayenne",
+			"America/Sao_Paulo|America/Cordoba",
+			"America/Sao_Paulo|America/Fortaleza",
+			"America/Sao_Paulo|America/Jujuy",
+			"America/Sao_Paulo|America/Maceio",
+			"America/Sao_Paulo|America/Mendoza",
+			"America/Sao_Paulo|America/Montevideo",
+			"America/Sao_Paulo|America/Paramaribo",
+			"America/Sao_Paulo|America/Punta_Arenas",
+			"America/Sao_Paulo|America/Recife",
+			"America/Sao_Paulo|America/Rosario",
+			"America/Sao_Paulo|America/Santarem",
+			"America/Sao_Paulo|Antarctica/Palmer",
+			"America/Sao_Paulo|Antarctica/Rothera",
+			"America/Sao_Paulo|Atlantic/Stanley",
 			"America/Sao_Paulo|Brazil/East",
+			"America/Sao_Paulo|Etc/GMT+3",
 			"America/St_Johns|Canada/Newfoundland",
 			"America/Whitehorse|America/Dawson",
 			"America/Whitehorse|Canada/Yukon",
@@ -69170,6 +69561,7 @@ return index;
 			"Europe/Paris|Europe/Warsaw",
 			"Europe/Paris|Europe/Zagreb",
 			"Europe/Paris|Europe/Zurich",
+			"Europe/Paris|MET",
 			"Europe/Paris|Poland",
 			"Pacific/Auckland|Antarctica/McMurdo",
 			"Pacific/Auckland|Antarctica/South_Pole",
@@ -69204,11 +69596,11 @@ return index;
 			"AL|Europe/Tirane",
 			"AM|Asia/Yerevan",
 			"AO|Africa/Lagos Africa/Luanda",
-			"AQ|Antarctica/Casey Antarctica/Davis Antarctica/Mawson Antarctica/Palmer Antarctica/Rothera Antarctica/Troll Antarctica/Vostok Pacific/Auckland Pacific/Port_Moresby Asia/Riyadh Antarctica/McMurdo Antarctica/DumontDUrville Antarctica/Syowa",
+			"AQ|Antarctica/Casey Antarctica/Davis Antarctica/Mawson Antarctica/Palmer Antarctica/Rothera Antarctica/Troll Antarctica/Vostok Pacific/Auckland Pacific/Port_Moresby Asia/Riyadh Asia/Singapore Antarctica/McMurdo Antarctica/DumontDUrville Antarctica/Syowa",
 			"AR|America/Argentina/Buenos_Aires America/Argentina/Cordoba America/Argentina/Salta America/Argentina/Jujuy America/Argentina/Tucuman America/Argentina/Catamarca America/Argentina/La_Rioja America/Argentina/San_Juan America/Argentina/Mendoza America/Argentina/San_Luis America/Argentina/Rio_Gallegos America/Argentina/Ushuaia",
 			"AS|Pacific/Pago_Pago",
 			"AT|Europe/Vienna",
-			"AU|Australia/Lord_Howe Antarctica/Macquarie Australia/Hobart Australia/Melbourne Australia/Sydney Australia/Broken_Hill Australia/Brisbane Australia/Lindeman Australia/Adelaide Australia/Darwin Australia/Perth Australia/Eucla",
+			"AU|Australia/Lord_Howe Antarctica/Macquarie Australia/Hobart Australia/Melbourne Australia/Sydney Australia/Broken_Hill Australia/Brisbane Australia/Lindeman Australia/Adelaide Australia/Darwin Australia/Perth Australia/Eucla Asia/Tokyo",
 			"AW|America/Puerto_Rico America/Aruba",
 			"AX|Europe/Helsinki Europe/Mariehamn",
 			"AZ|Asia/Baku",
@@ -69240,7 +69632,7 @@ return index;
 			"CH|Europe/Zurich",
 			"CI|Africa/Abidjan",
 			"CK|Pacific/Rarotonga",
-			"CL|America/Santiago America/Punta_Arenas Pacific/Easter",
+			"CL|America/Santiago America/Coyhaique America/Punta_Arenas Pacific/Easter",
 			"CM|Africa/Lagos Africa/Douala",
 			"CN|Asia/Shanghai Asia/Urumqi",
 			"CO|America/Bogota",
@@ -69340,7 +69732,7 @@ return index;
 			"MK|Europe/Belgrade Europe/Skopje",
 			"ML|Africa/Abidjan Africa/Bamako",
 			"MM|Asia/Yangon",
-			"MN|Asia/Ulaanbaatar Asia/Hovd Asia/Choibalsan",
+			"MN|Asia/Ulaanbaatar Asia/Hovd",
 			"MO|Asia/Macau",
 			"MP|Pacific/Guam Pacific/Saipan",
 			"MQ|America/Martinique",
@@ -69976,7 +70368,7 @@ options:
         };
 
     window.TimeSlider = function (input, options, pluginCount) {
-        this.VERSION = "7.7.3";
+        this.VERSION = "7.7.4";
 
         //Setting default options
         this.options = $.extend( true, {}, defaultOptions, options );
@@ -70091,8 +70483,9 @@ options:
         },
 
         _prettifyLabelAbsoluteDate: function( value ){
-                return this._valueToTzMoment( value, this.options.format.timezone ).format( this.options.format.dateFormat );
-            },
+            let result = this._valueToTzMoment( value, this.options.format.timezone ).format( this.options.format.dateFormat );
+            return result[0].toUpperCase() + result.slice(1);
+        },
 
         /**************************************************************
         adjustResult
@@ -74081,15 +74474,14 @@ module.exports = g;
 
     $.BSASMODAL = $.BSASMODAL || {};
     $.fn.asModal = function(options){
-        var _this   = this,
-            asModal = null;
+        var asModal = null;
 
         $.each($.BSASMODAL, function(id, asModalFunc){
-            if (_this.hasClass(id)){
+            if (this.hasClass(id)){
                 asModal = asModalFunc;
                 return false;
             }
-        });
+        }.bind(this) );
         return asModal ? $.proxy(asModal, this)( options ) : null;
     };
 
@@ -74129,11 +74521,9 @@ module.exports = g;
     $._bsAdjustIconAndText = function( options ){
         if (!options)
             return options;
-        if ($.isArray( options )){
+        if (Array.isArray( options )){
             var result = [];
-            $.each( options, function(index, content){
-                result.push( $._bsAdjustIconAndText(content) );
-            });
+            options.forEach(content => result.push( $._bsAdjustIconAndText(content) ) );
             return result;
         }
 
@@ -74170,9 +74560,9 @@ module.exports = g;
 
             //If context is given => convert all function to proxy
             if (context)
-                $.each( options, function( id, value ){
+                $.each( options, ( id, value ) => {
                     if ($.isFunction( value ))
-                        options[id] = $.proxy( value, context );
+                        options[id] = value.bind(context);
                 });
 
             return options;
@@ -74181,7 +74571,7 @@ module.exports = g;
 
         options = $.extend( true, {}, defaultOptions || {}, options, forceOptions || {} );
 
-        $.each(['selected', 'checked', /*v3 'active',*/ 'open', 'isOpen'], function(index, id){
+        ['selected', 'checked', /*v3 'active',*/ 'open', 'isOpen'].forEach( id =>{
             if (options[id] !== undefined){
                 options.selected = !!options[id];
                 return false;
@@ -74194,7 +74584,7 @@ module.exports = g;
 
         //Adjust options.content
         if (options.content){
-            if ($.isArray( options.content ) )
+            if (Array.isArray( options.content ) )
                 //Adjust each record in options.content
                 for (var i=0; i<options.content.length; i++ )
                     options.content[i] = adjustContentAndContextOptions( options.content[i], options.context );
@@ -74275,7 +74665,7 @@ module.exports = g;
     var iconfontPrefixRegExp = null;
     $._bsCreateIcon = function( options, $appendTo, title, className/*, insideStack*/ ){
         if (!iconfontPrefixRegExp){
-            var prefixes = $.isArray($.ICONFONT_PREFIXES) ? $.ICONFONT_PREFIXES : [$.ICONFONT_PREFIXES];
+            var prefixes = Array.isArray($.ICONFONT_PREFIXES) ? $.ICONFONT_PREFIXES : [$.ICONFONT_PREFIXES];
             iconfontPrefixRegExp = new window.RegExp('(\\s|^)(' + prefixes.join('|') + ')(\\s|$)', 'g');
         }
 
@@ -74284,13 +74674,11 @@ module.exports = g;
         if ($.type(options) == 'string')
             options = {class: options};
 
-        if ($.isArray( options)){
+        if (Array.isArray( options)){
             //Create a stacked icon
              $icon = $._bsCreateElement( 'div', null, title, null, 'container-stacked-icons ' + (className || '')  );
 
-            $.each( options, function( index, opt ){
-                $._bsCreateIcon( opt, $icon, null, 'stacked-icon' );
-            });
+            options.forEach( opt => $._bsCreateIcon( opt, $icon, null, 'stacked-icon' ) );
 
             //If any of the stacked icons have class fa-no-margin, width-1-Xem => set if on the container
             ['fa-no-margin', 'width-1-1em', 'width-1-2em', 'width-1-3em', 'width-1-4em', 'width-1-5em'].forEach( (className) => {
@@ -74381,6 +74769,44 @@ module.exports = g;
         return true;
     };
 
+    /****************************************************************************************
+    $.getTextWidth(text:STRING or []STRING, options:{} OR NUMBER)
+    Return the (maximum) length of text
+    options = font-size (NUMBER) or {fontFamily, fontSize, italic, bold, padding}
+    ****************************************************************************************/
+    $._getTextWidthCanvas = null;
+    $.getTextWidth = $.getTextWidth || function(text, options = {}){
+        $._getTextWidthCanvas = $._getTextWidthCanvas || $('<canvas></canvas>').get(0);
+        const ctx = $._getTextWidthCanvas.getContext("2d");
+
+        let textList = Array.isArray( text ) ? text : [text],
+            result = 0;
+
+        if (typeof options == 'number')
+            options = {fontSize: options};
+
+        options = $.extend({
+            fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color',
+            fontSize  : 12},
+            options
+        );
+
+        options.fontSize = options.fontSize + (typeof options.fontSize == 'number' ? 'px' : '');
+
+        ctx.font = options.fontSize + ' ' + options.fontFamily;
+        if (options.italic)
+            ctx.font = 'italic ' + ctx.font;
+        if (options.bold)
+            ctx.font = 'bold ' + ctx.font;
+
+        textList.forEach( txt => result = Math.max( result, ctx.measureText(txt).width ) );
+
+        return result + (options.padding || 0);
+    };
+
+
+
+
 
     //$.parentOptionsToInherit = []ID = id of options that modal-content can inherit from the modal itself
     $.parentOptionsToInherit = ['small'];
@@ -74433,9 +74859,7 @@ module.exports = g;
             {left: true, right: true, center: true, lowercase: true, uppercase: true, capitalize: true, normal: true, bold: true, italic: true}
         ****************************************************************************************/
         _bsAddStyleClasses: function( options = {}){
-            var _this = this,
-
-                bsStyleClass = {
+            let bsStyleClass = {
                     //Text color
                     "primary"     : "text-primary",
                     "secondary"   : "text-secondary",
@@ -74467,8 +74891,8 @@ module.exports = g;
                       ( (typeof options == 'string') && (options.indexOf(style) > -1 )  ) ||
                       ( (typeof options == 'object') && (options[style]) )
                     )
-                    _this.addClass( className );
-            });
+                    this.addClass( className );
+            }.bind(this));
             return this;
         },
 
@@ -74496,7 +74920,7 @@ module.exports = g;
 
             //**************************************************
             function getArray( input ){
-                return input ? ($.isArray( input ) ? input : [input]) : [];
+                return input ? (Array.isArray( input ) ? input : [input]) : [];
             }
             //**************************************************
             function isHtmlString( str ){
@@ -74525,13 +74949,11 @@ module.exports = g;
             if (options.content && checkForContent)
                 return this._bsAddHtml(options.content, htmlInDiv, ignoreLink);
 
-            var _this = this;
-
             //options = array => add each
-            if ($.isArray( options )){
-                $.each( options, function( index, textOptions ){
-                    _this._bsAddHtml( textOptions, htmlInDiv, ignoreLink );
-                });
+            if (Array.isArray( options )){
+                options.forEach( textOptions => {
+                    this._bsAddHtml( textOptions, htmlInDiv, ignoreLink );
+                }, this);
                 return this;
             }
 
@@ -74568,23 +74990,23 @@ module.exports = g;
                 textDataArray   = getArray( options.textData );
 
             //Add icons (optional)
-            $.each( iconArray, function( index, icon ){
-                $._bsCreateIcon( icon, _this, titleArray[ index ], iconClassArray[index] );
-            });
+            iconArray.forEach( ( icon, index ) => {
+                $._bsCreateIcon( icon, this, titleArray[ index ], iconClassArray[index] );
+            }, this);
 
             //Add color (optional)
             if (options.color)
-                _this.addClass('text-'+ options.color);
+                this.addClass('text-'+ options.color);
 
             //Add text
-            $.each( textArray, function( index, text ){
+            textArray.forEach( (text, index) => {
                 //If text ={da,en} and both da and is html-stirng => build inside div
                 var tagName = 'span';
                 if ( (text.hasOwnProperty('da') && isHtmlString(text.da)) || (text.hasOwnProperty('en') && isHtmlString(text.en)) )
                     tagName = 'div';
 
                 var $text = $._bsCreateElement( tagName, linkArray[ index ], titleArray[ index ], textStyleArray[ index ], textClassArray[index], textDataArray[index] );
-                $text.appendTo( _this );
+                $text.appendTo( this );
 
                 if ($.isFunction( text ))
                     text( $text );
@@ -74603,18 +75025,18 @@ module.exports = g;
                 if (index < textClassArray.length)
                     $text.addClass( textClassArray[index] );
 
-            });
+            }, this);
 
             //Add value-format content
-            $.each( vfFormatArray, function( index ){
+            vfFormatArray.forEach( (dummy, index) => {
                 $._bsCreateElement( 'span', linkArray[ index ], titleArray[ index ], textStyleArray[ index ], textClassArray[index] )
                     .vfValueFormat(
                         vfValueArray[index] || '',
                         vfFormatArray[index],
                         vfOptionsArray[index]
                     )
-                    .appendTo( _this );
-            });
+                    .appendTo( this );
+            }, this);
 
             return this;
         },
@@ -74622,7 +75044,7 @@ module.exports = g;
         //_bsButtonOnClick
         _bsButtonOnClick: function(){
             var options = this.data('bsButton_options');
-            $.proxy( options.onClick, options.context )( options.id, null, this );
+            options.onClick.bind(options.context)( options.id, null, this );
             return options.returnFromClick || false;
         },
 
@@ -74702,7 +75124,7 @@ module.exports = g;
             function buildFormControlGroup( options, $parent ){
                 return $parent
                            .attr('id', options.id)
-                           .addClass('flex-column')
+                           .addClass(options.horizontal ? 'flex-row' : 'flex-column')
                            ._bsAppendContent(options.content, null, null, options);
             }
 
@@ -74710,17 +75132,16 @@ module.exports = g;
                 return this;
 
             //Array of $-element, function etc
-            if ($.isArray( options )){
-                var _this = this;
-                $.each(options, function( index, opt){
-                    _this._bsAppendContent(opt, context, null, parentOptions );
-                });
+            if (Array.isArray( options )){
+                options.forEach( opt =>{
+                    this._bsAppendContent(opt, context, null, parentOptions );
+                }, this);
                 return this;
             }
 
             //Function: Include arg (if any) in call to method (=options)
             if ($.isFunction( options )){
-                arg = arg ? ($.isArray(arg) ? arg.slice() : [arg]) : [];
+                arg = arg ? (Array.isArray(arg) ? arg.slice() : [arg]) : [];
                 arg.unshift(this);
                 options.apply( context, arg );
                 return this;
@@ -74743,7 +75164,7 @@ module.exports = g;
 
 
             //Set values fro parentOptions into options
-            $.each($.parentOptionsToInherit, function(index, id){
+            $.parentOptionsToInherit.forEach( id => {
                 if (parentOptions.hasOwnProperty(id) && !options.hasOwnProperty(id))
                     options[id] = parentOptions[id];
             });
@@ -74815,7 +75236,10 @@ module.exports = g;
 
                     case 'formControlGroup' :
                     case 'inputgroup'       :   buildFunc = buildFormControlGroup;  addBorder = true; insideFormGroup = true; buildInsideParent = true; break;
-//                    case 'xx'               :   buildFunc = $.bsXx;               break;
+
+                    case 'content'          :   buildFunc = (typeof options.content === "function") ? options.content : function(){ return options.content; }; break;
+
+                  //case 'xx'               :   buildFunc = $.bsXx;               break;
 
                     default                 :   buildFunc = $.fn._bsAddHtml;        noPadding = true; buildInsideParent = true;
                 }
@@ -74880,8 +75304,9 @@ module.exports = g;
                             .appendTo( $inputGroup );
                 }
                 else
-                    //No-border => the input-group is just a container to keep vertival distance => no horizontal padding
-                    $inputGroup.addClass('px-0');
+                    //No-border => the input-group is just a container to keep vertival distance => no horizontal padding unless horizontalPadding = true
+                    if (!options.horizontalPadding)
+                        $inputGroup.addClass('px-0');
 
                 if (hasLabel)
                     $parent.addClass('child-with-label');
@@ -75039,7 +75464,8 @@ module.exports = g;
                         });
 
         //Adding the children {icon, text, content}
-        $.each( options.list, function( index, opt ){
+        options.list = options.list || [];
+        options.list.forEach( ( opt, index ) => {
             //Create the header
             opt = $._bsAdjustOptions( opt );
 
@@ -75124,7 +75550,7 @@ module.exports = g;
                 $contentContainer._bsAppendContent( opt.content, opt.contentContext, null, options );
 
             //If opt.list exists => create a accordion inside $contentContainer
-            if ($.isArray(opt.list))
+            if (Array.isArray(opt.list))
                 $.bsAccordion( {
                     allOpen   : options.allOpen,
                     multiOpen : options.multiOpen,
@@ -75134,7 +75560,7 @@ module.exports = g;
                     .appendTo( $contentContainer );
 
 
-        }); //End of $.each( options.list, function( index, opt ){
+        }); //End of options.list.forEach( ( opt, index ){
 
         if (options.onChange){
             $result.data('accordion_onChange', options.onChange);
@@ -75229,7 +75655,7 @@ module.exports = g;
         if (options._class)
             newClass.push(options._class);
 
-        $.each( optionToClassName, function( id, className ){
+        $.each( optionToClassName, ( id, className ) => {
             if (options[id] && (!$.isFunction(options[id]) || options[id]()))
                 newClass.push(className);
         });
@@ -75326,14 +75752,14 @@ module.exports = g;
         options.className_semi = 'semi-selected';
 
         //Use modernizr-mode and classes if icon and/or text containe two values
-        if ($.isArray(options.icon) && (options.icon.length == 2)){
+        if (Array.isArray(options.icon) && (options.icon.length == 2)){
             options.icon = [[
                 options.icon[0]+ ' icon-hide-for-selected',
                 options.icon[1]+ ' icon-show-for-selected'
             ]];
             options.modernizr = true;
         }
-        if ($.isArray(options.text)){
+        if (Array.isArray(options.text)){
             options.textClassName = ['hide-for-selected', 'show-for-selected'];
             options.modernizr = true;
         }
@@ -75384,9 +75810,6 @@ module.exports = g;
         var bsButtonOptions = $.extend({}, options);
         bsButtonOptions.selected = false;
         var $result = $.bsButton( bsButtonOptions ).checkbox( $.extend(options, {className: 'checked'}) );
-
-//        var $result = $.bsButton( bsButtonOptions ).checkbox( options );
-
         return $result;
     };
 
@@ -75435,11 +75858,11 @@ module.exports = g;
 
         //Create subtext. It can be an array of STRING or {LANG: STRING}
         if (options.subtext){
-            var subtextArray = $.isArray(options.subtext) ? options.subtext : [options.subtext];
+            var subtextArray = Array.isArray(options.subtext) ? options.subtext : [options.subtext];
             subtext = {};
 
-            $.each( subtextArray, function(index, next_subtext){
-                $.each($._bsAdjustText( next_subtext ), function(lang, text){
+            subtextArray.forEach( next_subtext => {
+                $.each($._bsAdjustText( next_subtext ), (lang, text) => {
                     subtext[lang] = subtext[lang] || '';
                     if (subtext[lang] && text)
                         subtext[lang] += separator;
@@ -75463,15 +75886,11 @@ module.exports = g;
 
 
     $.bsBigIconButton = function( options ){
-        return $.bsButton({
-            id          : options.id,
+        return $.bsButton($.extend(true, {}, options, {
             class       : 'w-100 d-flex',
             content     : $._bsBigIconButtonContent( options ),
             allowContent: true,
-            radioGroup  : options.radioGroup,
-            onClick     : options.onClick,
-        });
-
+        }) );
     };
 
 
@@ -75529,7 +75948,7 @@ module.exports = g;
             ._bsAddBaseClassAndSize( options );
 
         //Transfere generel button-options to buttonOptions
-        $.each(['square', 'bigSquare', 'bigIcon', 'extraLargeIcon'], function(index, id){
+        ['square', 'bigSquare', 'bigIcon', 'extraLargeIcon'].forEach( id => {
             if ((options[id] !== undefined) && (options.buttonOptions[id] === undefined))
                 options.buttonOptions[id] = options[id];
         });
@@ -75567,30 +75986,32 @@ module.exports = g;
 
         var $previousButton = null,
             spaceAfter     = false;
-        $.each( options.list, function(index, buttonOptions ){
 
-           if ((buttonOptions.spaceBefore || buttonOptions.lineBefore || spaceAfter) && $previousButton){
-                $previousButton.addClass('space-after');
-            }
+        if (options.list)
+            options.list.forEach( buttonOptions => {
 
-            spaceAfter      = buttonOptions.spaceAfter || buttonOptions.lineAfter;
-            $previousButton = null;
+               if ((buttonOptions.spaceBefore || buttonOptions.lineBefore || spaceAfter) && $previousButton){
+                    $previousButton.addClass('space-zafter');
+                }
 
-            if (buttonOptions.id || buttonOptions.onClick  || buttonOptions.onChange)
-                $previousButton =
-                    $._anyBsButton( $.extend(true, {}, options.buttonOptions, buttonOptions ) )
-                        .appendTo( result );
-            else
-                if (options.inclHeader)
-                    //Create content as header
-                    $('<div/>')
-                        .addClass('btn header-content')
-                        .toggleClass('header-main', !!buttonOptions.mainHeader)
+                spaceAfter      = buttonOptions.spaceAfter || buttonOptions.lineAfter;
+                $previousButton = null;
 
-                        .addClass( buttonOptions.class )
-                        ._bsHeaderAndIcons( {header: buttonOptions} )
-                        .appendTo( result );
-        });
+                if (buttonOptions.id || buttonOptions.onClick  || buttonOptions.onChange)
+                    $previousButton =
+                        $._anyBsButton( $.extend(true, {}, options.buttonOptions, buttonOptions ) )
+                            .appendTo( result );
+                else
+                    if (options.inclHeader)
+                        //Create content as header
+                        $('<div/>')
+                            .addClass('btn header-content')
+                            .toggleClass('header-main', !!buttonOptions.mainHeader)
+
+                            .addClass( buttonOptions.class )
+                            ._bsHeaderAndIcons( {header: buttonOptions} )
+                            .appendTo( result );
+            });
         return result;
     };
 
@@ -75605,10 +76026,10 @@ module.exports = g;
     **********************************************************/
     $.bsRadioButtonGroup = function( options ){
         options.items = options.items || options.list;
-        options.list = options.list || options.items;
+        options.list = options.list || options.items || [];
 
         //Set options for RadioGroup
-        $.each( options.list, function(index, buttonOptions ){
+        options.list.forEach( buttonOptions => {
             buttonOptions = $._bsAdjustOptions( buttonOptions );
             if (buttonOptions.id && buttonOptions.selected && (!$.isFunction(buttonOptions.selected) || buttonOptions.selected()) ) {
                 options.selectedId = buttonOptions.id;
@@ -75791,67 +76212,65 @@ options
                 .appendTo($result);
         }
 
-        this.options.list.forEach( (item, index) => {
-            var active = index == 0;
+        if (this.options.list)
+            this.options.list.forEach( (item, index) => {
+                var active = index == 0;
 
-            item.index = index;
+                item.index = index;
 
-            if (multiItems)
-                $('<button type="button" data-bs-target="#' + id + '" data-bs-slide-to="' + index + '"></button>')
-                    .toggleClass('active', !!active)
-                        .appendTo($indicators);
+                if (multiItems)
+                    $('<button type="button" data-bs-target="#' + id + '" data-bs-slide-to="' + index + '"></button>')
+                        .toggleClass('active', !!active)
+                            .appendTo($indicators);
 
-            var $item = $('<div/>')
-                    .addClass('carousel-item')
-                    .toggleClass('active', !!active)
-                    .appendTo($inner),
+                var $item = $('<div/>')
+                        .addClass('carousel-item')
+                        .toggleClass('active', !!active)
+                        .appendTo($inner),
 
-                //The image
-                $img = $('<img src="' + item.url + '"/>')
-                    .addClass('d-block w-100')
-                    .appendTo($item);
-                if (options.innerHeight && options.fitHeight)
-                    $img.css('max-height', options.innerHeight);
-
-                //Find onClick (if any)
-                item.onClick =
-                    item.onClick ? item.onClick :
-                    item.defaultOnClick ? defaultOnClick :
-                    options.onClick ? options.onClick :
-                    options.defaultOnClick ? defaultOnClick : null;
-                if (item.onClick)
-                    $img
-                        .data('bsc-item-options', item)
-                        .attr('role', 'button')
-                        .on('click', item_onClick);
-
-
-
-            //Caption
-            if (item.icon || item.text || item.subIcon || item.subText){
-                var $caption = $('<div />')
-                        .addClass('carousel-caption _d-none')
-                        .addClass('_d-md-block')     //<= set when the capition is visible. MANGLER skal justeres!!!
+                    //The image
+                    $img = $('<img src="' + item.url + '"/>')
+                        .addClass('d-block w-100')
                         .appendTo($item);
+                    if (options.innerHeight && options.fitHeight)
+                        $img.css('max-height', options.innerHeight);
 
-                var $innerCation = $('<div/>')
-                        .addClass('carousel-caption-inner w-100 d-flex flex-column align-items-center')
-                        .appendTo($caption);
+                    //Find onClick (if any)
+                    item.onClick =
+                        item.onClick ? item.onClick :
+                        item.defaultOnClick ? defaultOnClick :
+                        options.onClick ? options.onClick :
+                        options.defaultOnClick ? defaultOnClick : null;
+                    if (item.onClick)
+                        $img
+                            .data('bsc-item-options', item)
+                            .attr('role', 'button')
+                            .on('click', item_onClick);
 
+                //Caption
+                if (item.icon || item.text || item.subIcon || item.subText){
+                    var $caption = $('<div />')
+                            .addClass('carousel-caption _d-none')
+                            .addClass('_d-md-block')     //<= set when the capition is visible. MANGLER skal justeres!!!
+                            .appendTo($item);
 
-                    if (item.icon || item.text)
-                        $('<div/>')
-                            .addClass('caption')
-                            ._bsAddHtml({icon: item.icon, text: item.text})
-                            .appendTo($innerCation);
+                    var $innerCation = $('<div/>')
+                            .addClass('carousel-caption-inner w-100 d-flex flex-column align-items-center')
+                            .appendTo($caption);
 
-                    if (item.subIcon || item.subText)
-                        $('<div/>')
-                            .addClass('caption caption-sm')
-                            ._bsAddHtml({icon: item.subIcon, text: item.subText})
-                            .appendTo($innerCation);
-            }
-        });
+                        if (item.icon || item.text)
+                            $('<div/>')
+                                .addClass('caption')
+                                ._bsAddHtml({icon: item.icon, text: item.text})
+                                .appendTo($innerCation);
+
+                        if (item.subIcon || item.subText)
+                            $('<div/>')
+                                .addClass('caption caption-sm')
+                                ._bsAddHtml({icon: item.subIcon, text: item.subText})
+                                .appendTo($innerCation);
+                }
+            });
 
         return $result;
     };
@@ -75986,14 +76405,13 @@ options
             //Prevent default event and call the users onClick-function instead
             //The onClick-function must bee called with delay to allow update of the input-element
 
-            var _this       = this,
-                options     = this.cbxOptions(),
+            let options     = this.cbxOptions(),
                 state       = this.cbxGetState(),
                 onClickFunc = options.onClick;
 
             setTimeout(function(){
-                onClickFunc(options.id, state, _this);
-            }, 10);
+                onClickFunc(options.id, state, this);
+            }.bind(this), 10);
 
             event.preventDefault();
         }
@@ -76141,7 +76559,7 @@ options
 
         var className =
                 options.faClassName + ' ' +
-                ($.isArray(options.extraClassName) ? options.extraClassName.join(' ') : options.extraClassName) +
+                (Array.isArray(options.extraClassName) ? options.extraClassName.join(' ') : options.extraClassName) +
                 ' ';
         var result = [
             'fas ' + className + colorClassName,
@@ -76386,15 +76804,15 @@ options
                 var show = !this.options.showWhen; //If showWhen is given default is false = not show
                 $.each( this.options.hideWhen || {}, function( userId, hideValue ){
                     var value = values[userId];
-                    if ( ( $.isArray(hideValue) && (hideValue.indexOf(value) != -1)) ||
-                         (!$.isArray(hideValue) && (hideValue == value))
+                    if ( ( Array.isArray(hideValue) && (hideValue.indexOf(value) != -1)) ||
+                         (!Array.isArray(hideValue) && (hideValue == value))
                        )
                         show = false;
                 });
                 $.each( this.options.showWhen || {}, function( userId, showValue ){
                     var value = values[userId];
-                    if ( ( $.isArray(showValue) && (showValue.indexOf(value) != -1)) ||
-                         (!$.isArray(showValue) && (showValue == value))
+                    if ( ( Array.isArray(showValue) && (showValue.indexOf(value) != -1)) ||
+                         (!Array.isArray(showValue) && (showValue == value))
                        )
                         show = true;
                 });
@@ -76617,7 +77035,7 @@ options
                 return true;
             }
 
-            var _this = this,
+            let _this = this,
                 noty = $.bsNoty({
                     type     : 'info',
                     modal    : true,
@@ -76744,7 +77162,6 @@ options
         *******************************************************/
         onSubmit: function( event/*, data*/ ){
             var form = this.$form.get(0);
-
             if (form.checkValidity()) {
                 this.options.onSubmit ? this.options.onSubmit( this.getValues() ) : null;
                 this.$bsModal._close();
@@ -76752,6 +77169,12 @@ options
                 event.preventDefault();
             }
             else {
+                if (this.options.notyOnError)
+                    window.notyError(
+                        {da: 'Der er fejl i et eller flere felter', en: 'Error in one or more fields'},
+                        {textAlign: 'center', layout: 'center', timeout: 3000}
+                    );
+
                 event.preventDefault();
                 event.stopPropagation();
             }
@@ -76800,7 +77223,7 @@ https://getbootstrap.com/docs/5.2/forms/validation/
     $.extend($.BsModalInput.prototype, {
         addValidation: function(){
             var validators          = this.options.validators,
-                validatorList       = $.isArray(validators) ? validators : [validators],
+                validatorList       = Array.isArray(validators) ? validators : [validators],
                 $element            = this.getElement(),
                 $validationTooltip  = this.$validationTooltip =
                     $('<div/>')
@@ -76823,7 +77246,7 @@ https://getbootstrap.com/docs/5.2/forms/validation/
                     max === undefined ? minText :
                     min == max ? exactlyText :
                     minMaxText;
-                i18next.languages.forEach(function(lang){
+                i18next.languages.forEach( lang => {
                     nextError[lang] = nextError[lang] ? nextError[lang].replace('%min', min).replace('%max', max) : '';
                 });
 
@@ -76836,7 +77259,7 @@ https://getbootstrap.com/docs/5.2/forms/validation/
                     attr['max'+postfix] = max;
             }
 
-            validatorList.forEach(function(validator){
+            validatorList.forEach( validator => {
                 validator = typeof validator == 'string' ? {type: validator} : validator;
                 nextError = '';
                 switch (validator.type.toUpperCase()){
@@ -76874,8 +77297,8 @@ https://getbootstrap.com/docs/5.2/forms/validation/
             if (firstError)
                 errorList.unshift(firstError);
             var errorText = {};
-            errorList.forEach(function(error){
-                i18next.languages.forEach(function(lang){
+            errorList.forEach(error => {
+                i18next.languages.forEach( lang => {
                     var langText = errorText[lang] || '';
                     if (error[lang])
                         langText = langText + (langText.length ? '&nbsp;- ' : '') + error[lang];
@@ -76937,55 +77360,98 @@ uri         : {default: "Please enter a valid URI"}
     A header can contain any of the following icons:
     back (<)
     forward (>)
+    fullScreenOn
+    fullScreenOff
     extend (^)
     diminish
     pin
     unpin
-
+    new
+    warning
+    info
+    help
     close (x)
+    */
+
+    /*
+    There are two ways to display icon-buttons on the header:
+    1: Small icons inside round borders (default), or
+    2: Full sized icons with square background changing color on hover - a la MS Windows
+
+    Popups and Noty always uses 1.
+
+    For bsModals a global variablecan be set to use square icons
+
+    bsHeaderIcons and bsHeaderIconsSquare = {icon, className, title} for the different icons on the header. Set by function to allow updating $.FONTAWESOME_PREFIX_??
+
 
     */
 
-    //$.bsHeaderIcons = class-names for the different icons on the header. Set by function to allow updating $.FONTAWESOME_PREFIX_??
-    $.bsHeaderIcons = {};
-    $._set_bsHeaderIcons = function( forceOptions = {}){
+    $.BSMODAL_USE_SQUARE_ICONS = $.BSMODAL_USE_SQUARE_ICONS || false;
 
-        $.bsHeaderIcons = $.extend( $.bsHeaderIcons, {
-            back    : 'fa-circle-chevron-left',
-            forward : 'fa-circle-chevron-right',
+    let bsHeaderIcons       = $.bsHeaderIcons       = {},
+        bsHeaderIconsSquare = $.bsHeaderIconsSquare = {};
 
-            pin     : ['fas fa-thumbtack fa-inside-circle', $.FONTAWESOME_PREFIX_STANDARD + ' fa-circle'],
-            unpin   : 'fa-thumbtack',
+    $.getBsHeaderIcons = $.getHeaderIcons = function( SquareIcons ){ return SquareIcons ? bsHeaderIconsSquare : bsHeaderIcons; };
+    $.getModalHeaderIcons = function(){ return $.getBsHeaderIcons( $.BSMODAL_USE_SQUARE_ICONS ); };
 
-            extend  : 'fa-chevron-circle-up',
-            diminish: 'fa-chevron-circle-down',
+    function adjustHeaderIcon( headerIcon ){
+        if ((typeof headerIcon == 'string') || Array.isArray(headerIcon))
+                headerIcon = {icon: headerIcon};
+        return headerIcon;
+    }
+
+    function adjustHeaderIcons( headerIcons ){
+        $.each( headerIcons, (id, cont) => {
+            headerIcons[id] = adjustHeaderIcon(cont);
+        });
+        return headerIcons;
+    }
+    function getDefaultHeaderIcons( square ){
+        return adjustHeaderIcons({
+            back    : square ? 'fas fa-arrow-left'  : 'fa-circle-chevron-left',
+            forward : square ? 'fas fa-arrow-right' : 'fa-circle-chevron-right',
+
+            pin     : square ? 'fa-thumbtack' : ['fas fa-thumbtack fa-inside-circle', $.FONTAWESOME_PREFIX_STANDARD + ' fa-circle'],
+            unpin   : {
+                icon: 'fa-thumbtack',
+                class: square ? 'header-icon-selected' : null
+            },
+
+            extend  : square ? 'fa-square-plus'  : 'fa-chevron-circle-up',
+            diminish: square ? 'fa-square-minus' : 'fa-chevron-circle-down',
+
+            fullScreenOn : square ? 'fa-expand'   : [ $.FONTAWESOME_PREFIX_STANDARD + ' fa-expand fa-inside-circle2', $.FONTAWESOME_PREFIX_STANDARD + ' fa-circle'],
+            fullScreenOff: square ? 'fa-compress' : [ $.FONTAWESOME_PREFIX_STANDARD + ' fa-compress fa-inside-circle2', $.FONTAWESOME_PREFIX_STANDARD + ' fa-circle'],
 
 
-            new     : [ $.FONTAWESOME_PREFIX_STANDARD + ' fa-window-maximize fa-inside-circle2',
-                        $.FONTAWESOME_PREFIX_STANDARD + ' fa-circle'  ],
+            new     : square ? 'fa-window-maximize' : [ $.FONTAWESOME_PREFIX_STANDARD + ' fa-window-maximize fa-inside-circle2', $.FONTAWESOME_PREFIX_STANDARD + ' fa-circle'],
 
-            warning : [ 'fas fa-circle back text-warning',
-                        $.FONTAWESOME_PREFIX_STANDARD + ' fa-circle',
-                        'fas fa-exclamation fa-inside-circle-xmark'   ],
+            warning : {
+                icon : square ? 'fa-exclamation' : [ 'fas fa-circle back text-warning', $.FONTAWESOME_PREFIX_STANDARD + ' fa-circle', 'fas fa-exclamation fa-inside-circle-xmark'],
+                class: square ? 'header-icon-warning' : null
+            },
 
-            info    : 'fa-circle-info',
-            help    : 'fa-circle-question',
+            info    : square ? 'fa-info' : 'fa-circle-info',
+            help    : square ? 'fa-question' : 'fa-circle-question',
 
-            close   : [ 'fas fa-circle show-for-hover fa-hover-color-red',
-                        'fa-xmark fa-inside-circle-xmark fa-hover-color-white',
-                        $.FONTAWESOME_PREFIX_STANDARD+' fa-circle' ]
+            close   : {
+                icon : square ? 'fas fa-xmark' : ['fas fa-circle show-for-hover fa-hover-color-red', 'fa-xmark fa-inside-circle-xmark fa-hover-color-white', $.FONTAWESOME_PREFIX_STANDARD+' fa-circle'],
+                title: {da:'Luk', en:'Close'},
+                class: square ? 'header-icon-close' : null
+            }
+        });
+    }
 
-        }, forceOptions );
+    $._set_bsHeaderIcons = function( newHeaderIcons = {}, newHeaderIconsSquare = {}){
+        bsHeaderIcons       = $.extend(true, getDefaultHeaderIcons(),     bsHeaderIcons,       adjustHeaderIcons(newHeaderIcons)       );
+        bsHeaderIconsSquare = $.extend(true, getDefaultHeaderIcons(true), bsHeaderIconsSquare, adjustHeaderIcons(newHeaderIconsSquare) );
     };
+
     $._set_bsHeaderIcons();
 
-    //mandatoryHeaderIconClass = mandatory class-names and title for the different icons on the header
-    var mandatoryHeaderIconClassAndTitle = {
-        close  : {/*class:'',*/ title: {da:'Luk', en:'Close'}},
-    };
-
     /******************************************************
-    _bsHeaderAndIcons(options)
+    _bsHeaderAndIcons(options, useSquareIcons)
     Create the text and icon content of a header inside this
     options: {
         headerClassName: [string]
@@ -77000,23 +77466,24 @@ uri         : {default: "Please enter a valid URI"}
             event.stopImmediatePropagation();
     }
 
-    $.fn._bsHeaderAndIcons = function(options){
+    $.fn._bsHeaderAndIcons = function(options, useSquareIcons){
         var $this = this;
 
         options = $.extend( true, {text:'DAVS MED DIG', headerClassName: '', inclHeader: true, icons: {} }, options );
-        this.addClass( options.headerClassName );
-        this.addClass('header-content');
+        this
+            .addClass( options.headerClassName )
+            .addClass('header-content');
 
         if (options.inclHeader){
             options.header = $._bsAdjustIconAndText(options.header);
             //If header contents more than one text => set the first to "fixed" so that only the following text are truncated
-            if ($.isArray(options.header) && (options.header.length > 1)){
+            if (Array.isArray(options.header) && (options.header.length > 1))
                 options.header[0].textClass = 'fixed-header';
-            }
+
             this._bsAddHtml( options.header || $.EMPTY_TEXT );
         }
         //Add icons (if any)
-        if ( !$.isEmptyObject(options.icons) ) {
+        if ( !$.isEmptyObject(options.icons) ){
             //Container for icons
             var $iconContainer =
                     $('<div/>')
@@ -77024,22 +77491,23 @@ uri         : {default: "Please enter a valid URI"}
                             baseClass   :'header-icon-container',
                             useTouchSize: true
                         })
+                        .toggleClass('with-square-icons', !!useSquareIcons)
                         .appendTo( this );
 
             //Add icons
-            $.each( ['back', 'forward', 'pin', 'unpin', 'extend', 'diminish', 'new', 'warning', 'info', 'help', 'close'], function( index, id ){
-                var iconOptions = options.icons[id],
-                    classAndTitle = mandatoryHeaderIconClassAndTitle[id] || {};
-
-                if (iconOptions && iconOptions.onClick){
-                    var icon = iconOptions.icon || $.bsHeaderIcons[id];
-                    icon = $.isArray(icon) ? icon : [icon];
+            let headerIcons = useSquareIcons ? bsHeaderIconsSquare : bsHeaderIcons;
+            ['back', 'forward', 'pin', 'unpin', 'diminish', 'extend', 'fullScreenOn', 'fullScreenOff', 'new', 'warning', 'info', 'help', 'close'].forEach( (id) => {
+                let iconOptions = options.icons[id];
+                if (iconOptions && (iconOptions.onClick || (typeof iconOptions == 'function'))){
+                    if (typeof iconOptions == 'function')
+                        iconOptions = {onClick: iconOptions};
+                    iconOptions = $.extend(true, {}, headerIcons[id] || {}, iconOptions);
 
                     $._bsCreateIcon(
-                        icon,
+                        Array.isArray(iconOptions.icon) ? iconOptions.icon : [iconOptions.icon],
                         $iconContainer,
-                        iconOptions.title || classAndTitle.title || '',
-                        (iconOptions.className || '') + ' header-icon ' + (classAndTitle.class || '')
+                        iconOptions.title || '',
+                        'header-icon ' + (iconOptions.className || '') + ' ' + (iconOptions.class || '')
                     )
                     .toggleClass('hidden', !!iconOptions.hidden)
                     .toggleClass('disabled', !!iconOptions.disabled)
@@ -77213,12 +77681,12 @@ options
 
         var nofColumns = 1;
         //Adjust options.content and count number of columns
-        $.each(options.content, function( index, rowContent ){
-            rowContent = $.isArray( rowContent ) ? rowContent : [rowContent];
+        options.content.forEach( ( rowContent, index ) => {
+            rowContent = Array.isArray( rowContent ) ? rowContent : [rowContent];
             nofColumns = Math.max(nofColumns, rowContent.length);
 
             var rowContentObj = {};
-            $.each(rowContent, function( index, cellContent ){
+            rowContent.forEach( ( cellContent, index ) => {
                 rowContentObj['_'+index] = cellContent;
             });
 
@@ -77289,19 +77757,20 @@ options
 
         //Update all items
         var $firstItem, $lastItem;
-        $.each(options.list, function(index, itemOptions){
-            var $item  = itemOptions.$item,
-                hidden = !!itemOptions.hidden();
+        if (options.list)
+            options.list.forEach( itemOptions => {
+                var $item  = itemOptions.$item,
+                    hidden = !!itemOptions.hidden();
 
-            $item.removeClass('first last');
-            hidden ? $item.hide() : $item.show();
-            $item.toggleClass('disabled', !!itemOptions.disabled() );
+                $item.removeClass('first last');
+                hidden ? $item.hide() : $item.show();
+                $item.toggleClass('disabled', !!itemOptions.disabled() );
 
-            if (!hidden){
-                $firstItem = $firstItem || $item;
-                $lastItem = $item;
-            }
-        });
+                if (!hidden){
+                    $firstItem = $firstItem || $item;
+                    $lastItem = $item;
+                }
+            });
 
         if ($firstItem)
             $firstItem.addClass('first');
@@ -77312,7 +77781,7 @@ options
     $.bsMenu = function( options = {}){
         //Adjust options.list
         var list = options.list = options.list || [];
-        $.each(list, function(index, itemOptions){
+        list.forEach( itemOptions => {
 
             //Set type from other values
             if (!itemOptions.type){
@@ -77363,7 +77832,7 @@ options
             spaceAfter    = false;
 
         //Append the items
-        $.each(list, function(index, itemOptions){
+        list.forEach( (itemOptions, index) => {
             var $item = null,
                 isItemWithSpaceAfter = false,
                 radioGroup = null;
@@ -77435,7 +77904,7 @@ options
     };
 
     function eachBsMenuListItem( itemFunc, values, $this ){
-        $.each($this.data('bsMenu_options').list, function(index, item){
+        $this.data('bsMenu_options').list.forEach( item => {
             if (item.id && ( (item.type == 'checkbox') || (item.type == 'radio') ) )
                 itemFunc(item, values, $this );
         });
@@ -77617,7 +78086,6 @@ options
 
     var objectWithFileClasses = 'border-0 w-100 h-100';
 
-    //$.bsHeaderIcons = class-names for the different icons on the header
     $.bsExternalLinkIcon = 'fa-external-link-alt';
 
     /**********************************************************
@@ -77643,9 +78111,8 @@ options
 
     ZoomControl.prototype = {
         getButtons: function(){
-            var _this = this;
-            this.$zoomOutButton = $.bsButton({type:'button', icon:'fa-search-minus',  text:{da:'Zoom ud',  en:'Zoom Out'}, onClick: _this.zoomOut, context: _this });
-            this.$zoomInButton  = $.bsButton({type:'button', icon:'fa-search-plus',   text:{da:'Zoom ind', en:'Zoom In'},  onClick: _this.zoomIn,  context: _this });
+            this.$zoomOutButton = $.bsButton({type:'button', icon:'fa-search-minus',  text:{da:'Zoom ud',  en:'Zoom Out'}, onClick: this.zoomOut, context: this });
+            this.$zoomInButton  = $.bsButton({type:'button', icon:'fa-search-plus',   text:{da:'Zoom ind', en:'Zoom In'},  onClick: this.zoomIn,  context: this });
 
             return [this.$zoomOutButton, this.$zoomInButton];
         },
@@ -78069,16 +78536,15 @@ jquery-bootstrap-modal-promise.js
         },
 
         reject: function(){
-            var _this = this;
             this.loading = false;
             $.workingOff();
-            $.each(this.ownerList, function(index, ownerOptions){
+            this.ownerList.forEach( ownerOptions => {
                 var owner      = ownerOptions.owner,
-                    rejectFunc = owner._bsModalPromise_Reject || _this.options.reject;
+                    rejectFunc = owner._bsModalPromise_Reject || this.options.reject;
 
                 if (rejectFunc)
                     $.proxy(rejectFunc, owner)();
-            });
+            }, this);
             if (this.options.afterReject)
                 this.options.afterReject();
         },
@@ -78105,17 +78571,16 @@ jquery-bootstrap-modal-promise.js
 
         //updateOwner - update the owners with the new content
         updateOwner: function(){
-            var _this = this;
-            $.each(this.ownerList, function(index, ownerOptions){
+            this.ownerList.forEach( ownerOptions => {
                 //Convert this.data to modal-options
                 var owner        = ownerOptions.owner,
-                    convertFunc  = ownerOptions.getModalOptions || _this.options.getModalOptions || function(data){return data;},
-                    updateFunc   = owner._bsModalPromise_Update || _this.options.update,
-                    modalOptions = $.proxy(convertFunc, owner)(_this.data);
+                    convertFunc  = ownerOptions.getModalOptions || this.options.getModalOptions || function(data){return data;},
+                    updateFunc   = owner._bsModalPromise_Update || this.options.update,
+                    modalOptions = $.proxy(convertFunc, owner)(this.data);
 
                 if (updateFunc)
                     $.proxy(updateFunc, owner)(modalOptions);
-            });
+            }, this);
             if (this.options.afterUpdate)
                 this.options.afterUpdate();
         }
@@ -78165,6 +78630,11 @@ jquery-bootstrap-modal-promise.js
 
         alwaysMaxHeight: BOOLEAN - If true the modal is always the full height of it parent
 
+        allowFullScreen: BOOLEAN - if true the largest size (normal or extended) gets the possibility to be displayed in full-screen
+        noReopenFullScreen: BOOLEAN - if false and allowFullScreen = true and the modal was in full-screen when closed => It will reopen in full-screen. If true the modal will reopen in prevoius size (minimized, normal or extended)
+
+        innerHeight     : The fixed height of the content
+        innerMaxHeight  : The fixed max-height of the content
 
         flexWidth
         extraWidth
@@ -78181,15 +78651,18 @@ jquery-bootstrap-modal-promise.js
         minimized,
         extended: {
             type
+            showHeader (only minimized) if true the header is also shown in minimized-mode
             showHeaderOnClick (only minimized)
-            fixedContent
+            fixedContent, fixed: content or true. If true the content is equal to normal or extended/minimized
             noVerticalPadding
             noHorizontalPadding
             alwaysMaxHeight
+            innerHeight
+            innerMaxHeight
             content
             verticalButtons: BOOLEAN, default = options.verticalButtons, if true the buttons are vertical stacked and has width = 100%. If false and options.verticalButtons = true only normal gets vertival buttons
             scroll: boolean | 'vertical' | 'horizontal'
-            footer
+            footer: content or true. If true the content is equal to normal or extended/minimized
         }
         isExtended: boolean
         footer
@@ -78198,6 +78671,10 @@ jquery-bootstrap-modal-promise.js
         closeText
         noCloseIconOnHeader
         historyList         - The modal gets backward and forward icons in header to go backward and forward in the historyList. See demo and https://github.com/fcoo/history.js
+
+        keepScrollWhenReopen: false, - if true the scrolling of the content is reused. If false all content starts at scroll 0,0 when shown
+
+
 
     **********************************************************/
     var modalId = 0,
@@ -78237,6 +78714,7 @@ jquery-bootstrap-modal-promise.js
     By default it return the original options but they can be overwriten by applications/packages
     **********************************************************/
     $.MODAL_ADJUST_OPTIONS = function(modalOptions/*, modal*/){
+
         return modalOptions;
     };
     $.MODAL_NO_VERTICAL_MARGIN = false;
@@ -78253,10 +78731,10 @@ jquery-bootstrap-modal-promise.js
     function adjustModalMaxHeight( $modalContent ){
         var $modalContents = $modalContent || $('.modal-content.modal-flex-height');
 
-
         //For each $modalContent: Get the current data with options on relative size and set the height and max-height
         $modalContents.each(function(index, elem){
             var $modalContent = $(elem);
+
             $.each(modalSizeClassName, function(size, className){
                 if ($modalContent.hasClass(className)){
                     //The current percent/offset info is in .data('relativeHeightOptions')[size];
@@ -78273,7 +78751,8 @@ jquery-bootstrap-modal-promise.js
                         relativeOptions[id] = $.isFunction(value) ? value($modalContent) : value;
                     });
 
-                    var maxHeight = relativeOptions.relativeHeight * relativeOptions.parentContainerHeight - relativeOptions.relativeHeightOffset;
+                    const maxHeight = relativeOptions.relativeHeight * relativeOptions.parentContainerHeight - relativeOptions.relativeHeightOffset;
+
                     $modalContent.css({
                         'max-height': maxHeight+'px',
                         'height'    : maxHeight+'px'
@@ -78334,27 +78813,25 @@ jquery-bootstrap-modal-promise.js
     $._bsModal_closeMethods = $._bsModal_closeMethods || [];
 
     $.fn._bsModalCloseElements = function(){
-        var _this = this;
         //'Close' alle elements (eg. select-box)
-        $.each($._bsModal_closeMethods, function(index, options){
-            _this.find(options.selector).each(function(){
+        $._bsModal_closeMethods.forEach( options => {
+            this.find(options.selector).each(function(){
                 options.method($(this));
             });
-        });
+        }, this);
     };
 
     var currentModal = null;
     //******************************************************
     //show_bs_modal - called when a modal is opening
     function show_bs_modal( /*event*/ ) {
+
         //Close all popover
         $('.popover.show').popover('hide');
-
 
         //Close elements
         if (currentModal)
             currentModal._bsModalCloseElements();
-
 
         openModals++;
         this.previousModal = currentModal;
@@ -78398,6 +78875,10 @@ jquery-bootstrap-modal-promise.js
     function hide_bs_modal() {
         currentModal = this.previousModal;
 
+        //If in full-screen mode and dont reopen in full-screen => reset back
+        if (this.bsModal.isFullScreenMode && this.bsModal.noReopenFullScreen)
+            this._bsModalFullScreenOff();
+
         //Close elements
         this._bsModalCloseElements();
 
@@ -78437,9 +78918,9 @@ jquery-bootstrap-modal-promise.js
         //If options.extended.fixedContent == true and/or options.extended.footer == true => normal and extended uses same fixed and/or footer content
         if (options.extended) {
             //If common fixed content => add it as normal fixed content
-            if ((options.fixedContent === true) || (options.extended.fixedContent === true)) {
+            if ((options.fixedContent === true) || (options.extended.fixedContent === true) || (options.extended.fixed === true)) {
                 options.fixedContent = options.fixedContent === true ? options.extended.fixedContent : options.fixedContent;
-                options.extended.fixedContent = options.extended.fixedContent === true ? options.fixedContent : options.extended.fixedContent;
+                options.extended.fixedContent = ((options.extended.fixedContent === true) || (options.extended.fixed === true)) ? options.fixedContent : options.extended.fixedContent;
             }
 
             //If common footer content => add it as extended footer content
@@ -78447,6 +78928,15 @@ jquery-bootstrap-modal-promise.js
                 options.footer = options.footer === true ? options.extended.footer : options.footer;
                 options.extended.footer = options.extended.footer === true ? options.footer : options.extended.footer;
             }
+        }
+
+        //If options.minimized.fixedContent/fixed == true and/or options.minimized.footer == true => normal and minimized uses same fixed and/or footer content
+        if (options.minimized){
+            if ((options.minimized.fixedContent === true) || (options.minimized.fixed === true))
+                options.minimized.fixedContent = options.fixedContent;
+
+            if (options.minimized.footer === true)
+                options.minimized.footer = options.footer;
         }
     }
 
@@ -78456,13 +78946,23 @@ jquery-bootstrap-modal-promise.js
     ******************************************************/
     var bsModal_prototype = {
         show  : function(){
-                    this.modal('show');
+            this.modal('show');
 
-                    this.data('bsModalDialog')._bsModalSetHeightAndWidth();
+            this.data('bsModalDialog')._bsModalSetHeightAndWidth();
 
-                    if (this.bsModal.onChange)
-                        this.bsModal.onChange( this.bsModal );
-                },
+            if (this.bsModal.onChange)
+                this.bsModal.onChange( this.bsModal );
+
+            //Scroll all "body" back if keepScrollWhenReopen = false is set
+            if (!this.keepScrollWhenReopen)
+                ['', 'extended', 'minimized'].forEach( size => {
+                    let obj = size ? this.bsModal[size] : this.bsModal;
+                    if (obj && obj.$body){
+                        obj.$body.scrollTop(0);
+                        obj.$body.scrollLeft(0);
+                    }
+                }, this);
+        },
 
         _close: function(){
             this.modal('hide');
@@ -78513,7 +79013,6 @@ jquery-bootstrap-modal-promise.js
         Meaning that no new type can be added
         ******************************************************/
         update: function( options ){
-            var _this = this;
             //***********************************************************
             function updateElement($element, newOptions, methodName, param, param2, param3 ){
                 if ($element && newOptions){
@@ -78522,17 +79021,16 @@ jquery-bootstrap-modal-promise.js
                 }
             }
             //***********************************************************
-
             //Update header
             var $iconContainer = this.bsModal.$header.find('.header-icon-container').detach();
-            updateElement(this.bsModal.$header, options, '_bsHeaderAndIcons');
+            updateElement(this.bsModal.$header, options, '_bsHeaderAndIcons', $.BSMODAL_USE_SQUARE_ICONS);
             this.bsModal.$header.append($iconContainer);
 
             _updateFixedAndFooterInOptions(options);
 
             //Update the tree size-contents
-            $.each([null, 'minimized', 'extended'], function(index, id){
-                var containers     = id ? _this.bsModal[id] : _this.bsModal,
+            [null, 'minimized', 'extended'].forEach( id => {
+                var containers     = id ? this.bsModal[id] : this.bsModal,
                     contentOptions = id ? options[id]       : options;
 
                 if (containers && contentOptions){
@@ -78540,7 +79038,9 @@ jquery-bootstrap-modal-promise.js
                     updateElement(containers.$content,      contentOptions.content,      '_bsAppendContent', contentOptions.contentContext,      contentOptions.contentArg,      options );
                     updateElement(containers.$footer,       contentOptions.footer,       '_bsAddHtml' );
                 }
-            });
+            }, this);
+            
+            
             return this;
         },
 
@@ -78591,25 +79091,42 @@ jquery-bootstrap-modal-promise.js
             return result ? 'alert-'+result : '';
         }
 
+        function setInnerHeightAndInnerMaxHeight($elem, options){
+            if (options.innerHeight)
+                $elem.css('--inner-height',     typeof options.innerHeight == 'number'    ? options.innerHeight + 'px'    : options.innerHeight    );
+            if (options.innerMaxHeight)
+                $elem.css('--inner-max-height', typeof options.innerMaxHeight == 'number' ? options.innerMaxHeight + 'px' : options.innerMaxHeight );
+        }
+
         //Append fixed content (if any)
+        //If fixedContent.contetn exists => fixedContent is also the options for the fixed content
         //options.fixedContentOptions = options different from content for fixed-content
-        var fixedOptions = $.extend({}, options, options.fixedContentOptions || {}),
+        var fixedOptions = $.extend({},
+                options,
+                {innerHeight:'auto', innerMaxheight: 'none'},
+                options.fixedContent && options.fixedContent.content ? options.fixedContent : {},
+                options.fixedContentOptions || {}
+            ),
             $modalFixedContent = parts.$fixedContent =
                 $('<div/>')
                     .addClass('modal-body-fixed')
                     .addClass(className || '')
-                    .toggleClass(scrollbarClass, !!options._fixedContentHasScrollClass )
+                    .toggleClass(scrollbarClass,                !!options._fixedContentHasScrollClass )
                     .toggleClass('py-0',                        !!fixedOptions.noVerticalPadding)
                     .toggleClass('pt-0',                        !!fixedOptions.noTopPadding)
                     .toggleClass('pb-0',                        !!fixedOptions.noBottomPadding)
                     .toggleClass('px-0',                        !!fixedOptions.noHorizontalPadding)
                     .toggleClass('modal-body-semi-transparent', !!fixedOptions.semiTransparent)
+                    .toggleClass('center-middle-content',       !!fixedOptions.centerMiddle)
+                    .toggleClass('with-border',                 !!(fixedOptions.withBorder || fixedOptions.bottomBorder || fixedOptions.border))
                     .addClass( getAlertClass(fixedOptions) )
                     .addClass(options.fixedClassName || '')
                     .appendTo( this );
 
-        if (options.fixedContent)
-            $modalFixedContent._bsAppendContent( options.fixedContent, options.fixedContentContext, null, options );
+        if (options.fixedContent){
+            $modalFixedContent._bsAppendContent( options.fixedContent.content ? options.fixedContent.content : options.fixedContent, options.fixedContentContext, null, options );
+            setInnerHeightAndInnerMaxHeight($modalFixedContent, fixedOptions);
+        }
 
         //Append body and content
         var $modalBody = parts.$body =
@@ -78619,13 +79136,15 @@ jquery-bootstrap-modal-promise.js
                     .toggleClass('py-0',                         !!options.noVerticalPadding)
                     .toggleClass('px-0',                         !!options.noHorizontalPadding)
                     .toggleClass('modal-body-semi-transparent',  !!options.semiTransparent)
+                    .toggleClass('center-middle-content',        !!options.centerMiddle)
                     .addClass( getAlertClass(options) )
                     .addClass(options.className || '')
                     .appendTo( this );
 
+        setInnerHeightAndInnerMaxHeight($modalBody, options);
+
         if (!options.content || (options.content === {}))
             $modalBody.addClass('modal-body-no-content');
-
 
         var $modalContent = parts.$content =
                 hasScroll ?
@@ -78648,11 +79167,15 @@ jquery-bootstrap-modal-promise.js
             $modalContent._bsAppendContent( options.content, options.contentContext, options.contentArg, options  );
 
         //Add scroll-event to close any bootstrapopen -select
-        if (hasScroll)
+        if (hasScroll){
             $modalBody.on('scroll', function(){
                 //Close all elements when scrolling
                 $(this).parents('.modal').first()._bsModalCloseElements();
             });
+
+            if (options.onScroll)
+                $modalBody.on('scroll', options.onScroll);
+        }
 
         //Add footer
         parts.$footer =
@@ -78702,7 +79225,7 @@ jquery-bootstrap-modal-promise.js
             var relativeOptions = null;
             if (!getHeightFromOptions(options)){
                 //Save only options different from default
-                $.each(['relativeHeight', 'relativeHeightOffset', 'parentContainerHeight'], function(index, id){
+                ['relativeHeight', 'relativeHeightOffset', 'parentContainerHeight'].forEach( id => {
                     var value = options[id];
                     if (value || (value === 0)){
                         relativeOptions = relativeOptions || {};
@@ -78743,26 +79266,28 @@ jquery-bootstrap-modal-promise.js
         //Set bsModal.cssWidth
         this.bsModal.cssWidth[MODAL_SIZE_NORMAL] = getWidthFromOptions( options );
 
-        if (options.minimized)
-            this.bsModal.cssWidth[MODAL_SIZE_MINIMIZED] = getWidthFromOptions(options.minimized);
 
-        if (options.extended){
-            //If options.extended.width == true or none width-options is set in extended => use same width as normal-mode
-            if ( (options.extended.width == true) ||
-                 ( (options.extended.flexWidth == undefined) &&
-                   (options.extended.extraWidth == undefined) &&
-                   (options.extended.megaWidth == undefined) &&
-                   (options.extended.maxWidth == undefined) &&
-                   (options.extended.fullWidth == undefined) &&
-                   (options.extended.fullScreen == undefined) &&
-                   (options.extended.fullScreenWithBorder == undefined) &&
-                   (options.extended.width == undefined)
-                 )
-              )
-                this.bsModal.cssWidth[MODAL_SIZE_EXTENDED] = this.bsModal.cssWidth[MODAL_SIZE_NORMAL];
-            else
-                this.bsModal.cssWidth[MODAL_SIZE_EXTENDED] = getWidthFromOptions( options.extended );
+        function useNormalWidth(options = {}){
+            return (options.width == true) ||
+                    (   (options.flexWidth == undefined) &&
+                        (options.extraWidth == undefined) &&
+                        (options.megaWidth == undefined) &&
+                        (options.maxWidth == undefined) &&
+                        (options.fullWidth == undefined) &&
+                        (options.fullScreen == undefined) &&
+                        (options.fullScreenWithBorder == undefined) &&
+                        (options.width == undefined)
+                    );
         }
+
+        if (options.minimized)
+            //If options.minimized.width == true or none width-options is set in extended => use same width as normal-mode
+            this.bsModal.cssWidth[MODAL_SIZE_MINIMIZED] = useNormalWidth(options.minimized) ? this.bsModal.cssWidth[MODAL_SIZE_NORMAL] : getWidthFromOptions( options.minimized );
+
+        if (options.extended)
+            //If options.extended.width == true or none width-options is set in extended => use same width as normal-mode
+            this.bsModal.cssWidth[MODAL_SIZE_EXTENDED] = useNormalWidth(options.extended) ? this.bsModal.cssWidth[MODAL_SIZE_NORMAL] : this.bsModal.cssWidth[MODAL_SIZE_EXTENDED] = getWidthFromOptions( options.extended );
+
 
         var $modalContent = this.bsModal.$modalContent =
                 $('<div/>')
@@ -78770,6 +79295,7 @@ jquery-bootstrap-modal-promise.js
                     .addClass(options.modalContentClassName)
                     .toggleClass('no-shadow', !!options.noShadow)
                     .modernizrOff('modal-pinned')
+                    .modernizrOff('modal-set-to-full-screen')
                     .appendTo( this );
 
         //Set modal-[SIZE]-[STATE] class
@@ -78799,19 +79325,19 @@ jquery-bootstrap-modal-promise.js
         this._bsModalSetSizeClass(initSize);
         this._bsModalSetHeightAndWidth();
 
-        var modalExtend       = $.proxy( this._bsModalExtend,       this),
-            modalDiminish     = $.proxy( this._bsModalDiminish,     this),
-            modalToggleHeight = $.proxy( this._bsModalToggleHeight, this),
-            modalPin          = $.proxy( this._bsModalPin,          this),
-            modalUnpin        = $.proxy( this._bsModalUnpin,        this),
+        var modalExtend       = this._bsModalExtend.bind(this),
+            modalDiminish     = this._bsModalDiminish.bind(this),
+            modalToggleHeight = this._bsModalToggleHeight.bind(this),
+            modalPin          = this._bsModalPin.bind(this),
+            modalUnpin        = this._bsModalUnpin.bind(this),
             iconExtendClassName   = '',
             iconDiminishClassName = '',
             multiSize = this.bsModal.sizes > MODAL_SIZE_NORMAL;
 
         //If multi size: Set the class-name for the extend and diminish icons.
         if (multiSize){
-            iconExtendClassName   = this.bsModal.sizes & MODAL_SIZE_EXTENDED  ? 'hide-for-modal-extended'  : 'hide-for-modal-normal';
-            iconDiminishClassName = this.bsModal.sizes & MODAL_SIZE_MINIMIZED ? 'hide-for-modal-minimized' : 'hide-for-modal-normal';
+            iconExtendClassName   = 'hide-for-modal-set-to-full-screen ' + (this.bsModal.sizes & MODAL_SIZE_EXTENDED  ? 'hide-for-modal-extended'  : 'hide-for-modal-normal');
+            iconDiminishClassName = 'hide-for-modal-set-to-full-screen ' + (this.bsModal.sizes & MODAL_SIZE_MINIMIZED ? 'hide-for-modal-minimized' : 'hide-for-modal-normal');
         }
 
         this.bsModal.onPin = options.onPin;
@@ -78828,24 +79354,28 @@ jquery-bootstrap-modal-promise.js
 
             //Icons
             icons    : {
-                pin     : { className: 'hide-for-modal-pinned', onClick: options.onPin ? modalPin      : null },
-                unpin   : { className: 'show-for-modal-pinned', onClick: options.onPin ? modalUnpin    : null },
-                extend  : { className: iconExtendClassName,     onClick: multiSize ? modalExtend   : null, altEvents:'swipeup'   },
-                diminish: { className: iconDiminishClassName,   onClick: multiSize ? modalDiminish : null, altEvents:'swipedown' },
-                new     : { className: '',                      onClick: options.onNew ? $.proxy(options.onNew, this) : null },
-                info    : { className: '',                      onClick: options.onInfo ? $.proxy(options.onInfo, this) : null },
-                warning : { className: '',                      onClick: options.onWarning ? $.proxy(options.onWarning, this) : null },
-                help    : { className: '',                      onClick: options.onHelp ? $.proxy(options.onHelp, this) : null },
+                pin             : { className: 'hide-for-modal-pinned', onClick: options.onPin ? modalPin   : null },
+                unpin           : { className: 'show-for-modal-pinned', onClick: options.onPin ? modalUnpin : null },
+
+                fullScreenOn    : { className: 'modal-header-icon-full-screen-on hide-for-modal-set-to-full-screen',  onClick: options.allowFullScreen ? this._bsModalFullScreenOn.bind(this)  : null, altEvents:'swipeup'   },
+                fullScreenOff   : { className: 'modal-header-icon-full-screen-off show-for-modal-set-to-full-screen', onClick: options.allowFullScreen ? this._bsModalFullScreenOff.bind(this) : null, altEvents:'swipedown' },
+
+                extend          : { className: iconExtendClassName,     onClick: multiSize ? modalExtend   : null,                        altEvents:'swipeup'   },
+                diminish        : { className: iconDiminishClassName,   onClick: multiSize ? modalDiminish : null,                        altEvents:'swipedown' },
+                new             : {                                     onClick: options.onNew     ? options.onNew.bind(this)     : null                        },
+                info            : {                                     onClick: options.onInfo    ? options.onInfo.bind(this)    : null                        },
+                warning         : {                                     onClick: options.onWarning ? options.onWarning.bind(this) : null                        },
+                help            : {                                     onClick: options.onHelp    ? options.onHelp.bind(this)    : null                        },
             }
         }, options );
 
 
         //Save parentOptions for dynamic update
         var parentOptions = this.bsModal.parentOptions = {};
-        $.each($.parentOptionsToInherit, function(index, id){
+        $.parentOptionsToInherit.forEach( id => {
             if (options.hasOwnProperty(id))
                 parentOptions[id] = options[id];
-            });
+        });
 
 
         //Adjust for options.buttons: null
@@ -78878,7 +79408,7 @@ jquery-bootstrap-modal-promise.js
         if (!options.noHeader &&  (options.header || !$.isEmptyObject(options.icons) ) ){
             var $modalHeader = this.bsModal.$header =
                     $('<div/>')
-                        ._bsHeaderAndIcons( options )
+                        ._bsHeaderAndIcons( options, $.BSMODAL_USE_SQUARE_ICONS )
                         .appendTo( $modalContent );
 
             //Add dbl-click on header to change to/from extended
@@ -78894,6 +79424,12 @@ jquery-bootstrap-modal-promise.js
         //Create minimized content
         if (options.minimized){
             this.bsModal.minimized = {};
+
+            if (options.minimized.showHeader){
+                $modalContent.addClass('modal-minimized-full-header');
+                options.minimized.showHeaderOnClick = false;
+            }
+            else {
                 $modalContent.addClass('modal-minimized-hide-header');
                 var bsModalToggleMinimizedHeader = $.proxy(this._bsModalToggleMinimizedHeader, this);
                 options.minimized.onClick =
@@ -78901,9 +79437,10 @@ jquery-bootstrap-modal-promise.js
                         bsModalToggleMinimizedHeader :
                         modalExtend;
 
-            //Close header when a icon is clicked
-            if (options.minimized.showHeaderOnClick)
-                this.bsModal.$header.on('click', bsModalToggleMinimizedHeader);
+                //Close header when a icon is clicked
+                if (options.minimized.showHeaderOnClick)
+                    this.bsModal.$header.on('click', bsModalToggleMinimizedHeader);
+            }
 
             $modalContent._bsModalBodyAndFooter( MODAL_SIZE_MINIMIZED/*'minimized'*/, options.minimized, this.bsModal.minimized, '', initSize, parentOptions );
 
@@ -78915,6 +79452,7 @@ jquery-bootstrap-modal-promise.js
 
                 this.bsModal.cssHeight[MODAL_SIZE_MINIMIZED] = null;
             }
+
         }
 
         //Create normal content
@@ -78976,7 +79514,7 @@ jquery-bootstrap-modal-promise.js
 
         //If no button is given focus by options.focus: true => Last button gets focus
         var focusAdded = false;
-        $.each( buttons, function( index, buttonOptions ){
+        buttons.forEach( ( buttonOptions, index ) => {
             if (buttonOptions instanceof $){
                 buttonOptions.appendTo( $modalButtonContainer );
                 $modalButtons.push( buttonOptions );
@@ -78998,7 +79536,7 @@ jquery-bootstrap-modal-promise.js
 
                 //Add onClick from icons (if any)
                 buttonOptions.equalIconId = buttonOptions.equalIconId || '';
-                $.each( buttonOptions.equalIconId.split(' '), function( index, iconId ){
+                buttonOptions.equalIconId.split(' ').forEach( iconId => {
                     if (iconId && options.icons[iconId] && options.icons[iconId].onClick)
                         $button.on('click', options.icons[iconId].onClick);
                 });
@@ -79043,13 +79581,17 @@ jquery-bootstrap-modal-promise.js
     _bsModalSetHeightAndWidth - Set the height and width according to current cssHeight and cssWidth
     ******************************************************/
     $.fn._bsModalSetHeightAndWidth = function(){
-
         var bsModal = this.bsModal,
             $modalContent = get$modalContent(this),
             $modalDialog = $modalContent.parent(),
             size = $modalContent._bsModalGetSize(),
             cssHeight = bsModal.cssHeight[size],
             cssWidth = bsModal.cssWidth[size];
+
+        if (!cssWidth){
+            this._bsModalSetSize(MODAL_SIZE_NORMAL);
+            return;
+        }
 
         //Set height
         $modalContent
@@ -79070,6 +79612,12 @@ jquery-bootstrap-modal-promise.js
             .toggleClass('modal-full-screen-with-border', cssWidth.fullScreenWithBorder )
             .css('width', cssWidth.width ? cssWidth.width : '' );
 
+
+        if (this.bsModal.isFullScreenMode){
+            this._bsModalFullScreenOff();
+            this._bsModalFullScreenOn();
+        }            
+
         //Call onChange (if any)
         if (bsModal.onChange)
             bsModal.onChange( bsModal );
@@ -79077,7 +79625,8 @@ jquery-bootstrap-modal-promise.js
 
     /******************************************************
     _bsModalExtend, _bsModalDiminish, _bsModalToggleHeight,
-    _bsModalSetSize, _bsModalToggleMinimizedHeader
+    _bsModalSetSize, _bsModalToggleMinimizedHeader,
+    _bsModalFullScreenOn, _bsModalFullScreenOff
     Methods to change extended-mode
     ******************************************************/
     $.fn._bsModalExtend = function(){
@@ -79112,16 +79661,6 @@ jquery-bootstrap-modal-promise.js
 
         this._bsModalSetSizeClass(size);
         this._bsModalSetHeightAndWidth();
-
-
-        /*
-        NOTE: 2021-04-16
-        Original this methods returns false to prevent onclick-event on the header.
-        That prevented other more general events to be fired. Eg. in fcoo/leaflet-bootstrap
-        where the focus of a popup window was set when the window was clicked
-        It appear not to have any other effect when removed.
-        */
-        //return false; //Prevent onclick-event on header
     };
 
     //hid/show header for size = minimized
@@ -79129,6 +79668,87 @@ jquery-bootstrap-modal-promise.js
         if (this._bsModalGetSize() == MODAL_SIZE_MINIMIZED)
             get$modalContent(this).toggleClass('modal-minimized-hide-header');
     };
+
+    //Toggle full screen
+    $.fn._bsModalFullScreenOn = function(){
+        let bsModal       = this.bsModal,
+            $modalDialog  = bsModal.$modalDialog,
+            isExtended    = $modalDialog.hasClass('modal-full-screen-at-extended'),
+            $modalContent = bsModal.$modalContent,
+            $modalBody    = isExtended ? bsModal.extended.$body : bsModal.$body;
+
+        //Save and remove width and height set direct in css and
+        bsModal.saveWidth  = $modalDialog.css('width');
+        $modalDialog.css('width', '');
+        bsModal.saveHeight = $modalContent.css('height');
+        $modalContent.css('height', '');
+
+        //Save and remove any 'size'-classes
+        bsModal.saveDialogContentClass = $modalDialog.get(0).className;
+        bsModal.saveModalContentClass  = $modalContent.get(0).className;
+        bsModal.saveBodyClass          = $modalBody.get(0).className;
+
+        let classNames = [
+                'modal-fixed-height',
+                'modal-flex-height',
+                'modal-flex-width',
+                'modal-extra-width',
+                'modal-mega-width',
+                'modal-full-width',
+            ].join(' ');
+
+        $modalDialog.removeClass(classNames);
+        $modalContent.removeClass(classNames);
+        $modalBody.removeClass(classNames);
+
+        //Set new classes to make size = full screen
+        $modalDialog.addClass ('modal-max-width modal-full-screen modal-full-screen-with-border');
+        $modalContent.addClass('modal-flex-height');
+        $modalContent.addClass('modal-' + (isExtended ? 'extended' : 'normal') + '-always-max-height');
+
+        $modalBody.addClass   ('modal-body-always-max-height');
+
+        //Save data-relativeHeightOptions from modal-content and set new with no margin
+        bsModal.save_relativeHeightOptions = $modalContent.data('relativeHeightOptions') || {};
+
+        let newData = {};
+        newData[MODAL_SIZE_NORMAL] = newData[MODAL_SIZE_EXTENDED] = {  relativeHeightOffset: 0 };
+        $modalContent.data('relativeHeightOptions', newData);
+        adjustModalMaxHeight( $modalContent );
+
+        $modalContent.modernizrOn('modal-set-to-full-screen');
+
+        bsModal.isFullScreenMode = true;
+    };
+
+
+    $.fn._bsModalFullScreenOff = function(){
+        let bsModal       = this.bsModal,
+            $modalDialog  = bsModal.$modalDialog,
+            isExtended    = $modalDialog.hasClass('modal-full-screen-at-extended'),
+            $modalContent = bsModal.$modalContent,
+            $modalBody    = isExtended ? bsModal.extended.$body : bsModal.$body;
+
+        //Reset original size-classes
+        $modalDialog.get(0).className   = bsModal.saveDialogContentClass;
+        $modalContent.get(0).className  = bsModal.saveModalContentClass;
+        $modalBody.get(0).className     = bsModal.saveBodyClass;
+
+        //Reset data-relativeHeightOptions
+        $modalContent.data('relativeHeightOptions', bsModal.save_relativeHeightOptions);
+        adjustModalMaxHeight( $modalContent );
+
+        //Reset original width and height set direct in css
+        $modalDialog.css('width',   bsModal.saveWidth || '');
+        $modalContent.css('height', bsModal.saveHeight || '');
+
+        $modalContent.modernizrOff('modal-set-to-full-screen');
+
+        bsModal.isFullScreenMode = false;
+    };
+
+
+
 
 /* TODO: animate changes in height and width - Use Bootstrtap 5 collaps
        var $this = this.bsModal.$container,
@@ -79210,17 +79830,34 @@ jquery-bootstrap-modal-promise.js
              (options.removeOnClose === undefined) )
             options.remove = !!options.defaultRemoveOnClose || !!options.defaultRemove;
 
-        //Set options for full screen with border
-        if (options.fullScreenWithBorder)
-            options.fullScreen = true;
+        //Prevent allow-full-screen if already set
+        if (options.fullScreen || options.fullScreenWithBorder)
+            options.allowFullScreen = false;
 
-        //Set options for full screen
-        if (options.fullScreen){
-            options.maxWidth             = true;
-            options.alwaysMaxHeight      = true;
-            options.relativeHeightOffset = 0;
+
+
+        function adjustFullScreenOptions( opt, defaultOpt={} ){
+            if (!opt) return;
+            ['fullScreenWithBorder', 'fullScreen'].forEach( id => {
+                if (opt[id] === undefined)
+                    opt[id] = defaultOpt[id] || false;
+            });
+            if (opt.fullScreenWithBorder)
+                opt.fullScreen = true;
+
+            //Set options for full screen
+            if (opt.fullScreen){
+                opt.maxWidth             = true;
+                opt.alwaysMaxHeight      = true;
+                opt.relativeHeightOffset = 0;
+            }
         }
 
+        //Set options for full screen with border
+        adjustFullScreenOptions(options);
+        adjustFullScreenOptions(options.minimized, options);
+        adjustFullScreenOptions(options.extended, options);
+        
         //Check $.MODAL_NO_VERTICAL_MARGIN
         if ($.MODAL_NO_VERTICAL_MARGIN){
             options.relativeHeightOffset = 0;
@@ -79228,6 +79865,28 @@ jquery-bootstrap-modal-promise.js
                 options.extended.relativeHeightOffset = 0;
         }
 
+        //Set options for a modal inside a container
+        if (options.$container){
+            options.show      = true;
+            options.fullWidth = !options.width;
+            if (options.minimized){
+                options.minimized.width = options.minimized.width || options.width;
+                options.minimized.fullWidth = !options.minimized.width;
+            }
+            if (options.extended){
+                options.extended.width = options.extended.width || options.width;
+                options.extended.fullWidth = !options.extended.width;
+                options.extended.height = options.extended.height || true;
+            }
+        }
+
+        //If allowFullScreen: Find the largest size-mode and set the differnet class-names etc.
+        if (options.allowFullScreen)
+            options.sizeWithFullScreen = options.extended ? MODAL_SIZE_EXTENDED : MODAL_SIZE_NORMAL;
+
+
+        //Set keepScrollWhenReopen to allow the content to be scrolled back to 0,0 when reopen a modal
+        this.keepScrollWhenReopen = options.keepScrollWhenReopen;
 
         //Create the modal
         $result =
@@ -79245,6 +79904,10 @@ jquery-bootstrap-modal-promise.js
                 ._bsAddBaseClassAndSize( options )
                 .attr( 'role', 'document')
                 .appendTo( $result );
+
+        if (options.allowFullScreen)
+            $modalDialog.addClass('modal-full-screen-at-' + (options.extended ? 'extended' : 'normal') );
+
 
         //Extend with prototype
         $result.extend( bsModal_prototype );
@@ -79278,6 +79941,8 @@ jquery-bootstrap-modal-promise.js
         });
         $result.bsModal = $modalDialog.bsModal;
 
+        $result.bsModal.$modalDialog = $modalDialog;
+
         $result.removeOnClose = options.remove || options.removeOnClose;
 
         if (options.historyList){
@@ -79286,23 +79951,34 @@ jquery-bootstrap-modal-promise.js
             $result.getHeaderIcon('forward').css('visibility', 'hidden');
         }
 
-        $result.on({
-            'show.bs.modal'  : $.proxy(show_bs_modal, $result),//show_bs_modal,
-            'shown.bs.modal' : shown_bs_modal,
-            'hide.bs.modal'  : $.proxy(hide_bs_modal, $result),
-            'hidden.bs.modal': hidden_bs_modal
-        });
+        if (options.$container){
+            $result.addClass('show');
+            $result.appendTo( options.$container );
+            options.$container.addClass('modal-fixed-container');
+        }
+        else {
+            $result.on({
+                'show.bs.modal'  : show_bs_modal.bind($result),
+                'shown.bs.modal' : shown_bs_modal,
+                'hide.bs.modal'  : hide_bs_modal.bind($result),
+                'hidden.bs.modal': hidden_bs_modal
+            });
+            $result.appendTo( $('body') );
+            if (options.show)
+                $result.show();
+        }
 
-        $result.appendTo( $('body') );
+        //Save some options in bsModal
+        ['noReopenFullScreen'].forEach( id => {
+            $result.bsModal[id] = options[id];
+        }); 
 
-        if (options.show)
-            $result.show();
         return $result;
     };
 
 }(jQuery, this.bootstrap, this, document));
 ;
-/****************************************************************************
+/*****************************************************  ***********************
 	jquery-bootstrap-noty.js,
 
 	(c) 2017, FCOO
@@ -79491,7 +80167,7 @@ jquery-bootstrap-modal-promise.js
 
         //Add header (if any)
         if (options.header || options.defaultHeader){
-            if (!$.isArray(options.content))
+            if (!Array.isArray(options.content))
                 options.content = [options.content];
 
             options.header = $._bsAdjustIconAndText(options.header) || {};
@@ -79524,13 +80200,12 @@ jquery-bootstrap-modal-promise.js
         //Add callbacks.onTemplate to add content (and close-icon) by converting the noty uinto a Bootstrap modal
         options.callbacks = options.callbacks || {};
         options.callbacks.onTemplate = function() {
-            var _this           = this,
-                $barDom         = $(this.barDom),
+            let $barDom         = $(this.barDom),
                 $body           = $barDom.find('.noty_body'),
                 closeFunc       = function( event ){
                                       event.stopPropagation();
-                                      _this.close();
-                                   },
+                                      this.close();
+                                   }.bind(this),
                 headerClassName = 'modal-header',
                 icons           = {close: { onClick: closeFunc } };
 
@@ -79578,7 +80253,7 @@ jquery-bootstrap-modal-promise.js
                         closeOnClick: true
                     };
 
-                $.each( buttons, function( index, buttonOptions ){
+                buttons.forEach( buttonOptions => {
                     buttonOptions = $.extend(true, defaultButtonOptions, buttonOptions );
                     var $button = $.bsButton(buttonOptions).appendTo($buttonContainer);
                     if (buttonOptions.closeOnClick)
@@ -79628,6 +80303,13 @@ jquery-bootstrap-modal-promise.js
 
         var classNames = '.modal.noty-container.noty-container-'+options.layout,
             $container = $bsNotyLayerToUse.find(classNames);
+
+        //Adjust width
+        if (options.extraWidth)
+            classNames = classNames +'.noty-extra-width';
+        if (options.megaWidth)
+            classNames = classNames +'.noty-mega-width';
+
         if (!$container.length){
             $container =
                 $('<div/>')
@@ -79668,7 +80350,8 @@ jquery-bootstrap-modal-promise.js
     /********************************************************************
     *********************************************************************
     Create standard variations of bsNoty:
-    notySuccess/notyOk, notyError, notyWarning, notyAlert, notyInfo (and dito $bsNoty[TYPE]
+    notySuccess/notyOk, notyError, notyWarning, notyAlert, noty
+ (and dito $bsNoty[TYPE]
     The following default options is used
     queue: "global" but if != "global" options.killer is set to options.queue
     killer: if options.queue != "global" => killer = queue and the noty will close all noty with same queue.
@@ -80080,21 +80763,22 @@ jquery-bootstrap-modal-promise.js
     //adjustItemOptionsForPopover - Adjust class-name for buttons/items in a popover
     function adjustItemOptionsForPopover(options, listId){
         var result = $.extend({}, options);
-        $.each(options[listId], function(index, itemOptions){
-            var closeOnClickClass = '';
-            //If item has individuel clickOnClick => use it
-            if ($.type(itemOptions.closeOnClick) == 'boolean')
-                closeOnClickClass = itemOptions.closeOnClick ? popoverCloseOnClick : no_popoverCloseOnClick;
-            else
-                if (!itemOptions.id && !itemOptions.list)
-                    closeOnClickClass = no_popoverCloseOnClick;
+        if (options[listId])
+            options[listId].forEach( (itemOptions, index) => {
+                var closeOnClickClass = '';
+                //If item has individuel clickOnClick => use it
+                if ($.type(itemOptions.closeOnClick) == 'boolean')
+                    closeOnClickClass = itemOptions.closeOnClick ? popoverCloseOnClick : no_popoverCloseOnClick;
+                else
+                    if (!itemOptions.id && !itemOptions.list)
+                        closeOnClickClass = no_popoverCloseOnClick;
 
-            itemOptions.class = itemOptions.class || '';
-            itemOptions.class = (itemOptions.class ? itemOptions.class + ' ' : '') + closeOnClickClass;
+                itemOptions.class = itemOptions.class || '';
+                itemOptions.class = (itemOptions.class ? itemOptions.class + ' ' : '') + closeOnClickClass;
 
-            //Adjust child-list (if any)
-            result[listId][index] = adjustItemOptionsForPopover(itemOptions, listId);
-        });
+                //Adjust child-list (if any)
+                result[listId][index] = adjustItemOptionsForPopover(itemOptions, listId);
+            });
         return result;
     }
 
@@ -80297,7 +80981,7 @@ options
     $.bsSelect = $.bsSelectBox = $.bsSelectbox = function( options ){
 
         //options.items = options.items || options.list;
-        options.list = options.list || options.items;
+        options.list = options.list || options.items || [];
 
         options =
             $._bsAdjustOptions( options, {
@@ -80315,7 +80999,7 @@ options
 
 
         options.optionList = [];
-        $.each( options.list, function( index, itemOptions ){
+        options.list.forEach( itemOptions => {
             var $option =
                     itemOptions.id ?
                     $('<option/>')
@@ -80368,9 +81052,13 @@ options
         options.onClick = $.fn._bsSelectButton_onClick;
         options.list    = options.list || options.items;
         options._class  = (options._class || '') + ' text-truncate btn-select';
+
+        //isBB = true => use $.bsBigIconButton
+        options.isBB = options.isBB || options.useBigButtons || options.useBigButton || options.bigButtons || options.bigButton;
+
         delete options.items;
 
-        var $result = $.bsButton( options );
+        var $result = options.isBB ? $.bsBigIconButton( options ) : $.bsButton( options );
 
         options = $result.data('bsButton_options');
         options.context = $result,
@@ -80392,20 +81080,19 @@ options
         options.selectedId = value;
         this.data('bsButton_options', options);
 
-        options.list.forEach( function(item){
-            if (item.id == value)
-                selectedItem = item;
-        });
+        if (options.list)
+            options.list.forEach( item => {
+                if (item.id == value)
+                    selectedItem = item;
+            });
 
         if (selectedItem){
-            this
-                .empty()
-                ._bsAddHtml(
-                    $.extend(true,
-                        {textClass: 'text-truncate'},
-                        selectedItem
-                    )
-                );
+            this.empty();
+
+            if (options.isBB)
+                this.append( $._bsBigIconButtonContent( selectedItem ) );
+            else
+                this._bsAddHtml( $.extend(true, {textClass: 'text-truncate'}, selectedItem ) );
 
             if (options.onChange)
                 $.proxy(options.onChange, options.context)(value);
@@ -80424,9 +81111,10 @@ options
             selectedId = options.selectedId,
             list       = $.extend(true, {}, options).list;
 
-        list.forEach(function(item){
-            item.selected = item.id ? item.id == selectedId : false;
-        });
+        if (list)
+            list.forEach( item => {
+                item.selected = item.id ? item.id == selectedId : false;
+            });
 
         $selectButton_Modal = $.bsModal({
             noHeader    : true,
@@ -80434,13 +81122,16 @@ options
             clickable   : true,
             transparentBackground: true,
             scroll      : list.length > 5,
+
             content: {
-                type         : 'selectlist',
-                allowReselect: true,
-                list         : list,
-                onChange     : $.fn._bsSelectButton_onChange,
-                context      : this,
-                truncate     : true
+                type             : 'selectlist',
+                allowReselect    : true,
+                list             : list,
+                onChange         : $.fn._bsSelectButton_onChange,
+                context          : this,
+                truncate         : true,
+                center           : options.center,
+                createItemContent: options.isBB ? $.bsBigIconButton : null,
             },
             show: true,
             removeOnClose: true
@@ -80481,7 +81172,8 @@ options
                 id          : '_bsSelectlist'+ selectlistId++,
                 baseClass   : 'select-list',
                 class       : 'form-control dropdown-menu',
-                useTouchSize: true
+                useTouchSize: true,
+                createItemContent: null, //function( itemOptions ) return a $-element
             });
 
         var $result =
@@ -80499,14 +81191,33 @@ options
 
         $result.data('radioGroup', radioGroup);
 
-        $.each( options.list, function( index, itemOptions ){
-            var isItem = (itemOptions.id != undefined ),
-                $item = $(isItem ? '<a/>' : '<div/>')
-                            .addClass( isItem ? 'dropdown-item' : 'dropdown-header' )
-                            .toggleClass( 'text-center',   !!options.center )
-                            .toggleClass( 'text-truncate', !!options.truncate )
-                            ._bsAddHtml( itemOptions, false, false, true )
-                            .appendTo( $result );
+        options.list = options.list || [];
+        options.list.forEach( itemOptions => {
+            const isItem = (itemOptions.id != undefined);
+            let $item;
+
+            if (isItem){
+                if (options.createItemContent)
+                    $item = options.createItemContent( itemOptions );
+                else
+                    $item = $('<a/>')
+                        .addClass('dropdown-item')
+                        .toggleClass( 'text-center',   !!options.center )
+                        .toggleClass( 'text-truncate', !!options.truncate )
+                        ._bsAddHtml( itemOptions, false, false, true );
+            }
+            else {
+                if (options.createHeaderContent)
+                    $item = options.createHeaderContent( itemOptions );
+                else
+                    $item = $('<div/>')
+                        .addClass('dropdown-header')
+                        .toggleClass( 'text-center',   !!options.center )
+                        .toggleClass( 'text-truncate', !!options.truncate )
+                        ._bsAddHtml( itemOptions, false, false, true );
+            }
+
+            $item.appendTo( $result );
 
             if (isItem)
                 radioGroup.addElement( $item, itemOptions );
@@ -80553,38 +81264,50 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
 
         createContent : function(content, $td, sortBy) Create the content inside $td. Optional
 
-        sortable           :  [boolean] false
-        sortBy             : [string or function(e1, e2): int] "string". Possible values: "int" (sort as float), "moment", "moment_date", "moment_time" (sort as moment-obj) or function(e1, e2) return int
-        sortIndex          : [int] null. When sorting and to values are equal the values from an other column is used.
+        sortable            :  BOOLEAN false
+        sortBy              : [string or function(e1, e2): int] "string". Possible values: "int" (sort as float), "moment", "moment_date", "moment_time" (sort as moment-obj) or function(e1, e2) return int
+        sortIndex           : [int] null. When sorting and to values are equal the values from an other column is used.
                              The default order of the other columns to test is given by the its index in options.columns. Default sortIndex is (column-index+1)*100 (first column = 100). sortIndex can be set to alter the order.
-        sortDefault        : [string or boolean]. false. Possible values = false, true, "asc" or "desc". true => "asc"
-        updateAfterSorting : [boolean] false. If true and createContent is given the content of the coumun is updated after the tabel has been sorted
-        getSortContent     : function(content) return the part of content to be used when sorting. optional
-        sortHeader         : [boolean] false. If true a header-row is added every time the sorted value changes
+        sortDefault         : [string or boolean]. false. Possible values = false, true, "asc" or "desc". true => "asc"
+        updateAfterSorting  : BOOLEAN false. If true and createContent is given the content of the coumun is updated after the tabel has been sorted
+        getSortContent      : function(content) return the part of content to be used when sorting. optional
+        sortHeader          : BOOLEAN false. If true a header-row is added every time the sorted value changes
+
+        minimizable         : BOOLEAN false. If true the column can be minimized/maximized by clicking the header
+        minimized           : BOOLEAN false. Default state of minimizable column
+        minimizedIcon       : STRING or true. The icon shown when the column is minimized. default = icon from header. True = Force default icon
+
         createHeaderContent: function(content, $span, sortBy) Create the content of a sort-group-heade insider $span. Optional
 
-        filter       : function(rawValue, colunmOptions) null. Return true if row is included based on single value
+        filter       : function(rawValue, columnOptions) null. Return true if row is included based on single value
 
     }
 
-    showHeader          [boolean] true
-    verticalBorder      [boolean] true. When true vertical borders are added together with default horizontal borders
-    noBorder            [boolean] false. When true no borders are visible
-    hoverRow            [boolean] true. When true the row get hightlightet when hovered
-    noPadding           [boolean] false. When true the vertical padding of all cells are 0px
+    showHeader          BOOLEAN true
+    verticalBorder      BOOLEAN true. When true vertical borders are added together with default horizontal borders
+    noBorder            BOOLEAN false. When true no borders are visible
+    hoverRow            BOOLEAN true. When true the row get hightlightet when hovered
+    noPadding           BOOLEAN false. When true the vertical padding of all cells are 0px
 
-    notFullWidth        [boolean] false. When true the table is not 100% width and will adjust to it content
-    centerInContainer   [boolean] false. When true the table is centered inside its container. Normaally it require notFullWidth: true
+    notFullWidth        BOOLEAN false. When true the table is not 100% width and will adjust to it content
+    centerInContainer   BOOLEAN false. When true the table is centered inside its container. Normaally it require notFullWidth: true
 
-    selectable          [boolean] false
+    saveState           BOOLEAN false. When true the table will save the state of the column (sorting, hidden, minimized) and set the state agian when the table is displayed again
+
+    selectable          BOOLEAN false
     selectedId          [string] "" id for selected row
     onChange            [function(id, selected, trElement)] null Called when a row is selected or unselected (if options.allowZeroSelected == true)
-	allowZeroSelected   [boolean] false. If true it is allowed to un-select a selected row
-    allowReselect       [Boolean] false. If true the onChange is called when a selected item is reselected/clicked
+	allowZeroSelected   BOOLEAN false. If true it is allowed to un-select a selected row
+    allowReselect       BOOLEAN false. If true the onChange is called when a selected item is reselected/clicked
 
-    defaultColunmOptions: {}. Any of the options for columns to be used as default values
+    defaultColumnOptions: {}. Any of the options for columns to be used as default values
 
-    rowClassName      : [] of string. []. Class-names for each row
+    rowClassName      : [] of STRING or function(rowIndex) return STRING. []. Get or return class-names for each row
+
+    rowIsHighlighted     : [] of BOOLEAN or function(rowIndex) return BOOLEAN. []. Get or return true/false for each row
+    rowIsSemiHighlighted : [] of BOOLEAN or function(rowIndex) return BOOLEAN. []. Get or return true/false for each row
+
+    rowIsPrimary, rowIsSecondary, rowIsSuccess, rowIsDanger, rowIsWarning, rowIsInfo, rowIsLight, rowIsDark: BOOLEAN. Adds Bootstrap color-clases
 
     rowFilter         : function(rowData, rowId) null. Return true if row is to be included/shown. rowData = {id: value}
 
@@ -80646,7 +81369,6 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
 
     });
 
-
     var defaultOptions = {
             baseClass           : 'table',
             styleClass          : 'fixed',
@@ -80658,13 +81380,13 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
             notFullWidth        : false,
             centerInContainer   : false,
             useTouchSize        : true,
-            defaultColunmOptions: {},
+            defaultColumnOptions: {},
             rowClassName        : [],
-
+            columns             : [],
             stupidtable         : {}
         },
 
-        defaultColunmOptions = {
+        defaultColumnOptions = {
             align               : 'left',
             verticalAlign       : 'middle',
             noWrap              : false,
@@ -80672,6 +81394,7 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
             fixedWidth          : false,
             sortBy              : 'string',
             sortable            : false,
+            minimizable         : false,
             noHorizontalPadding : false,
             noVerticalPadding   : false
         },
@@ -80703,62 +81426,39 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
     asModal - display the table in a modal-window with fixed header and scrolling content
     **********************************************************/
     $.BSASMODAL.BSTABLE = function( modalOptions = {}){
-        var showHeader = this.find('.no-header').length == 0,
-            _this      = this,
-            $result,
-            count;
+        const options = this.bsTableOptions;
+        let $result;
 
-        if (showHeader){
-            //Clone the header and place them in fixed-body of the modal. Hide the original header by padding the table
-            //Add on-click on the clone to 'pass' the click to the original header
-            this.$theadClone = this.find('thead').clone( true, false );
+        if (options.showHeader)
+            this.$thead_tr = this.find('thead tr');
 
-            this.$theadClone.find('th').on('click', function( event ){
-                var columnIndex = $(event.delegateTarget).index();
-                _this.sortBy( columnIndex );
+        const show = !!modalOptions.show;
+        modalOptions.show = false,
+
+        $result =
+            $.bsModal(
+                $.extend( modalOptions, {
+                    scroll              : options.fullWidth ? 'horizontal' : true, //Full width set scroll to horizontal to avoid scroll shadow and add overflow-y: scroll in css
+                    flexWidth           : true,
+                    noVerticalPadding   : true,
+                    noHorizontalPadding : options.fullWidth,
+                    content             : this,
+                    className           : options.fullWidth  ? 'overflow-y-scroll' : '',
+                    onScroll            : options.showHeader ? function(event){ this.$thead_tr.toggleClass('scroll-top', event.target.scrollTop > 0); }.bind(this) : null,
+                })
+            );
+
+        if (options.saveState || modalOptions.saveState)
+            $result.on({
+                'shown.bs.modal' : this.loadState.bind(this),
+                'hidden.bs.modal': this.saveState.bind(this),
             });
 
-            this.$tableWithHeader =
-                $('<table/>')
-                    ._bsAddBaseClassAndSize( this.data(dataTableId) )
-                    .addClass('table-with-header')
-                    .append( this.$theadClone );
-            this.$thead = this.find('thead');
-            count  = 20;
-        }
+        if (options.showHeader)
+            this._toggleAllColumns();
 
-        $result = $.bsModal(
-                        $.extend( modalOptions, {
-                            flexWidth        : true,
-                            noVerticalPadding: true,
-                            content          : this,
-                            fixedContent     : this.$tableWithHeader,
-                            _fixedContentHasScrollClass: true,      //Internal options to have scroll-bar-margin on fixed content
-                        })
-                      );
-
-        if (showHeader){
-            //Using timeout to wait for the browser to update DOM and get height of the header
-            var setHeaderHeight = function(){
-                    var height = _this.$tableWithHeader.outerHeight();
-                    if (height <= 0){
-                        count--;
-                        if (count){
-                            //Using timeout to wait for the browser to update DOM and get height of the header
-                            setTimeout( setHeaderHeight, 50 );
-                            return;
-                        }
-                    }
-
-                    _this.setHeaderWidthAndHeight();
-
-                    //Only set header-height once
-                    $result.off('shown.bs.modal.table', setHeaderHeight );
-                };
-
-            $result.on('shown.bs.modal.table', setHeaderHeight );
-            this.$thead.resize( $.proxy(this.setHeaderWidthAndHeight, this) );
-        }
+        if (show)
+            $result.show();
 
         return $result;
     };
@@ -80771,21 +81471,66 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         addRow( rowContent)  - add a new row to the table
         **********************************************************/
         addRow: function( rowContent ){
-            var options = this.data(dataTableId),
-                $tbody  = this.find('tbody').first(),
-                $tr     = $('<tr/>').appendTo( $tbody );
+            let options  = this.data(dataTableId),
+                $tbody   = this.find('tbody').first(),
+                $tr      = $('<tr/>').appendTo( $tbody ),
+                rowIndex = $tbody.children('tr').length - 1;
 
+
+            function getRowValue( id, defaultValue ){
+                let opt = options[id];
+                if (!opt)
+                    return defaultValue;
+
+                if ((typeof opt == 'string') || (typeof opt == 'boolean'))
+                    return opt;
+
+                if ($.isFunction(opt))
+                    return opt(rowIndex, rowContent);
+
+                if (Array.isArray(opt) && (opt.length > rowIndex))
+                    return opt[rowIndex];
+
+                return defaultValue;
+            }
+
+            function getRowClass( id, className ){
+                return getRowValue( id, false ) ? className + ' ' : '';
+            }
+
+            let className =
+                    getRowValue( 'rowClassName', '' ) + ' ' +
+                    getRowClass( 'rowIsHighlighted',       'row-is-highlighted') +
+                    getRowClass( 'rowIsHigh',              'row-is-highlighted') +
+                    getRowClass( 'rowIsSemiHighlighted',   'row-is-semi-highlighted') +
+                    getRowClass( 'rowIsSemiHigh',          'row-is-semi-highlighted') +
+
+                    //Bootstrap bg-color classes
+                    getRowClass('rowIsPrimary',     'table-primary') +
+                    getRowClass('rowIsSecondary',   'table-secondary') +
+                    getRowClass('rowIsSuccess',     'table-success') +
+                    getRowClass('rowIsDanger',      'table-danger') +
+                    getRowClass('rowIsWarning',     'table-warning') +
+                    getRowClass('rowIsInfo',        'table-info') +
+                    getRowClass('rowIsLight',       'table-light') +
+                    getRowClass('rowIsDark',        'table-dark') +
+
+                    '';
+
+            $tr.addClass(className);
+
+
+/*
             if (options.rowClassName.length){
                 var rowIndex = $tbody.children('tr').length - 1;
                 if (options.rowClassName.length > rowIndex)
                     $tr.addClass(options.rowClassName[rowIndex]);
             }
-
+*/
             if (options.selectable)
                 $tr.attr('id', rowContent.id || 'rowId_'+rowId++);
 
-            var _this = this;
-            $.each( options.columns, function( index, columnOptions ){
+            options.columns.forEach((columnOptions, index) => {
                 var content = rowContent[columnOptions.id],
                     $td = $('<td/>').appendTo($tr);
                 adjustThOrTd( $td, columnOptions, !options.showHeader );
@@ -80800,8 +81545,8 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                     $td.data('raw-value', content );
 
                 //Build the content using the createContent-function, _bsAppendContent, or jquery-value-format
-                _this._createTdContent( content, $td, index );
-            });
+                this._createTdContent( content, $td, index );
+            }, this);
 
             //Add rows to radioGroup
             if (options.selectable)
@@ -80852,8 +81597,6 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         }
         **********************************************************/
         eachRow: function( rowFunc ){
-            var _this = this;
-
             this.find('tbody tr').each( function( rowIndex, tr ){
                 var $tr = $(tr),
                     id = $tr.attr('id'),
@@ -80869,8 +81612,8 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                 });
 
                 //Find the "raw" content eq. before any display adjusting was made and the content used for sorting
-                $.each($tdList, function( columnIndex, $td ){
-                    var column    = _this._getColumn( columnIndex ),
+                $tdList.forEach( function( $td, columnIndex ){
+                    var column    = this._getColumn( columnIndex ),
                         sortValue = $td.data('sort-value'),
                         value     = column.getSortContent ? $td.data('raw-value') : sortValue;
 
@@ -80880,7 +81623,7 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                     sortValueList.push(sortValue);
                     sortValues[column.id] = sortValue;
 
-                });
+                }.bind(this));
 
                 rowFunc({
                     id       : id,
@@ -80896,29 +81639,109 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                     columns: this.columns
 
                 });
-            });
+            }.bind(this));
             return this;
         },
 
+
         /**********************************************************
-        setHeaderWidthAndHeight - Set the width of headers in the cloned table and adjust margin-top
+        showColumn, hideColumn,
+        maximizeColumn, minimizeColumn,
+        toggleColumn, toggleMinimizedColumn
         **********************************************************/
-        setHeaderWidthAndHeight: function(){
-            var _this   = this,
-                options = _this.data(dataTableId);
-
-            if (options.showHeader){
-                this.$thead.find('th').each(function( index, th ){
-                    _this.$theadClone.find('th:nth-child(' + (index+1) + ')')
-                        .width( $(th).width()+'px' );
-                });
-                this.$tableWithHeader.width( this.width()+'px' );
-
-                //Set the margin-top of the table to hide its own header
-                var headerHeight = _this.$tableWithHeader.outerHeight();
-                this.css('margin-top', -headerHeight + 'px');
-            }
+        showColumn: function(index){ return this.toggleColumn(index, true); },
+        hideColumn: function(index){ return this.toggleColumn(index, false); },
+        toggleColumn: function(index, show){
+            return this._toggleColumn('hidden', index, show);
         },
+
+        maximizeColumn: function(index){ return this.toggleMinimizedColumn(index, true); },
+        minimizeColumn: function(index){ return this.toggleMinimizedColumn(index, false); },
+        toggleMinimizedColumn: function(index, show){
+            this.columns[index].minimizeTimeoutId = null;
+            return this._toggleColumn('minimized', index, show);
+        },
+
+        maximizeAllColumns: function(){ return this.toggleMinimizedAllColumns(false); },
+        minimizeAllColumns: function(){ return this.toggleMinimizedAllColumns(true); },
+        toggleMinimizedAllColumns: function(minimize){
+            this.columns.forEach( (columnOptions, index) => {
+                if (columnOptions.minimizable)
+                    this.toggleMinimizedColumn(index, minimize);
+            });
+        },
+
+
+
+
+        _toggleColumn: function(id, index, show){
+            this.columns[index][id] = typeof show == 'boolean' ? show : !this.columns[index][id];
+            this._toggleAllColumns();
+        },
+
+        _toggleAllColumns: function(){
+            /* Not needed
+            let cssHeight = parseInt(this.$thead.css('min-height')),
+                height = this.$thead.height();
+            if (height > cssHeight)
+                this.$thead.css('height', height+'px');
+            */
+
+            this.columns.forEach((columnOptions, index) => {
+                //Toggle class-name for hidden and minimized column
+                this.toggleClass('hideColumnIndex'+index,      !!columnOptions.hidden);
+                this.toggleClass('minimizedColumnIndex'+index, !!columnOptions.minimized);
+            }, this );
+        },
+
+
+        /**********************************************************
+        getState setState - get/set sort, hidden, minimized columns
+        loadState, saveState - load/save current setting internally
+        **********************************************************/
+        getState: function(){
+            let result = [];
+            this.columns.forEach( colOptions => {
+                result.push({
+                    id          : colOptions.id,
+                    hidden      : !!colOptions.hidden,
+                    minimizable : !!colOptions.minimizable,
+                    minimized   : !!colOptions.minimized,
+                    sortBy      : this.lastSortBy.columnIndex == colOptions.index ? this.lastSortBy.direction : false,
+                    sortable    : !!colOptions.sortable,
+                });
+            });
+            return result;
+        },
+
+
+        setState: function( columnState ){
+            if (columnState)
+                columnState.forEach( stateOptions => {
+                    let col = this._getColumn( stateOptions.id );
+                    if (col){
+                        ['hidden', 'minimizable', 'minimized', 'sortable'].forEach( id => col[id] = stateOptions[id] );
+
+                        if (stateOptions.sortBy)
+                            this.sortBy(col.index, stateOptions.sortBy);
+                    }
+                }, this);
+
+            this._toggleAllColumns();
+
+            return this;
+        },
+
+
+        loadState: function(){
+            if (this.savedState)
+                this.setState( this.savedState );
+        },
+
+        saveState: function(){
+            this.savedState = this.getState();
+        },
+
 
         /**********************************************************
         sortBy - Sort the table
@@ -80953,45 +81776,34 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         **********************************************************/
         afterTableSort: function(event, sortInfo){
             this.lastSortBy = {
-                    columnIndex: sortInfo.column,
-                    direction  : sortInfo.direction
+                columnIndex: sortInfo.column,
+                direction  : sortInfo.direction
             };
-
-            //Update the class-names of the cloned <thead>
-            var cloneThList = this.$theadClone.find('th');
-            this.find('thead th').each( function( index, th ){
-                $(cloneThList[index])
-                    .removeClass()
-                    .addClass( $(th).attr('class') );
-            });
-
 
             //Update all cells if column.options.updateAfterSorting == true
             var updateColumn = [],
                 updateAnyColumn = false;
 
-            $.each( this.columns, function( index, columnOptions ){
+            this.columns.forEach( ( columnOptions, index ) => {
                 updateColumn[index] = !!columnOptions.updateAfterSorting && !!columnOptions.createContent;
                 updateAnyColumn = updateAnyColumn || updateColumn[index];
             });
 
-            var _this = this;
             if (updateAnyColumn)
                 this.eachRow( function(rowOptions){
-
-                    $.each(updateColumn, function(columnIndex){
-                        if (updateColumn[columnIndex]){
+                    updateColumn.forEach( function(opt, columnIndex){
+                        if (opt){
                             var $td = rowOptions.$tdList[columnIndex];
                             $td.empty();
 
-                            _this._getColumn(columnIndex).createContent(
+                            this._getColumn(columnIndex).createContent(
                                 rowOptions.valueList[columnIndex],
                                 $td,
-                                _this.lastSortBy.columnIndex == columnIndex ? _this.lastSortBy.direction : false
+                                this.lastSortBy.columnIndex == columnIndex ? this.lastSortBy.direction : false
                             );
                         }
-                    });
-                });
+                    }.bind(this));
+                }.bind(this));
 
             var column = this._getColumn( sortInfo.column );
 
@@ -81020,22 +81832,18 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                         var $newTd = $tdBase.clone(true),
                             $span = $('<span/>').appendTo($newTd);
 
-                        _this._createTdContent( nextHeaderContent, $span/*$newTd*/, column.index, column.createHeaderContent );
+                        this._createTdContent( nextHeaderContent, $span/*$newTd*/, column.index, column.createHeaderContent );
 
                         //Create new row and insert before current row
                         $('<tr/>')
-                            .addClass('table-light table-sort-group-header')
+                            .addClass('table-sort-group-header')
                             .append( $newTd )
                             .insertBefore( $td.parent() );
 
                         lastHeaderContent = nextHeaderContent;
                     }
-                });
+                }.bind(this));
             }
-
-            //Re-calc and update width and height of headers
-            this.setHeaderWidthAndHeight();
-
         },
 
         /**********************************************************
@@ -81045,7 +81853,6 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
             this.find('tbody tr').removeClass('filter-out');
             if (!dontSort)
                 this._resort();
-            this.setHeaderWidthAndHeight();
             return this;
         },
 
@@ -81053,8 +81860,7 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         filterTable -
         **********************************************************/
         filterTable: function( rowF, columnF ){
-            var _this = this,
-                options = $(this).data(dataTableId),
+            let options = $(this).data(dataTableId),
                 rowFilter = rowF || options.rowFilter,
                 columnFilter = {};
 
@@ -81077,19 +81883,17 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                     result = rowFilter(opt.values, opt.id ); //<- HER: Måske nyt navn i stedet for values
                 else {
                     $.each(columnFilter, function(id, filterFunc){
-                        if (!filterFunc(opt.values[id], _this._getColumn(id))){ //<- HER: Måske nyt navn i stedet for values
+                        if (!filterFunc(opt.values[id], this._getColumn(id))){ //<- HER: Måske nyt navn i stedet for values
                             result = false;
                             return false;
                         }
-                    });
+                    }.bind(this));
                 }
                 opt.$tr.toggleClass('filter-out', !result);
-            });
+            }.bind(this));
 
             //Sort table again
             this._resort();
-
-            this.setHeaderWidthAndHeight();
 
             return this;
         }
@@ -81103,15 +81907,21 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         sortId     = 0;
 
     $.bsTable = function( options ){
-
+        
         options = $._bsAdjustOptions( options, defaultOptions );
+
+        //Fixed first column only needed when horizontal scrolling ( = full width)
+        options.firstColumnFixed = options.firstColumnFixed && options.fullWidth;
+
         options.class =
             'jb-table ' +
-            (options.verticalBorder && !options.noBorder ? 'table-bordered ' : '' ) +
+            (options.verticalBorder && !options.noBorder ? 'table-bordered border-black ' : '' ) +
             (options.noBorder ? 'table-borderless ' : '' ) +
             (options.hoverRow ? 'table-hover ' : '' ) +
             (options.noPadding ? 'table-no-padding ' : '' ) +
+            (options.fullWidth ? 'table-full-width ' : '' ) +
             (options.notFullWidth ? 'table-not-full-width ' : '' ) +
+            (options.firstColumnFixed ? 'table-first-column-fixed ' : '' ) +
             (options.centerInContainer ? 'mx-auto my-0 ' : '' ) +
             (options.selectable ? 'table-selectable ' : '' ) +
             (options.allowZeroSelected ? 'allow-zero-selected ' : '' );
@@ -81119,15 +81929,17 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         //Adjust each column
         var columnIds = {};
 
-        $.each( options.columns, function( index, columnOptions ){
+        options.columns.forEach( ( columnOptions, index ) => {
+            let titlePost = null;
+
             columnOptions.sortable = columnOptions.sortable || columnOptions.sortBy;
             columnOptions = $.extend( true,
                 {
                     index    : index,
                     sortIndex: (index+1)*100
                 },
-                defaultColunmOptions,
-                options.defaultColunmOptions,
+                defaultColumnOptions,
+                options.defaultColumnOptions || options.defaultColunmOptions, //Bug fix: Spelling error
                 columnOptions
             );
 
@@ -81140,6 +81952,62 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                 options.stupidtable[stupidtableSortId] = columnOptions.sortBy;
                 columnOptions.sortBy = stupidtableSortId;
             }
+
+            if (columnOptions.sortable)
+               titlePost = {da:'(Klik: Sortér)', en:'(Click to sort)'};
+
+
+            //If column is not sortable and have options minimizable the column can be minimized
+            if (options.showHeader && !columnOptions.sortable && columnOptions.minimizable) {
+                columnOptions.minimizable = true;
+
+                let minIcon = 'fa-left-right',
+                    colIcon = (columnOptions.header && columnOptions.header.icon) ? columnOptions.header.icon : null;
+                if (columnOptions.minimizedIcon !== true)
+                    minIcon = columnOptions.minimizedIcon || colIcon || minIcon;
+
+                columnOptions.minimizedIcon = minIcon;
+
+                titlePost = {da:'(Klik: min/maksimere)', en:'(Click to min/maximize)'};
+            }
+
+            if (titlePost){
+                let title = {},
+                    titleFound = false;
+
+                [columnOptions.title, columnOptions.header].forEach( newTitle => {
+                    if (newTitle && !titleFound){
+                        /*
+                        newTitle = STRING
+                        newTitle = {da:, en:STRING}
+                        newTitle = {text: STRING}
+                        newTitle = {text: {da:, en:STRING}}
+                        */
+                        titleFound = true;
+                        if (typeof newTitle == 'string')
+                            title.da = newTitle;
+                        else
+                            if (newTitle.text){
+                                if (typeof newTitle.text == 'string')
+                                    title.da = newTitle.text;
+                                else
+                                    title = $.extend({}, newTitle.text);
+                            }
+                            else
+                                title = $.extend({}, newTitle);
+
+                        title = $._bsAdjustText(title);
+                    }
+                });
+
+                $.each( titlePost, (lang, text) => {
+                    title[lang] = (title[lang] || '') + ' ' + text;
+                    title[lang] = title[lang].replace('<br>', ' - ');
+                });
+                columnOptions.title = title;
+            }
+
+
         });
 
         var id = 'bsTable'+ tableId++,
@@ -81149,8 +82017,7 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                         .attr({
                             'id': id
                         }),
-            $thead = $('<thead/>')
-                        .addClass('table-light')
+            $thead = $table.$thead = $('<thead/>')
                         .toggleClass('no-header', !options.showHeader )
                         .appendTo( $table ),
             $tr = $('<tr/>')
@@ -81162,9 +82029,11 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         $table.columns = options.columns;
         $table.columnIds = columnIds;
 
+        $table.bsTableOptions = options;
+
         //Create colgroup
         var $colgroup = $('<colgroup/>').appendTo($table);
-        $.each( options.columns, function( index, columnOptions ){
+        options.columns.forEach( columnOptions => {
             var $col = $('<col/>').appendTo( $colgroup );
             if (columnOptions.fixedWidth)
                 $col.attr('width', '1');
@@ -81183,20 +82052,42 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
 
             multiSortList = []{columnIndex, sortIndex} sorted by sortIndex. Is used be each th to define alternative sort-order
         */
-        $.each( options.columns, function( index, columnOptions ){
-            if (columnOptions.sortable)
+        let anyColumnSortable = false;
+        options.columns.forEach( ( columnOptions, index ) => {
+            if (columnOptions.sortable){
                 multiSortList.push( {columnId: columnOptions.id, columnIndex: ''+index, sortIndex: columnOptions.sortIndex });
+                anyColumnSortable = true;
+            }                
         });
         multiSortList.sort(function( c1, c2){ return c1.sortIndex - c2.sortIndex; });
 
         //Create headers
-        if (options.showHeader)
-            $.each( $table.columns, function( index, columnOptions ){
-                columnOptions.$th = $('<th/>').appendTo( $tr );
+        if (options.showHeader || anyColumnSortable){
+            let anyColumnMinimizable = false;
+
+
+            $table.columns.forEach( (columnOptions, columnIndex) => {
+                if (columnOptions.minimizable)
+                    anyColumnMinimizable = true;
+
+
+                let $th = columnOptions.$th = $('<th/>').appendTo( $tr );
+
+                if (columnOptions.minimizable)
+                    $th
+                        .addClass('minimizable clickable')
+                        ._bsAddHtml( {icon: columnOptions.minimizedIcon, iconClass: 'show-for-minimized'} )
+                        .on('click', function(columnIndex){
+                            //Delay toggle minimize to allow dbl-click to take over
+                            let column = this.columns[columnIndex];
+                            if (!column.minimizeTimeoutId)
+                                column.minimizeTimeoutId = window.setTimeout(
+                                    this.toggleMinimizedColumn.bind(this, columnIndex), 200 );
+                        }.bind($table, columnIndex) );
 
                 if (columnOptions.sortable){
-                    columnOptions.$th
-                        .addClass('sortable')
+                    $th
+                        .addClass('sortable clickable')
                         .attr('data-sort', columnOptions.sortBy);
 
                     if (columnOptions.sortDefault){
@@ -81206,7 +82097,7 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
 
                     //Create alternative/secondary columns to sort by
                     var sortMulticolumn = '';
-                    $.each( multiSortList, function( index, multiSort ){
+                    multiSortList.forEach( multiSort => {
                         if (multiSort.columnIndex != columnOptions.index)
                             sortMulticolumn = (sortMulticolumn ? sortMulticolumn + ',' : '') + multiSort.columnIndex;
                     });
@@ -81220,20 +82111,45 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                         if (sortMulticolumn.indexOf(',') == -1)
                             sortMulticolumn = sortMulticolumn + ',' + sortMulticolumn;
 
-                        columnOptions.$th.attr('data-sort-multicolumn', sortMulticolumn);
+                        $th.attr('data-sort-multicolumn', sortMulticolumn);
                     }
                     sortableTable = true;
                 }
 
+                if (columnOptions.title)
+                    $th.i18n(columnOptions.title, 'title');
 
-                adjustThOrTd( columnOptions.$th, columnOptions, true );
+                adjustThOrTd( $th, columnOptions, true );
 
-                columnOptions.$th._bsAddHtml( columnOptions.header );
-            });
+                $th._bsAddHtml( columnOptions.header );
+            }, this);
+
+
+            if (anyColumnMinimizable && options.showHeader)
+                $tr.on('dblclick', function(){
+                    let minimize = true;
+                    this.columns.forEach( columnOptions => {
+                        if (columnOptions.minimized)
+                            minimize = false;
+
+                        if (columnOptions.minimizeTimeoutId){
+                            window.clearTimeout(columnOptions.minimizeTimeoutId);
+                            columnOptions.minimizeTimeoutId = null;
+                        }
+                    });
+                    this.toggleMinimizedAllColumns( minimize );
+
+                }.bind($table) );
+
+
+
+
+        }
+
 
         if (options.selectable){
             var radioGroupOptions = $.extend( true, {}, options );
-            radioGroupOptions.className = 'selected';
+            radioGroupOptions.className = 'table-selected';
             options.radioGroup = $.radioGroup( radioGroupOptions );
         }
 
@@ -81243,18 +82159,19 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         //Create tbody and all rows
         $table.append( $('<tbody/>') );
 
-        $.each( options.content, function( index, rowContent ){
-            $table.addRow( rowContent );
-        });
+        if (options.content)
+            options.content.forEach( rowContent => $table.addRow( rowContent ) );
 
         if (sortableTable){
             $table.stupidtable( options.stupidtable )
-                .bind('beforetablesort', $.proxy( $table.beforeTableSort, $table ) )
-                .bind('aftertablesort',  $.proxy( $table.afterTableSort,  $table ) );
+                .bind('beforetablesort', $table.beforeTableSort.bind( $table ) )
+                .bind('aftertablesort',  $table.afterTableSort.bind( $table ) );
 
             if (sortDefaultId, sortDefaultDir)
                 $table.sortBy(sortDefaultId, sortDefaultDir);
         }
+
+        $table._toggleAllColumns();
 
         return $table;
     };
@@ -81351,8 +82268,8 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         if (options.height)
             $contents.height( options.height );
 
-
-        $.each( options.list, function( index, opt ){
+        options.list = options.list || [];
+        options.list.forEach( ( opt, index ) => {
             opt = $._bsAdjustOptions( opt );
             var tabId = options.id || id + 'tab' + index,
                 contentId = tabId + 'content',
@@ -81461,7 +82378,7 @@ Utilities for manipulation JSON and other objects
     *******************************************/
     $.mergeObjects = function mergeObjects(obj1, obj2){
         function objType( obj ){
-            if ($.isArray(obj)) return 'array';
+            if (Array.isArray(obj)) return 'array';
             if ($.isPlainObject(obj)) return 'object';
             if (obj === undefined)  return 'undefined';
             return 'simple';
@@ -85496,6 +86413,7 @@ Set methodes and options for format utm
         openNewModal            : true,  //Boolean or function. If true a "new"-icon in small-modal will open a new modal. Typical used if small modals are use as popups and the screen is widther
         normalModalExtendable   : false, //Boolean or function. If true the mormal modal can extend to a version with map and inlined attachments. Typical on desktops
         modalIsExtended         : false, //Boolean or function. If true (and normalModalExtendable = true) the modal 'start' as extended (modal-option.isExtended: true)
+        modalInFullScreen       : false, //Boolean or function. If true the modal is in size = full-screen.  Normally on phones and other small screens
 
 
         createMap: null, //function($element, message, options): function to create a map inside $element and displaying the message.geoJSON
@@ -86489,6 +87407,9 @@ Set methodes and options for format utm
     Return standard options to create a $.bsModal
     ******************************************************/
     ns.Message.prototype.bsModalOptions = function(){
+        
+        const modalInFullScreen = ns.options.isSet('modalInFullScreen');
+              
         var result = {
                 header      : this.bsHeaderOptions('NORMAL'),
                 fixedContent: this.bsFixedContent('NORMAL'),
@@ -86496,8 +87417,11 @@ Set methodes and options for format utm
 
                 footer      : ns.options.modalFooter,
 
-                flexWidth   : true,
-                extraWidth  : true,
+                flexWidth           : !modalInFullScreen,
+                extraWidth          : !modalInFullScreen,
+                allowFullScreen     : !modalInFullScreen,                             
+
+                fullScreenWithBorder: modalInFullScreen,
 
                 onClose     : this.bsModalOnClose.bind(this),
 
@@ -86515,8 +87439,8 @@ Set methodes and options for format utm
                 content     : this.bsAccordionOptions({fullDate: true, largeVersion: true}, {allOpen: true, neverClose: true}, true),
                 footer      : true,
 
-                flexWidth   : true,
-                megaWidth   : true
+                flexWidth   : !modalInFullScreen,
+                megaWidth   : !modalInFullScreen
             };
             result.isExtended = ns.options.isSet('modalIsExtended');
         }
@@ -86750,8 +87674,10 @@ Set methodes and options for format utm
                 selectable       : true,
                 allowZeroSelected: false,
                 allowReselect    : true,
+                showHeader       : !displayInSmallTable,                    
                 onChange         : $.proxy(this.messageAsModal, this ),
                 columns          : this.tableColumns(displayInSmallTable)
+                    
             };
 
             //Create table and add data
@@ -86768,11 +87694,14 @@ Set methodes and options for format utm
                 {icon: ns.options.filterIcon,      text:{da:'Filter', en:'Filter'}, onClick: $.proxy(this.filterAsModalForm, this)}
             );
 
+            const modalInFullScreen = ns.options.isSet('modalInFullScreen');
             var bsModalOptions = {
                 header     : '',
                 buttons    : buttons,
-                flexWidth  : true,
-                megaWidth  : true,
+
+                extraWidth          : !modalInFullScreen,
+                fullScreenWithBorder: modalInFullScreen,
+                allowFullScreen     : !modalInFullScreen,                             
 
                 static     : true,
                 show       : false,
@@ -86794,8 +87723,6 @@ Set methodes and options for format utm
 
             //In small-mode: Hide first column and hide table header and add selectbox with sorting options
             if (displayInSmallTable){
-                this.bsTable.$thead.hide();
-                this.bsTable.$theadClone.hide();
                 $.bsSelectBox({
                     fullWidth : true,
                     selectedId: this.sortBsTableBy || 'sort_date_desc',
@@ -86868,6 +87795,7 @@ Set methodes and options for format utm
         var ids = id.split('_'),
             dir = ids[2];
         this._sortBsTableBy = ids[1];
+
         this.bsTable.sortBy(0, dir);
     };
 
@@ -87147,13 +88075,16 @@ Set methodes and options for format utm
     };
 
     ns.Publications.prototype.asModal = function(){
+        const modalInFullScreen = ns.options.isSet('modalInFullScreen');
+        
         var options = {
                 header   : {
                     icon: ns.options.partIcon.PUBLICATIONS,
                     text: 'niord:publications'
                 },
-                flexWidth: true,
-                extraWidth: true,
+                extraWidth          : !modalInFullScreen,
+                fullScreenWithBorder: modalInFullScreen,
+                allowFullScreen     : !modalInFullScreen,                             
                 content: {
                     type     : 'accordion',
                     multiOpen: true,
@@ -89720,14 +90651,20 @@ Base object-class for all type of markers
         options.iconColorName = options.iconColorName || options.textColorName || 'black';
 //BRUGES MÅSKE IKKE:             options.color = options.color || options.textColor || options.iconColor;
 
-        options.size = options.size ? options.size.toLowerCase() : 'nl';
-        options.size =  options.size == 'extrasmall' ? 'xs' :
-                        options.size == 'small' ? 'sm' :
-                        options.size == 'large' ? 'lg' :
-                        options.size == 'xlarge' ? 'xl' :
-                        options.size == 'normal' ? 'nl' :
-                        options.size;
 
+        if (typeof options.size == 'number'){
+            //Individual size
+            options.indvidualSize = true;
+        }
+        else {
+            options.size = options.size ? options.size.toLowerCase() : 'nl';
+            options.size =  options.size == 'extrasmall' ? 'xs' :
+                            options.size == 'small' ? 'sm' :
+                            options.size == 'large' ? 'lg' :
+                            options.size == 'xlarge' ? 'xl' :
+                            options.size == 'normal' ? 'nl' :
+                            options.size;
+        }
         return options;
     };
 
@@ -89766,7 +90703,7 @@ Base object-class for all type of markers
                 options.faClassName = a.faClassName;
 
             if (!options.faClassName && (a.round === false))
-                options.faClassName = 'fa-square';
+                options.faClassName = 'fa-square-full';
         }
         else {
             //2:, 3:, or 4:
@@ -89776,7 +90713,7 @@ Base object-class for all type of markers
             if (typeof c === 'boolean'){
                 //2: (STRING, STRING, BOOLEAN)
                 if (!c)
-                    options.faClassName = 'fa-square';
+                    options.faClassName = 'fa-square-full';
             }
             else
 
@@ -89805,7 +90742,7 @@ Base object-class for all type of markers
     L.BsMarkerBase = L.Marker.extend({
         options: {
             type       : 'base',  //Type of the marker
-            size       : 'nl',    //Size of the marker. Possble values: 'extrasmall'/'sx', 'small'/'sm', '', 'large'/'lg', 'xlarge'*'xl'
+            size       : 'nl',    //Size of the marker. Possble values: 'extrasmall'/'sx', 'small'/'sm', '', 'large'/'lg', 'xlarge'*'xl' or number
 
             scale      : null,    //Value = 40, 50, 60, 70, 80, 90, 120, 130, 150, 180 or 200: Scale specific icons to fit the other icons. Only for icon-marker
             scaleY     : null,    //Value = 40, 50, 60, 70, 80, 90, 120, 130, 150, 180 or 200: Scale height of specific icons to better fit icons with very low height
@@ -89881,7 +90818,7 @@ Base object-class for all type of markers
             options = options || this.options;
             options = ns._adjustOptions( options );
 
-            if (options.useTouchSize && options.draggable && window.bsIsTouch)
+            if (!options.indvidualSize && options.useTouchSize && options.draggable && window.bsIsTouch)
                 options.size = 'lg';
 
             return options;
@@ -89921,7 +90858,7 @@ Base object-class for all type of markers
         getWH - Return [width,height] of the icon
         *****************************************************/
         getWH: function( sizeId ){
-            var width = ns.size[sizeId || this.size],
+            var width = this.options.indvidualSize ? (sizeId || this.size) : ns.size[sizeId || this.size],
                 height = width;
 
             if (this.options.scale){
@@ -90440,7 +91377,7 @@ Create L.bsMarkerCircle = a round marker with options for color, shadow and puls
             options.innerIconClass = options.innerIconClass || options.iconClass;
             L.BsMarkerBase.prototype.initialize.call(this, latLng, options);
             if (!this.options.round)
-                this.options.faClassName = 'fa-square';
+                this.options.faClassName = 'fa-square-full';
             return this;
         }
     });
@@ -100759,9 +101696,7 @@ var windowIsDefined = (typeof window === "undefined" ? "undefined" : _typeof(win
 
     L._adjustButtonList = function(list, owner){
         var newList = [];
-        $.each(list, function(index, options){
-            newList.push( L._adjustButton(options, owner) );
-        });
+        (list || []).forEach(options => newList.push( L._adjustButton(options, owner) ) );
         return newList;
     };
     L._adjustButton = function(options, owner){
@@ -101283,7 +102218,7 @@ L.BsControl = extention of L.Control with
         if (force || (height != this.lbHeight)){
             this.lbHeight = height;
 
-            $.each(['left', 'center', 'right'], function(index, horizontal){
+            ['left', 'center', 'right'].forEach( horizontal => {
 
                 var topControlList = [],
                     bottomControlList = [];
@@ -102940,8 +103875,11 @@ https://github.com/nerik/leaflet-graphicscale
 
                 //In simple-mode: If no header is given and there are more than one object => add header (if any)
                 if (contextmenuOptions.items.length && !!contextmenuOptions.header && (!o.header || !firstObject || contextmenuOptions.forceHeader)) {
-// HER>                 if ((!firstObject || !o.header) && (objectList.length > 1) && contextmenuOptions.items.length && !!contextmenuOptions.header) {
                     var headerOptions = $._bsAdjustIconAndText(contextmenuOptions.header);
+
+                    //Bug fix: For some (unknown) reason the header sometime also have content => error in display. The content is removed
+                    delete headerOptions.content;
+
                     headerOptions.spaceBefore = !firstObject;
                     headerOptions.mainHeader = firstObject;
                     itemList.push(headerOptions);
@@ -102994,7 +103932,6 @@ https://github.com/nerik/leaflet-graphicscale
 
                 itemList.push(item);
             });
-
         }); //end of $.each( objectList, function(index, obj){
 
         result.width = widthToUse;
@@ -104161,7 +105098,7 @@ Can be used as leaflet standard zoom control with Bootstrap style
                     _this.$popupElements.contextmenu();
                 };
 
-            $.each(['_zoomInButton', '_zoomOutButton'], function( index, id ){
+            ['_zoomInButton', '_zoomOutButton'].forEach( id => {
                 if (_this.zoom[id])
                     $(_this.zoom[id]).on('contextmenu', onContextmenu);
             });
@@ -104531,23 +105468,27 @@ leaflet-bootstrap-control-legend.js
 
     *******************************************************************
     ******************************************************************/
-    L.BsLegend_defaultOptions = {
-        show       : true,  //Show or hide the legend at init
-        showContent: true,  //Show or hide the content at init
-        showIcons  : true,  //Show or hide the icon-buttons t the header at init
-        isExtended : true,  //Extend/diminish the legend at init
+    L.BsLegend_close_icon  = ['fa-map fa-scale-x-08', 'fa-slash fa-scale-x-08'];
+    L.BsLegend_close_title = {da:'Skjul', en:'Hide'};
+    L.BsLegend_defaultOptions = function(){
+        return {
+            show       : true,  //Show or hide the legend at init
+            showContent: true,  //Show or hide the content at init
+            showIcons  : true,  //Show or hide the icon-buttons t the header at init
+            isExtended : true,  //Extend/diminish the legend at init
 
-        //closeIconOptions = options for the close-icon in the header that removes the layer
-        closeIconOptions: {
-            icon     : ['fa-map fa-scale-x-08', 'fa-slash fa-scale-x-08'],
-            className: 'fa-map-margin-right',
-            title    : {da:'Skjul', en:'Hide'},
-        }
+            //closeIconOptions = options for the close-icon in the header that removes the layer
+            closeIconOptions: {
+                icon     : L.BsLegend_close_icon,
+                className: $.BSMODAL_USE_SQUARE_ICONS ? null : 'fa-map-margin-right',
+                title    : L.BsLegend_close_title
+            }
+        };
     };
 
 
     L.BsLegend = function( options ){
-        this.options = $.extend(true, {semiTransparent: true}, L.BsLegend_defaultOptions, options);
+        this.options = $.extend(true, {semiTransparent: true}, L.BsLegend_defaultOptions(), options);
         this.index = options.index;
     };
 
@@ -104559,7 +105500,7 @@ leaflet-bootstrap-control-legend.js
         addTo: function( parent ){
             var _this = this,
                 options = this.options,
-                normalIcon = options.icon || 'fa-square text-white',
+                normalIcon = options.icon || 'fa-square-full text-white',
                 normalIconIsStackedIcon = false;
 
             //Add class to normal-icon to make it visible when working = off
@@ -104678,15 +105619,13 @@ semiTransparent: true,
                     $normalIcon.children('.container-stacked-icons').addClass('hide-for-bsl-working');
 
                 this.actionIcons = {};
-                $.each(['warning', 'info', 'help', 'close'], function(index, id){
+                ['warning', 'info', 'help', 'close'].forEach( id => {
                     _this.actionIcons[id] = _this.$container.find('[data-header-icon-id="'+id+'"]');
                     _this.actionIcons[id].toggle(_this.options.showIcons || (id == 'close'));
                 });
 
                 this.sizeIcons = {};
-                $.each(['extend', 'diminish'], function(index, id){
-                    _this.sizeIcons[id] = _this.$container.find('[data-header-icon-id="'+id+'"]');
-                });
+                ['extend', 'diminish'].forEach( id => _this.sizeIcons[id] = _this.$container.find('[data-header-icon-id="'+id+'"]') );
 
                 this.$header = this.$container.find('.modal-header');
 
@@ -105117,6 +106056,10 @@ Note: All buttons in options.buttons will have event-methods
 with arguments = (id, selected, $button, map, owner) where owner = the popup
 Eq., onClick: function(id, selected, $button, map, popup){...}
 
+The options for the content also allows options onResize: function(size, popup, $body, options, map) that is called when the body are resized
+
+
+
 ****************************************************************************/
 (function ($, L/*, window, document, undefined*/) {
     "use strict";
@@ -105312,13 +106255,13 @@ Eq., onClick: function(id, selected, $button, map, popup){...}
         }
 
         //Adjust buttons in content(s) and buttons to include map in arguments for onClick/onChange
-        $.each(['content', 'extended.content', 'minimized.content', 'buttons'], function(index, idStr){
+        ['content', 'extended.content', 'minimized.content', 'buttons'].forEach( idStr => {
             var idList = idStr.split('.'),
                 lastId = idList.pop(),
                 parent = modalOptions,
                 exists = true;
 
-            $.each(idList, function(index, id){
+            idList.forEach(id => {
                 if (parent[id])
                     parent = parent[id];
                 else
@@ -105375,10 +106318,40 @@ Eq., onClick: function(id, selected, $button, map, popup){...}
         //Save the modal-object
         this.bsModal = this.$contentNode.bsModal;
 
+        //Add onResize to the different "body"
+        [$.MODAL_SIZE_NORMAL, $.MODAL_SIZE_MINIMIZED, $.MODAL_SIZE_EXTENDED].forEach( function(size){
+            let id = '';
+            switch (size){
+                case $.MODAL_SIZE_NORMAL    : id = '';          break;
+                case $.MODAL_SIZE_MINIMIZED : id = 'minimized'; break;
+                case $.MODAL_SIZE_EXTENDED  : id = 'extended';  break;
+            }
+
+            let opt     = id ? this.modalOptions[id] : this.modalOptions,
+                bsModal = id ? this.bsModal[id]      : this.bsModal,
+                $body   = bsModal ? bsModal.$body : null;
+
+            if ($body && opt.onResize){
+                $body.resize( function(size, popup, $body, options/*, map*/){
+                    if ($body._callingOnResize || !options.onResize)
+                        return;
+
+                    $body._callingOnResize = true;
+
+                    options.onResize.apply(options.contentContext, arguments);
+
+                    //Delay the allowing of new onResize to allow onResize to also resize
+                    window.setTimeout(function(){ this._callingOnResize = false; }.bind($body), 200);
+
+                }.bind(null, size, this, $body, opt, this._map));
+            }
+
+        }.bind(this));
+
         //If any of the contents (minimized, normal, or extended) should have the same tooltip as the source
         if (this._source && this._source.getTooltip()){
             var $list = [];
-            $.each(['', 'minimized', 'extended'], function(index, id){
+            ['', 'minimized', 'extended'].forEach(id => {
                 var show     = id ? modalOptions[id] && modalOptions[id].showTooltip : modalOptions.showTooltip,
                     elements = id ? _this.bsModal[id] : _this.bsModal;
                 if (show){
@@ -105524,9 +106497,41 @@ Eq., onClick: function(id, selected, $button, map, popup){...}
 
 
     /*********************************************************
-    L.Popup.changeContent - only changes the content
-    of the "body" of the bsModal inside the popup
+    L.Popup.setWidth( width )
+    Set new width of the popup
+    width = NUMBER or {width: NUMBER, minimized: NUMBER, extended: NUMBER}
     *********************************************************/
+    L.Popup.prototype.setWidth = function(width){
+        if (typeof width == 'number')
+            width = {width: width};
+
+        const allNewWidth = {};
+        allNewWidth[$.MODAL_SIZE_NORMAL]    = width.width || width.normal;
+        allNewWidth[$.MODAL_SIZE_MINIMIZED] = width.minimized;
+        allNewWidth[$.MODAL_SIZE_EXTENDED]  = width.extended;
+
+        const setWidth = function(size, id){
+            let options = this.modalOptions || this._content;
+            if (id)
+                options = options[id];
+            if (!options) return;
+
+            let newWidth = allNewWidth[size];
+            if (newWidth)
+                options.width = newWidth;
+
+            if (this.bsModal && this.bsModal.cssWidth && (typeof newWidth == 'number'))
+                this.bsModal.cssWidth[size].width = newWidth+'px';
+        }.bind(this);
+
+
+        setWidth($.MODAL_SIZE_NORMAL);
+        setWidth($.MODAL_SIZE_MINIMIZED, 'minimized');
+        setWidth($.MODAL_SIZE_EXTENDED,  'extended');
+
+        if (this.$contentNode)
+            this.$contentNode._bsModalSetHeightAndWidth();
+    };
 
 
 
@@ -105732,7 +106737,8 @@ Eq., onClick: function(id, selected, $button, map, popup){...}
             //TODO zIndexWhenHover         : null,   //zIndex applied when the polyline/polygon is hover
             //TODO zIndexWhenPopupOpen     : null,   //zIndex applied when the a popup is open on the polyline/polygon
 
-            className       : 'lpl-base',
+            baseClassName   : 'lpl-base',
+            className       : '',
 
             borderWidth     : 1, //Width of border
             shadowWidth     : 3, //Width of shadow
@@ -105751,14 +106757,16 @@ Eq., onClick: function(id, selected, $button, map, popup){...}
         *****************************************************/
         initialize: function( initialize ){
             return function( latLngs, options ){
-                var _this = this;
-                function getOptions( className, interactive ){
-                    return $.extend({}, _this.options, defaultOptions, {
-                               className     : className,
-                               addInteractive: false,
-                               interactive   : interactive,
-                            });
-                }
+
+                const getOptions = function( baseClassName='', interactive ){
+                    let result = $.extend({}, this.options, defaultOptions, {
+//                            className     : className,
+                            addInteractive: false,
+                            interactive   : interactive,
+                        });
+                    result.className = baseClassName + ' ' + (this.options.className || '');
+                    return result;                
+                }.bind(this);
 
                 options = options || {};
                 if (!options.addInteractive)
@@ -105824,7 +106832,7 @@ Eq., onClick: function(id, selected, $button, map, popup){...}
 
                 //If there are options in options.polyline or options.LineString for polyline etc. => copy them into options.
                 //This makes it possible to add options in geoJSON-layer with different options for polygons and lines
-                $.each(this instanceof L.Polygon ? ['polygon', 'Polygon'] : ['polyline', 'Polyline', 'lineString', 'LineString'], function(index, name){
+                (this instanceof L.Polygon ? ['polygon', 'Polygon'] : ['polyline', 'Polyline', 'lineString', 'LineString']).forEach( name => {
                     if (options[name])
                         $.extend(options, adjust(options[name]));
                 });
@@ -105841,7 +106849,7 @@ Eq., onClick: function(id, selected, $button, map, popup){...}
                 this.polylineList[interactiveIndex].setStyle({weight: options.weight + 2*options.interactiveWidth});
 
                 //Add class and colors to this and shadow
-                this._addClass(thisIndex, options.className);
+                this._addClass(thisIndex, (options.baseClassName || '') + ' ' + (options.className || ''));
                 this.setColor(options.colorName);
                 this.setBorderColor(options.borderColorName);
                 this._toggleClass(thisIndex, 'lpl-transparent', !!options.transparent);
@@ -105950,7 +106958,6 @@ Eq., onClick: function(id, selected, $button, map, popup){...}
         Add, remove and toggle class from a polyline
         *****************************************************/
         _eachPolyline: function( onlyPolyline, methodName, arg ){
-            var _this = this;
             if (onlyPolyline != null){
                 if ($.isNumeric(onlyPolyline))
                     onlyPolyline = this.polylineList[onlyPolyline];
@@ -105960,9 +106967,7 @@ Eq., onClick: function(id, selected, $button, map, popup){...}
                 }
             }
             else
-                $.each(this.polylineList, function( index, polyline ){
-                   _this._eachPolyline( polyline, methodName, arg );
-                });
+                this.polylineList.forEach( polyline => this._eachPolyline( polyline, methodName, arg ), this);
         },
 
         _addClass: function( polyline, className ){
